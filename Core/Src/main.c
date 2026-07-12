@@ -34,6 +34,8 @@
 /* USER CODE BEGIN Includes */
 
 # include "../../bsp/LED/LED.h"
+# include "../../bsp/can/can.h"
+# include "../../device/motor/motor.h"
 
 /* USER CODE END Includes */
 
@@ -120,6 +122,7 @@ int main(void)
   MX_FDCAN1_Init();
   MX_FDCAN2_Init();
   MX_FDCAN3_Init();
+  can_init();
   MX_USB_OTG_HS_PCD_Init();
   MX_SPI6_Init();
   MX_TIM1_Init();
@@ -131,6 +134,7 @@ int main(void)
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
    LED_init();
+   Motor_System_PowerOn_Init();
    // LED_BLUE_SET();
    // HAL_Delay(2000);
    // LED_off();

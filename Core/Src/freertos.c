@@ -27,6 +27,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "../../task/all_task.h"
+#include "../../device/motor/motor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -228,6 +229,7 @@ void can_test_entry(void *argument)
   /* Infinite loop */
   for(;;)
   {
+    Motor_All_Update();
     osDelay(1);
   }
   /* USER CODE END can_test_entry */
