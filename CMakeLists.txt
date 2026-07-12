@@ -39,7 +39,11 @@ add_executable(${CMAKE_PROJECT_NAME}
         task/test_task.h
         task/all_task.h
         bsp/uart/uart.c
-        bsp/uart/uart.h)
+        bsp/uart/uart.h
+        bsp/can/can.c
+        bsp/can/can.h
+        device/motor.c
+        device/motor.h)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
