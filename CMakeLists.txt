@@ -35,8 +35,8 @@ enable_language(C ASM)
 add_executable(${CMAKE_PROJECT_NAME}
         bsp/LED/LED.c
         bsp/LED/LED.h
-        task/test_task.c
-        task/test_task.h
+        task/test_task/test_task.c
+        task/test_task/test_task.h
         task/all_task.h
         bsp/uart/uart.c
         bsp/uart/uart.h
@@ -49,6 +49,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         dsp/MahonyAHRS/MahonyAHRS.c
         device/BMI088/BMI088driver.c
         device/BMI088/BMI088Middleware.c
+        task/sensor_task/sensor_task.c
+        task/sensor_task/sensor_task.h
 )
 
 # Add STM32CubeMX generated sources

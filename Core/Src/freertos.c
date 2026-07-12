@@ -89,10 +89,10 @@ const osThreadAttr_t test_attributes = {
 
 /* USER CODE END FunctionPrototypes */
 
-void StartDefaultTask(void *argument);
-void StartTestTask(void *argument);
-void StartTask03(void *argument);
-void StartTask04(void *argument);
+void seneor_task_entry(void *argument);
+void uart_test_entry(void *argument);
+void can_test_entry(void *argument);
+void usb_test_entry(void *argument);
 void test_task_entry(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -154,16 +154,16 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the thread(s) */
   /* creation of sensor */
-  sensorHandle = osThreadNew(StartDefaultTask, NULL, &sensor_attributes);
+  sensorHandle = osThreadNew(seneor_task_entry, NULL, &sensor_attributes);
 
   /* creation of uart_test */
-  uart_testHandle = osThreadNew(StartTestTask, NULL, &uart_test_attributes);
+  uart_testHandle = osThreadNew(uart_test_entry, NULL, &uart_test_attributes);
 
   /* creation of can_test */
-  can_testHandle = osThreadNew(StartTask03, NULL, &can_test_attributes);
+  can_testHandle = osThreadNew(can_test_entry, NULL, &can_test_attributes);
 
   /* creation of usb_test */
-  usb_testHandle = osThreadNew(StartTask04, NULL, &usb_test_attributes);
+  usb_testHandle = osThreadNew(usb_test_entry, NULL, &usb_test_attributes);
 
   /* creation of test */
   testHandle = osThreadNew(test_task_entry, NULL, &test_attributes);
@@ -178,77 +178,77 @@ void MX_FREERTOS_Init(void) {
 
 }
 
-/* USER CODE BEGIN Header_StartDefaultTask */
+/* USER CODE BEGIN Header_seneor_task_entry */
 /**
   * @brief  Function implementing the sensor thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
+/* USER CODE END Header_seneor_task_entry */
+void seneor_task_entry(void *argument)
 {
-  /* USER CODE BEGIN StartDefaultTask */
+  /* USER CODE BEGIN seneor_task_entry */
+  sensor_task();
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartDefaultTask */
+  /* USER CODE END seneor_task_entry */
 }
 
-/* USER CODE BEGIN Header_StartTestTask */
+/* USER CODE BEGIN Header_uart_test_entry */
 /**
 * @brief Function implementing the uart_test thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartTestTask */
-void StartTestTask(void *argument)
+/* USER CODE END Header_uart_test_entry */
+void uart_test_entry(void *argument)
 {
-  /* USER CODE BEGIN StartTestTask */
+  /* USER CODE BEGIN uart_test_entry */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartTestTask */
+  /* USER CODE END uart_test_entry */
 }
 
-/* USER CODE BEGIN Header_StartTask03 */
+/* USER CODE BEGIN Header_can_test_entry */
 /**
 * @brief Function implementing the can_test thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartTask03 */
-void StartTask03(void *argument)
+/* USER CODE END Header_can_test_entry */
+void can_test_entry(void *argument)
 {
-  /* USER CODE BEGIN StartTask03 */
-
+  /* USER CODE BEGIN can_test_entry */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartTask03 */
+  /* USER CODE END can_test_entry */
 }
 
-/* USER CODE BEGIN Header_StartTask04 */
+/* USER CODE BEGIN Header_usb_test_entry */
 /**
 * @brief Function implementing the usb_test thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartTask04 */
-void StartTask04(void *argument)
+/* USER CODE END Header_usb_test_entry */
+void usb_test_entry(void *argument)
 {
-  /* USER CODE BEGIN StartTask04 */
+  /* USER CODE BEGIN usb_test_entry */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartTask04 */
+  /* USER CODE END usb_test_entry */
 }
 
 /* USER CODE BEGIN Header_test_task_entry */

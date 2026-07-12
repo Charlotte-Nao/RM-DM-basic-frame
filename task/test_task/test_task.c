@@ -2,9 +2,9 @@
 // Created by charlotte on 7/12/26.
 //
 
-#include "test_task.h"
+#include "../test_task/test_task.h"
 #include "cmsis_os2.h"
-#include "../bsp/uart/uart.h"
+#include "../../bsp/uart/uart.h"
 
 #include <stdbool.h>
 #include <string.h>
