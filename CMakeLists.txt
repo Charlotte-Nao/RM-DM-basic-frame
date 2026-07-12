@@ -42,8 +42,14 @@ add_executable(${CMAKE_PROJECT_NAME}
         bsp/uart/uart.h
         bsp/can/can.c
         bsp/can/can.h
-        device/motor.c
-        device/motor.h)
+        device/motor/motor.c
+        device/motor/motor.h
+        dsp/pid/pid.c
+        dsp/pid/pid.h
+        dsp/MahonyAHRS/MahonyAHRS.c
+        device/BMI088/BMI088driver.c
+        device/BMI088/BMI088Middleware.c
+)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
