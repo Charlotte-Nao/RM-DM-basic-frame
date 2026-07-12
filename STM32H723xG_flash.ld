@@ -227,6 +227,13 @@ SECTIONS
   } >DTCMRAM
   PROVIDE( __non_tls_bss_start = ADDR(.bss) );
 
+  /* DMA1/DMA2 cannot access DTCM on STM32H723. */
+  .dma_buffer (NOLOAD) : ALIGN(32)
+  {
+    *(.dma_buffer)
+    . = ALIGN(32);
+  } >RAM_D2
+
   PROVIDE( __bss_start = __tbss_start );
   PROVIDE( __bss_size = __bss_end - __bss_start );
 
