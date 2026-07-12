@@ -14,14 +14,7 @@ void test_task(void)
     {
         // LED_BLUE_RESET();
         //LED_GREEN_RESET();
-        LED_BLUE_SET();
-        osDelay(1000);
-
-        LED_off();
-        osDelay(1000);
-
-
-
+        LED_SKY_SET();
 
         osDelay(1);
     }
