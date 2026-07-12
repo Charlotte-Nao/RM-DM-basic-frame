@@ -8,6 +8,10 @@
 #define BMI088_ACCEL_3G_SEN      0.0008974609375f
 #define BMI088_GYRO_2000_SEN     0.00106526443603169529841533860381f
 
+#define BMI088_NO_ERROR          0U
+#define BMI088_ACCEL_ID_ERROR    1U
+#define BMI088_GYRO_ID_ERROR     2U
+
 typedef float fp32;
 
 // 初始化与读取
