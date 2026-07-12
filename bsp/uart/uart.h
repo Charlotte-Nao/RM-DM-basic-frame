@@ -27,8 +27,11 @@ struct uart_device {
     /** Start this device's receive operation. Safe to call more than once. */
     int (*uart_init)(struct uart_device *device);
 
-    /** Start an asynchronous transmit. Completion invokes uart_send_callback. */
-    int (*uart_send)(struct uart_device *device, const uint8_t *data, uint16_t length);
+    /** Send a NUL-terminated string asynchronously. */
+    int (*uart_send)(struct uart_device *device, const char *message);
+
+    /** Format and send text asynchronously; completion uses uart_send_callback. */
+    int (*uart_printf)(struct uart_device *device, const char *format, ...);
 
     /** Called in interrupt context after a complete IT/DMA transmission. */
     uart_send_callback_t uart_send_callback;

@@ -5,6 +5,8 @@
 
 #include "uart.h"
 
+#include <stdarg.h>
+#include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -30,7 +32,7 @@ struct uart_port_data {
     struct uart_device *tx_owner;
     uint8_t it_rx_byte;
     uint8_t *dma_rx_buffer;
-    uint8_t *dma_tx_buffer;
+    uint8_t *tx_buffer;
     uint16_t dma_last_position;
 };
 
@@ -42,9 +44,11 @@ struct uart_device_data {
 };
 
 static int uart_device_init(struct uart_device *device);
-static int uart_device_send(struct uart_device *device,
-                            const uint8_t *data,
-                            uint16_t length);
+static int uart_device_send(struct uart_device *device, const char *message);
+static int uart_device_printf(struct uart_device *device, const char *format, ...);
+static int uart_device_send_bytes(struct uart_device *device,
+                                  const uint8_t *data,
+                                  uint16_t length);
 
 #define DMA_BUFFER __attribute__((section(".dma_buffer"), aligned(32)))
 
@@ -59,18 +63,18 @@ static uint8_t uart10_dma_tx_buffer[UART_DMA_TX_BUFFER_SIZE] DMA_BUFFER;
 
 static struct uart_port_data uart1_port = {
     .handle = &huart1, .dma_rx_buffer = uart1_dma_rx_buffer,
-    .dma_tx_buffer = uart1_dma_tx_buffer,
+    .tx_buffer = uart1_dma_tx_buffer,
 };
 static struct uart_port_data uart5_port = {
     .handle = &huart5, .dma_rx_buffer = uart5_dma_rx_buffer,
 };
 static struct uart_port_data uart7_port = {
     .handle = &huart7, .dma_rx_buffer = uart7_dma_rx_buffer,
-    .dma_tx_buffer = uart7_dma_tx_buffer,
+    .tx_buffer = uart7_dma_tx_buffer,
 };
 static struct uart_port_data uart10_port = {
     .handle = &huart10, .dma_rx_buffer = uart10_dma_rx_buffer,
-    .dma_tx_buffer = uart10_dma_tx_buffer,
+    .tx_buffer = uart10_dma_tx_buffer,
 };
 
 #define UART_DEVICE_DATA(port_data, mode, can_transmit) \
@@ -95,7 +99,8 @@ static struct uart_device_data uart10_dma_data =
 
 #define UART_DEVICE(name_string, data) \
     { .name = (name_string), .uart_init = uart_device_init, \
-      .uart_send = uart_device_send, .priv_data = &(data) }
+      .uart_send = uart_device_send, .uart_printf = uart_device_printf, \
+      .priv_data = &(data) }
 
 static struct uart_device uart1_it = UART_DEVICE("uart1_it", uart1_it_data);
 static struct uart_device uart1_dma = UART_DEVICE("uart1_dma", uart1_dma_data);
@@ -175,9 +180,9 @@ static int uart_device_init(struct uart_device *device)
     return UART_DEVICE_OK;
 }
 
-static int uart_device_send(struct uart_device *device,
-                            const uint8_t *data,
-                            uint16_t length)
+static int uart_device_send_bytes(struct uart_device *device,
+                                  const uint8_t *data,
+                                  uint16_t length)
 {
     struct uart_device_data *device_data;
     struct uart_port_data *port;
@@ -201,16 +206,23 @@ static int uart_device_send(struct uart_device *device,
         return UART_DEVICE_ERR_BUSY;
     }
 
+    if (length > UART_DMA_TX_BUFFER_SIZE) {
+        return UART_DEVICE_ERR_PARAM;
+    }
+
     port->tx_owner = device;
+    if (data != port->tx_buffer) {
+        memcpy(port->tx_buffer, data, length);
+    }
     if (device_data->transfer_mode == UART_TRANSFER_IT) {
-        status = HAL_UART_Transmit_IT(port->handle, (uint8_t *)data, length);
+        status = HAL_UART_Transmit_IT(port->handle, port->tx_buffer, length);
     } else {
-        if (length > UART_DMA_TX_BUFFER_SIZE) {
-            port->tx_owner = NULL;
-            return UART_DEVICE_ERR_PARAM;
-        }
-        memcpy(port->dma_tx_buffer, data, length);
-        status = HAL_UART_Transmit_DMA(port->handle, port->dma_tx_buffer, length);
+        /* DMA bypasses D-Cache; publish the copied buffer to RAM before TX. */
+        uint32_t clean_length = ((uint32_t)length + 31U) & ~31U;
+
+        SCB_CleanDCache_by_Addr((uint32_t *)port->tx_buffer, (int32_t)clean_length);
+        __DSB();
+        status = HAL_UART_Transmit_DMA(port->handle, port->tx_buffer, length);
     }
 
     if (status != HAL_OK) {
@@ -219,6 +231,54 @@ static int uart_device_send(struct uart_device *device,
     }
 
     return UART_DEVICE_OK;
+}
+
+static int uart_device_send(struct uart_device *device, const char *message)
+{
+    size_t length;
+
+    if (message == NULL) {
+        return UART_DEVICE_ERR_PARAM;
+    }
+
+    length = strlen(message);
+    if (length == 0U || length > UINT16_MAX) {
+        return UART_DEVICE_ERR_PARAM;
+    }
+
+    return uart_device_send_bytes(device, (const uint8_t *)message, (uint16_t)length);
+}
+
+static int uart_device_printf(struct uart_device *device, const char *format, ...)
+{
+    struct uart_device_data *device_data;
+    struct uart_port_data *port;
+    va_list arguments;
+    int length;
+
+    if (device == NULL || device->priv_data == NULL || format == NULL) {
+        return UART_DEVICE_ERR_PARAM;
+    }
+
+    device_data = device->priv_data;
+    if (!device_data->tx_supported) {
+        return UART_DEVICE_ERR_UNSUPPORTED;
+    }
+
+    port = device_data->port;
+    if (port->tx_owner != NULL || port->handle->gState != HAL_UART_STATE_READY) {
+        return UART_DEVICE_ERR_BUSY;
+    }
+
+    va_start(arguments, format);
+    length = vsnprintf((char *)port->tx_buffer, UART_DMA_TX_BUFFER_SIZE, format, arguments);
+    va_end(arguments);
+
+    if (length <= 0 || length >= (int)UART_DMA_TX_BUFFER_SIZE) {
+        return UART_DEVICE_ERR_PARAM;
+    }
+
+    return uart_device_send_bytes(device, port->tx_buffer, (uint16_t)length);
 }
 
 static void uart_dma_deliver(struct uart_port_data *port, uint16_t position)
