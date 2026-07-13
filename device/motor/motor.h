@@ -39,6 +39,12 @@ struct motor_device {
 struct motor_device *motor_get_device(const char *name);
 uint32_t Motor_Get_Count(void);
 
+/* Raw CAN1 receive diagnostics, updated only in the FDCAN FIFO0 ISR. */
+extern volatile uint32_t g_can1_irq_count;
+extern volatile uint32_t g_can1_frame_count;
+extern volatile uint32_t g_can1_last_id;
+extern volatile uint32_t g_can1_last_dlc;
+
 /** True only after a feedback frame has arrived within the offline timeout. */
 bool motor_is_online(const struct motor_device *motor);
 

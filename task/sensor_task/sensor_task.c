@@ -8,6 +8,7 @@
 #include "../../bsp/uart/uart.h"
 #include "../../device/BMI088/BMI088driver.h"
 #include "../../dsp/MahonyAHRS/MahonyAHRS.h"
+#include "../../application/global_data.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -104,8 +105,15 @@ void sensor_task(void)
                             (gyro[2] - gyro_bias[2]) ,
                             accel[0], accel[1], accel[2]);
 
+        /* Publish the newest attitude every sample for motor-control users. */
+        quaternion_to_euler(quaternion, &roll, &pitch, &yaw);
+        global_data.imu_roll_rad = roll;
+        global_data.imu_pitch_rad = pitch;
+        global_data.imu_yaw_rad = yaw;
+        global_data.imu_update_tick = osKernelGetTickCount();
+        global_data.imu_ready = 1U;
+
         if ((osKernelGetTickCount() - last_print_tick) >= ATTITUDE_PRINT_PERIOD_MS) {
-            quaternion_to_euler(quaternion, &roll, &pitch, &yaw);
             last_print_tick = osKernelGetTickCount();
 
             if (uart1 != NULL) {

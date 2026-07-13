@@ -31,6 +31,11 @@
 #define DM4310_CLEAR_RETRY_MS              50U
 #define DM4310_ENABLE_RETRY_MS             20U
 
+volatile uint32_t g_can1_irq_count = 0U;
+volatile uint32_t g_can1_frame_count = 0U;
+volatile uint32_t g_can1_last_id = 0U;
+volatile uint32_t g_can1_last_dlc = 0U;
+
 typedef struct {
     pid_t position_pid;
     pid_t velocity_pid;
@@ -480,16 +485,16 @@ static void dm4310_set_para(const struct motor_device *motor, const char *which,
 
 static const gm6020_pid_config_t gm6020_yaw_pid_config = {
     .position_pid = {
-        .kp = 15.0f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 100.0f, .ki = 0.0f, .kd = 0.0f,
         .integral_limit = 0.0f, .output_limit = GM6020_SPEED_LIMIT_RPM,
-        .derivative_filter_alpha = 0.2f, .deadband = 0.002f,
+        .derivative_filter_alpha = 0.5f, .deadband = 0.002f,
         .integral_separation_threshold = 0.0f,
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
         .kp = 80.0f, .ki = 0.0f, .kd = 0.0f,
         .integral_limit = 3000.0f, .output_limit = GM6020_OUTPUT_LIMIT,
-        .derivative_filter_alpha = 0.2f, .deadband = 1.0f,
+        .derivative_filter_alpha = 0.5f, .deadband = 1.0f,
         .integral_separation_threshold = 100.0f,
         .variable_integration_threshold = 50.0f,
     },
@@ -639,9 +644,18 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *handle, uint32_t interrupts)
 
 
 
+    if (handle == &hfdcan1) {
+        ++g_can1_irq_count;
+    }
+
     if ((interrupts & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) == 0U) { return; }
     while (HAL_FDCAN_GetRxFifoFillLevel(handle, FDCAN_RX_FIFO0) > 0U) {
         if (HAL_FDCAN_GetRxMessage(handle, FDCAN_RX_FIFO0, &header, frame) != HAL_OK) { break; }
+        if (handle == &hfdcan1) {
+            ++g_can1_frame_count;
+            g_can1_last_id = header.Identifier;
+            g_can1_last_dlc = header.DataLength;
+        }
         if (header.IdType != FDCAN_STANDARD_ID || header.DataLength != FDCAN_DLC_BYTES_8) { continue; }
         for (index = 0U; index < Motor_Get_Count(); ++index) {
             struct motor_device *motor = motor_list[index];

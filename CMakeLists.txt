@@ -51,6 +51,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         device/BMI088/BMI088Middleware.c
         task/sensor_task/sensor_task.c
         task/sensor_task/sensor_task.h
+        application/global_data.c
+        application/global_data.h
 )
 
 # Add STM32CubeMX generated sources
