@@ -229,8 +229,8 @@ void can_test_entry(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    Motor_All_Update();
-    osDelay(1);
+    /* Motor control is owned by test_task during the GM6020 test. */
+    osDelay(1000);
   }
   /* USER CODE END can_test_entry */
 }

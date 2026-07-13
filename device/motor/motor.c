@@ -637,6 +637,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *handle, uint32_t interrupts)
     uint8_t frame[8];
     uint32_t index;
 
+
+
     if ((interrupts & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) == 0U) { return; }
     while (HAL_FDCAN_GetRxFifoFillLevel(handle, FDCAN_RX_FIFO0) > 0U) {
         if (HAL_FDCAN_GetRxMessage(handle, FDCAN_RX_FIFO0, &header, frame) != HAL_OK) { break; }
