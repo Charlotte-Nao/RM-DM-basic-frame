@@ -47,18 +47,18 @@ static void sensor_calibrate_gyro(float gyro_bias[3])
 static void quaternion_to_euler(const float q[4], float *roll,
                                 float *pitch, float *yaw)
 {
-    float sin_pitch;
+    float sin_roll;
 
-    *roll = atan2f(2.0f * (q[0] * q[1] + q[2] * q[3]),
+    *pitch = atan2f(2.0f * (q[0] * q[1] + q[2] * q[3]),
                    1.0f - 2.0f * (q[1] * q[1] + q[2] * q[2]));
 
-    sin_pitch = 2.0f * (q[0] * q[2] - q[3] * q[1]);
-    if (sin_pitch > 1.0f) {
-        sin_pitch = 1.0f;
-    } else if (sin_pitch < -1.0f) {
-        sin_pitch = -1.0f;
+    sin_roll = 2.0f * (q[0] * q[2] - q[3] * q[1]);
+    if (sin_roll > 1.0f) {
+        sin_roll = 1.0f;
+    } else if (sin_roll < -1.0f) {
+        sin_roll = -1.0f;
     }
-    *pitch = asinf(sin_pitch);
+    *roll = asinf(sin_roll);
 
     *yaw = atan2f(2.0f * (q[0] * q[3] + q[1] * q[2]),
                   1.0f - 2.0f * (q[2] * q[2] + q[3] * q[3]));

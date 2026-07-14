@@ -502,7 +502,51 @@ static void dm4310_set_para(const struct motor_device *motor, const char *which,
 }
 
 /* --------------------------- Static instances --------------------------- */
-// 6020yaw实例化
+// 6020pitch实例化
+static const gm6020_pid_config_t gm6020_pitch_pid_config = {
+    .position_pid = {
+        .kp = 100.0f, .ki = 0.0f,
+        .kd = 0.0f,
+        .integral_limit = 0.0f,
+        .output_limit = GM6020_SPEED_LIMIT_RPM,
+        .derivative_filter_alpha = 0.5f,
+        .deadband = 0.002f,
+        .integral_separation_threshold = 0.0f,
+        .variable_integration_threshold = 0.0f,
+    },
+    .velocity_pid = {
+        .kp = 80.0f,
+        .ki = 0.0f,
+        .kd = 0.0f,
+        .integral_limit = 3000.0f,
+        .output_limit = GM6020_OUTPUT_LIMIT,
+        .derivative_filter_alpha = 0.5f,
+        .deadband = 1.0f,
+        .integral_separation_threshold = 100.0f,
+        .variable_integration_threshold = 50.0f,
+    },
+};
+
+static gm6020_data_t gm6020_pitch_data = {
+    .pid_config = &gm6020_pitch_pid_config,
+};
+
+static struct motor_device gm6020_pitch = {
+    .motor_name = "GM6020_PITCH",
+    .motor_id = CAN_GM6020_PITCH_ID,
+    .motor_data = &gm6020_pitch_data,
+    .init = gm6020_init,
+    .feedback_calculate = gm6020_feedback_calculate,
+    .send_enable_cmd = gm6020_enable,
+    .send_disable_cmd = gm6020_disable,
+    .send_ctrl_cmd = gm6020_send_ctrl_cmd,
+    .update = gm6020_update,
+    .set_target = gm6020_set_target,
+    .get_status = gm6020_get_status,
+    .set_para = gm6020_set_para,
+};
+
+//6020yaw实例化
 static const gm6020_pid_config_t gm6020_yaw_pid_config = {
     .position_pid = {
         .kp = 100.0f, .ki = 0.0f,
@@ -530,7 +574,6 @@ static const gm6020_pid_config_t gm6020_yaw_pid_config = {
 static gm6020_data_t gm6020_yaw_data = {
     .pid_config = &gm6020_yaw_pid_config,
 };
-static dm4310_data_t dm4310_pitch_data;
 
 static struct motor_device gm6020_yaw = {
     .motor_name = "GM6020_YAW",
@@ -547,6 +590,9 @@ static struct motor_device gm6020_yaw = {
     .set_para = gm6020_set_para,
 };
 
+
+static dm4310_data_t dm4310_pitch_data;
+
 static struct motor_device dm4310_pitch = {
     .motor_name = "DM4310_PITCH",
     .motor_id = DM_4310_MASTER_ID,
@@ -562,8 +608,8 @@ static struct motor_device dm4310_pitch = {
     .set_para = dm4310_set_para,
 };
 
-static struct motor_device *const motor_list[] = {&gm6020_yaw, &dm4310_pitch};
-
+static struct motor_device *const motor_list[] = {&gm6020_pitch, &dm4310_pitch, &gm6020_yaw};
+/* --------------------------- 信号发送与接收部分 --------------------------- */
 /* Build every byte of 0x1FF from the registered GM6020s on this CAN bus.
  * This prevents one motor's update from zeroing the other three control slots. */
 // 将挂载在传入can句柄上的电机的控制量打包下发
@@ -626,10 +672,10 @@ bool motor_is_online(const struct motor_device *motor)
 
 void Motor_System_PowerOn_Init(void)
 {
+    gm6020_pitch.init(&gm6020_pitch, CAN_GM6020_PITCH_ID, &hfdcan1, 0);
     gm6020_yaw.init(&gm6020_yaw, CAN_GM6020_YAW_ID, &hfdcan1, 0);
-    dm4310_pitch.init(&dm4310_pitch, DM_4310_MASTER_ID, &hfdcan2, 0);
+    gm6020_pitch.send_disable_cmd(&gm6020_pitch);
     gm6020_yaw.send_disable_cmd(&gm6020_yaw);
-    dm4310_pitch.send_disable_cmd(&dm4310_pitch);
 }
 
 void Motor_All_Update(void)
@@ -638,7 +684,7 @@ void Motor_All_Update(void)
     for (index = 0U; index < Motor_Get_Count(); ++index) {
         motor_list[index]->update(motor_list[index]);
     }
-    Motor_Send_All_Control();
+   // Motor_Send_All_Control();
 }
 
 void Motor_Send_All_Control(void)
