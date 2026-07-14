@@ -44,6 +44,8 @@ extern volatile uint32_t g_can1_irq_count;
 extern volatile uint32_t g_can1_frame_count;
 extern volatile uint32_t g_can1_last_id;
 extern volatile uint32_t g_can1_last_dlc;
+extern volatile uint32_t g_can1_tx_ok_count;
+extern volatile uint32_t g_can1_tx_fail_count;
 
 /** True only after a feedback frame has arrived within the offline timeout. */
 bool motor_is_online(const struct motor_device *motor);

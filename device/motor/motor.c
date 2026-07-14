@@ -35,6 +35,8 @@ volatile uint32_t g_can1_irq_count = 0U;
 volatile uint32_t g_can1_frame_count = 0U;
 volatile uint32_t g_can1_last_id = 0U;
 volatile uint32_t g_can1_last_dlc = 0U;
+volatile uint32_t g_can1_tx_ok_count = 0U;
+volatile uint32_t g_can1_tx_fail_count = 0U;
 
 typedef struct {
     pid_t position_pid;
@@ -89,6 +91,7 @@ static void motor_send_standard(FDCAN_HandleTypeDef *handle, uint32_t identifier
                                 const uint8_t data[8])
 {
     FDCAN_TxHeaderTypeDef header = {0};
+    HAL_StatusTypeDef status;
 
     if (handle == NULL || data == NULL) {
         return;
@@ -103,7 +106,14 @@ static void motor_send_standard(FDCAN_HandleTypeDef *handle, uint32_t identifier
     header.FDFormat = FDCAN_CLASSIC_CAN;
     header.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
     header.MessageMarker = 0U;
-    (void)HAL_FDCAN_AddMessageToTxFifoQ(handle, &header, (uint8_t *)data);
+    status = HAL_FDCAN_AddMessageToTxFifoQ(handle, &header, (uint8_t *)data);
+    if (handle == &hfdcan1) {
+        if (status == HAL_OK) {
+            ++g_can1_tx_ok_count;
+        } else {
+            ++g_can1_tx_fail_count;
+        }
+    }
 }
 
 // 限幅函数
@@ -292,7 +302,7 @@ static void gm6020_set_target(const struct motor_device *motor, int para_num, ..
     va_end(arguments);
 }
 
-//获取电机的某个状态值，存入valu中
+//获取电机的某个状态值，存入value中
 static void gm6020_get_status(const struct motor_device *motor, const char *which,
                               void *value)
 {
@@ -303,6 +313,7 @@ static void gm6020_get_status(const struct motor_device *motor, const char *whic
     else if (strcmp(which, "VEL") == 0) { *(float *)value = data->velocity_rpm; }
     else if (strcmp(which, "TEMP") == 0) { *(uint8_t *)value = data->temperature; }
     else if (strcmp(which, "TARGET") == 0) { *(float *)value = data->target_position_rad; }
+    else if (strcmp(which, "ENC") == 0) { *(uint16_t *)value = data->encoder; }
 }
 
 
@@ -505,7 +516,7 @@ static void dm4310_set_para(const struct motor_device *motor, const char *which,
 // 6020pitch实例化
 static const gm6020_pid_config_t gm6020_pitch_pid_config = {
     .position_pid = {
-        .kp = 100.0f, .ki = 0.0f,
+        .kp = 130.0f, .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 0.0f,
         .output_limit = GM6020_SPEED_LIMIT_RPM,
@@ -515,13 +526,13 @@ static const gm6020_pid_config_t gm6020_pitch_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 80.0f,
+        .kp = 110.0f,
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 3000.0f,
         .output_limit = GM6020_OUTPUT_LIMIT,
         .derivative_filter_alpha = 0.5f,
-        .deadband = 1.0f,
+        .deadband = 0.2f,
         .integral_separation_threshold = 100.0f,
         .variable_integration_threshold = 50.0f,
     },
@@ -684,7 +695,7 @@ void Motor_All_Update(void)
     for (index = 0U; index < Motor_Get_Count(); ++index) {
         motor_list[index]->update(motor_list[index]);
     }
-   // Motor_Send_All_Control();
+    Motor_Send_All_Control();
 }
 
 void Motor_Send_All_Control(void)

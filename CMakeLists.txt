@@ -53,6 +53,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         task/sensor_task/sensor_task.h
         application/global_data.c
         application/global_data.h
+        task/motor_task/motor_task.c
+        task/motor_task/motor_task.h
 )
 
 # Add STM32CubeMX generated sources

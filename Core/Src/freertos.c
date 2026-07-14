@@ -84,6 +84,13 @@ const osThreadAttr_t test_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
+/* Definitions for motor */
+osThreadId_t motorHandle;
+const osThreadAttr_t motor_attributes = {
+  .name = "motor",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -95,6 +102,7 @@ void uart_test_entry(void *argument);
 void can_test_entry(void *argument);
 void usb_test_entry(void *argument);
 void test_task_entry(void *argument);
+void motor_enter(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -168,6 +176,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of test */
   testHandle = osThreadNew(test_task_entry, NULL, &test_attributes);
+
+  /* creation of motor */
+  motorHandle = osThreadNew(motor_enter, NULL, &motor_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -270,6 +281,25 @@ void test_task_entry(void *argument)
     osDelay(1);
   }
   /* USER CODE END test_task_entry */
+}
+
+/* USER CODE BEGIN Header_motor_enter */
+/**
+* @brief Function implementing the motor thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_motor_enter */
+void motor_enter(void *argument)
+{
+  /* USER CODE BEGIN motor_enter */
+  motor_task();
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END motor_enter */
 }
 
 /* Private application code --------------------------------------------------*/

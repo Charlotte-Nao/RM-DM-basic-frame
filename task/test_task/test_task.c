@@ -38,40 +38,25 @@ static void gm6020_print_feedback(struct uart_device *uart1,
     float position_rad = 0.0f;
     float velocity_rpm = 0.0f;
     uint8_t temperature = 0U;
-    FDCAN_ProtocolStatusTypeDef protocol_status = {0};
-    FDCAN_ErrorCountersTypeDef error_counters = {0};
-
+    uint16_t encoder = 0U;
     if (uart1 == NULL || gm6020 == NULL) {
         return;
     }
-
     gm6020->get_status(gm6020, "POS", &position_rad);
     gm6020->get_status(gm6020, "VEL", &velocity_rpm);
     gm6020->get_status(gm6020, "TEMP", &temperature);
-    (void)HAL_FDCAN_GetProtocolStatus(&hfdcan1, &protocol_status);
-    (void)HAL_FDCAN_GetErrorCounters(&hfdcan1, &error_counters);
+    gm6020->get_status(gm6020, "ENC", &encoder);
     (void)uart1->uart_printf(uart1,
-                             "CAN1: irq=%lu frame=%lu last_id=0x%03lX last_dlc=0x%08lX fifo=%lu tx_free=%lu TEC=%lu REC=%lu busoff=%lu LEC=%lu\r\n"
-                             "GM6020: online=%u rx_tick=%lu pos=%.3f rad vel=%.1f rpm temp=%u C\r\n",
-                             (unsigned long)g_can1_irq_count,
-                             (unsigned long)g_can1_frame_count,
-                             (unsigned long)g_can1_last_id,
-                             (unsigned long)g_can1_last_dlc,
-                             (unsigned long)HAL_FDCAN_GetRxFifoFillLevel(&hfdcan1, FDCAN_RX_FIFO0),
-                             (unsigned long)HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1),
-                             (unsigned long)error_counters.TxErrorCnt,
-                             (unsigned long)error_counters.RxErrorCnt,
-                             (unsigned long)protocol_status.BusOff,
-                             (unsigned long)protocol_status.LastErrorCode,
+                             "GM6020: online=%u pos=%.3f rad vel=%.1f rpm temp=%u C encoder=%u\r\n",
                              motor_is_online(gm6020) ? 1U : 0U,
-                             (unsigned long)gm6020->last_rx_tick,
                              position_rad, velocity_rpm,
-                             (unsigned int)temperature);
+                             (unsigned int)temperature,
+                             (unsigned int)encoder);
 }
 
 void test_task(void)
 {
-    struct motor_device *gm6020 = motor_get_device("GM6020_YAW");
+    struct motor_device *gm6020 = motor_get_device("GM6020_PITCH");
     struct uart_device *uart1 = uart_get_device("uart1_dma");
     uint32_t last_diag_tick = 0U;
 
@@ -83,8 +68,6 @@ void test_task(void)
 
     /* Do not enable before both CAN feedback and a valid IMU attitude are available. */
     while (!motor_is_online(gm6020) || global_data.imu_ready == 0U) {
-        /* Keep sending a zero 0x1FF frame while waiting, without energising the motor. */
-        Motor_All_Update();
         LED_SKY_SET();
         if ((osKernelGetTickCount() - last_diag_tick) >= GM6020_DIAG_PERIOD_MS) {
             last_diag_tick = osKernelGetTickCount();
@@ -97,11 +80,23 @@ void test_task(void)
     gm6020->send_enable_cmd(gm6020);
 
     for (;;) {
-        float target_rad = pitch_to_gm6020_target_rad(global_data.imu_roll_rad);
+        float target_rad = 0;
+        float angle_rad_differ = global_data.imu_pitch_rad;
+        uint16_t now_encoder = 0;
+        gm6020->get_status(gm6020, "ENC", &now_encoder);
+        float encoder_target = now_encoder + angle_rad_differ * 8192 / 2 / 3.1415926;
+        if (encoder_target > 8192)
+        {
+            encoder_target = encoder_target - 8192;
+        }
+        if (encoder_target < 0)
+        {
+            encoder_target = encoder_target + 8192;
+        }
+        target_rad = encoder_target * 2 * 3.1415926 / 8192;
 
         /* -90/0/+90 IMU pitch maps continuously to 0/180/360 GM6020 degrees. */
-        gm6020->set_target(gm6020, 1, (double)target_rad);
-        Motor_All_Update();
+        gm6020->set_target(gm6020, 2, (double)target_rad,angle_rad_differ);
         LED_RED_SET();
         if ((osKernelGetTickCount() - last_diag_tick) >= GM6020_DIAG_PERIOD_MS) {
             last_diag_tick = osKernelGetTickCount();
