@@ -15,9 +15,6 @@
 
 #define SENSOR_SAMPLE_PERIOD_MS       1U
 #define GYRO_CALIBRATION_SAMPLES      1000U
-#define ATTITUDE_PRINT_PERIOD_MS      50U
-#define DEG_TO_RAD                    0.01745329251994329577f
-#define RAD_TO_DEG                    57.295779513082320876f
 
 static void sensor_calibrate_gyro(float gyro_bias[3])
 {
@@ -76,9 +73,8 @@ void sensor_task(void)
     float roll;
     float pitch;
     float yaw;
-    uint32_t last_print_tick;
-    uint8_t bmi088_status;
 
+    uint8_t bmi088_status;
     uart1 = uart_get_device("uart1_dma");
     bmi088_status = BMI088_init();
     if (bmi088_status != 0U) {
@@ -92,7 +88,6 @@ void sensor_task(void)
     }
 
     sensor_calibrate_gyro(gyro_bias);
-    last_print_tick = osKernelGetTickCount();
 
     for (;;)
     {
@@ -112,17 +107,6 @@ void sensor_task(void)
         global_data.imu_yaw_rad = yaw;
         global_data.imu_update_tick = osKernelGetTickCount();
         global_data.imu_ready = 1U;
-
-        if ((osKernelGetTickCount() - last_print_tick) >= ATTITUDE_PRINT_PERIOD_MS) {
-            last_print_tick = osKernelGetTickCount();
-
-            if (uart1 != NULL) {
-                (void)uart1->uart_printf(uart1,
-                                         "roll:%.2f,pitch:%.2f,yaw:%.2f,temp:%.2f\r\n",
-                                         global_data.imu_roll_rad * RAD_TO_DEG, global_data.imu_pitch_rad * RAD_TO_DEG,
-                                         yaw * RAD_TO_DEG, temperature);
-            }
-        }
 
         osDelay(SENSOR_SAMPLE_PERIOD_MS);
     }

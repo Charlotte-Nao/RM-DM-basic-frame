@@ -56,10 +56,10 @@ const osThreadAttr_t sensor_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
-/* Definitions for uart_test */
-osThreadId_t uart_testHandle;
-const osThreadAttr_t uart_test_attributes = {
-  .name = "uart_test",
+/* Definitions for printf */
+osThreadId_t printfHandle;
+const osThreadAttr_t printf_attributes = {
+  .name = "printf",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
@@ -98,7 +98,7 @@ const osThreadAttr_t motor_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void seneor_task_entry(void *argument);
-void uart_test_entry(void *argument);
+void printf_entry(void *argument);
 void can_test_entry(void *argument);
 void usb_test_entry(void *argument);
 void test_task_entry(void *argument);
@@ -165,8 +165,8 @@ void MX_FREERTOS_Init(void) {
   /* creation of sensor */
   sensorHandle = osThreadNew(seneor_task_entry, NULL, &sensor_attributes);
 
-  /* creation of uart_test */
-  uart_testHandle = osThreadNew(uart_test_entry, NULL, &uart_test_attributes);
+  /* creation of printf */
+  printfHandle = osThreadNew(printf_entry, NULL, &printf_attributes);
 
   /* creation of can_test */
   can_testHandle = osThreadNew(can_test_entry, NULL, &can_test_attributes);
@@ -209,22 +209,23 @@ void seneor_task_entry(void *argument)
   /* USER CODE END seneor_task_entry */
 }
 
-/* USER CODE BEGIN Header_uart_test_entry */
+/* USER CODE BEGIN Header_printf_entry */
 /**
-* @brief Function implementing the uart_test thread.
+* @brief Function implementing the printf thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_uart_test_entry */
-void uart_test_entry(void *argument)
+/* USER CODE END Header_printf_entry */
+void printf_entry(void *argument)
 {
-  /* USER CODE BEGIN uart_test_entry */
+  /* USER CODE BEGIN printf_entry */
+  printf_task();
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END uart_test_entry */
+  /* USER CODE END printf_entry */
 }
 
 /* USER CODE BEGIN Header_can_test_entry */
