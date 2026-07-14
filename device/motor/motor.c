@@ -41,12 +41,13 @@ typedef struct {
     pid_t velocity_pid;
 } gm6020_pid_config_t;
 
+/* ------------------------------ 电机结构体封装 ---------------------------------- */
 typedef struct {
     const gm6020_pid_config_t *pid_config;
     pid_t position_pid;
     pid_t velocity_pid;
     float target_position_rad;
-    float target_velocity_rpm;
+    float target_velocity_rpm;  //速度前馈
     float position_rad;
     float velocity_rpm;
     float torque_current;
@@ -81,6 +82,9 @@ typedef struct {
     uint32_t last_enable_cmd_tick;
 } dm4310_data_t;
 
+/* ------------------------------ 工具化函数 ---------------------------------- */
+
+// 电机数据组帧下发函数，传入参数为下发can句柄，canid，下发8字节数据
 static void motor_send_standard(FDCAN_HandleTypeDef *handle, uint32_t identifier,
                                 const uint8_t data[8])
 {
@@ -102,6 +106,7 @@ static void motor_send_standard(FDCAN_HandleTypeDef *handle, uint32_t identifier
     (void)HAL_FDCAN_AddMessageToTxFifoQ(handle, &header, (uint8_t *)data);
 }
 
+// 限幅函数
 static float clamp_float(float value, float minimum, float maximum)
 {
     if (value < minimum) {
@@ -113,6 +118,7 @@ static float clamp_float(float value, float minimum, float maximum)
     return value;
 }
 
+// dm4310协议要求浮点数转化为uint16
 static uint16_t float_to_uint(float value, float minimum, float maximum, uint16_t bits)
 {
     float scaled;
@@ -126,7 +132,8 @@ static uint16_t float_to_uint(float value, float minimum, float maximum, uint16_
 static void gm6020_send_group(FDCAN_HandleTypeDef *can_handle);
 
 /* ------------------------------ GM6020 ---------------------------------- */
-
+// 初始化6020对象 传入要实例化电机对象，反馈id，can句柄
+// 作用为清空6020初始状态，绑定can和id，确定组帧槽位，并加载pid参数
 static void gm6020_init(struct motor_device *motor, uint32_t motor_id,
                         FDCAN_HandleTypeDef *can_handle, int para_num, ...)
 {
@@ -159,6 +166,8 @@ static void gm6020_init(struct motor_device *motor, uint32_t motor_id,
     (void)para_num;
 }
 
+// 解析6020反馈帧数据，传入实例化电机与反馈帧
+// 数据存储在该实例对应的私有数据中
 static void gm6020_feedback_calculate(const struct motor_device *motor,
                                       const uint8_t frame[8])
 {
@@ -177,6 +186,7 @@ static void gm6020_feedback_calculate(const struct motor_device *motor,
     data->torque_current = (float)data->current;
 }
 
+// 打包6020电机数据组帧发送
 static void gm6020_send_ctrl_cmd(struct motor_device *motor)
 {
     if (motor == NULL || motor->motor_data == NULL) {
@@ -186,6 +196,7 @@ static void gm6020_send_ctrl_cmd(struct motor_device *motor)
     gm6020_send_group(motor->motor_can_handle);
 }
 
+// 使能6020
 static void gm6020_enable(struct motor_device *motor)
 {
     gm6020_data_t *data;
@@ -202,6 +213,7 @@ static void gm6020_enable(struct motor_device *motor)
     data->enabled = 1U;
 }
 
+// 失能6020
 static void gm6020_disable(struct motor_device *motor)
 {
     gm6020_data_t *data;
@@ -220,6 +232,7 @@ static void gm6020_disable(struct motor_device *motor)
     gm6020_send_ctrl_cmd(motor);
 }
 
+// 不断更新gm6020应该下发的值
 static void gm6020_update(struct motor_device *motor)
 {
     gm6020_data_t *data;
@@ -249,9 +262,12 @@ static void gm6020_update(struct motor_device *motor)
         dt = clamp_float(dt, 0.0001f, 0.020f);
     }
     data->last_update_tick = now;
+
     position_error = data->target_position_rad - data->position_rad;
-    while (position_error > 3.14159265358979323846f) { position_error -= MOTOR_TWO_PI; }
-    while (position_error < -3.14159265358979323846f) { position_error += MOTOR_TWO_PI; }
+    while (position_error > 3.14159265358979323846f)
+        { position_error -= MOTOR_TWO_PI; }
+    while (position_error < -3.14159265358979323846f)
+        { position_error += MOTOR_TWO_PI; }
     desired_velocity = pid_update(&data->position_pid, position_error, 0.0f, dt);
     desired_velocity += data->target_velocity_rpm;
     desired_velocity = clamp_float(desired_velocity,
@@ -260,6 +276,7 @@ static void gm6020_update(struct motor_device *motor)
                                       data->velocity_rpm, dt);
 }
 
+// 设置目标位置，参数顺序为目标位置，速度前馈
 static void gm6020_set_target(const struct motor_device *motor, int para_num, ...)
 {
     gm6020_data_t *data;
@@ -275,6 +292,7 @@ static void gm6020_set_target(const struct motor_device *motor, int para_num, ..
     va_end(arguments);
 }
 
+//获取电机的某个状态值，存入valu中
 static void gm6020_get_status(const struct motor_device *motor, const char *which,
                               void *value)
 {
@@ -287,6 +305,8 @@ static void gm6020_get_status(const struct motor_device *motor, const char *whic
     else if (strcmp(which, "TARGET") == 0) { *(float *)value = data->target_position_rad; }
 }
 
+
+// 运行时把对应的pid参数修改为value
 static void gm6020_set_para(const struct motor_device *motor, const char *which,
                             const void *value)
 {
@@ -482,19 +502,26 @@ static void dm4310_set_para(const struct motor_device *motor, const char *which,
 }
 
 /* --------------------------- Static instances --------------------------- */
-
+// 6020yaw实例化
 static const gm6020_pid_config_t gm6020_yaw_pid_config = {
     .position_pid = {
-        .kp = 100.0f, .ki = 0.0f, .kd = 0.0f,
-        .integral_limit = 0.0f, .output_limit = GM6020_SPEED_LIMIT_RPM,
-        .derivative_filter_alpha = 0.5f, .deadband = 0.002f,
+        .kp = 100.0f, .ki = 0.0f,
+        .kd = 0.0f,
+        .integral_limit = 0.0f,
+        .output_limit = GM6020_SPEED_LIMIT_RPM,
+        .derivative_filter_alpha = 0.5f,
+        .deadband = 0.002f,
         .integral_separation_threshold = 0.0f,
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 80.0f, .ki = 0.0f, .kd = 0.0f,
-        .integral_limit = 3000.0f, .output_limit = GM6020_OUTPUT_LIMIT,
-        .derivative_filter_alpha = 0.5f, .deadband = 1.0f,
+        .kp = 80.0f,
+        .ki = 0.0f,
+        .kd = 0.0f,
+        .integral_limit = 3000.0f,
+        .output_limit = GM6020_OUTPUT_LIMIT,
+        .derivative_filter_alpha = 0.5f,
+        .deadband = 1.0f,
         .integral_separation_threshold = 100.0f,
         .variable_integration_threshold = 50.0f,
     },
@@ -539,6 +566,7 @@ static struct motor_device *const motor_list[] = {&gm6020_yaw, &dm4310_pitch};
 
 /* Build every byte of 0x1FF from the registered GM6020s on this CAN bus.
  * This prevents one motor's update from zeroing the other three control slots. */
+// 将挂载在传入can句柄上的电机的控制量打包下发
 static void gm6020_send_group(FDCAN_HandleTypeDef *can_handle)
 {
     uint8_t frame[8] = {0};
@@ -570,16 +598,19 @@ static void gm6020_send_group(FDCAN_HandleTypeDef *can_handle)
     motor_send_standard(can_handle, GM6020_CONTROL_GROUP_ID, frame);
 }
 
+//得到电机句柄
 struct motor_device *motor_get_device(const char *name)
 {
     uint32_t index;
     if (name == NULL) { return NULL; }
     for (index = 0U; index < (sizeof(motor_list) / sizeof(motor_list[0])); ++index) {
-        if (strcmp(name, motor_list[index]->motor_name) == 0) { return motor_list[index]; }
+        if (strcmp(name, motor_list[index]->motor_name) == 0)
+            { return motor_list[index]; }
     }
     return NULL;
 }
 
+// 得到注册电机数量
 uint32_t Motor_Get_Count(void)
 {
     return (uint32_t)(sizeof(motor_list) / sizeof(motor_list[0]));

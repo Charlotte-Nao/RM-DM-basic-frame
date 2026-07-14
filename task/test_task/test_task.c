@@ -97,7 +97,7 @@ void test_task(void)
     gm6020->send_enable_cmd(gm6020);
 
     for (;;) {
-        float target_rad = pitch_to_gm6020_target_rad(global_data.imu_pitch_rad);
+        float target_rad = pitch_to_gm6020_target_rad(global_data.imu_roll_rad);
 
         /* -90/0/+90 IMU pitch maps continuously to 0/180/360 GM6020 degrees. */
         gm6020->set_target(gm6020, 1, (double)target_rad);
