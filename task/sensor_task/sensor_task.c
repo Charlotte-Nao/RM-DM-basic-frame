@@ -47,18 +47,18 @@ static void sensor_calibrate_gyro(float gyro_bias[3])
 static void quaternion_to_euler(const float q[4], float *roll,
                                 float *pitch, float *yaw)
 {
-    float sin_roll;
+    float sin_pitch;
 
-    *pitch = atan2f(2.0f * (q[0] * q[1] + q[2] * q[3]),
+    *roll = atan2f(2.0f * (q[0] * q[1] + q[2] * q[3]),
                    1.0f - 2.0f * (q[1] * q[1] + q[2] * q[2]));
 
-    sin_roll = 2.0f * (q[0] * q[2] - q[3] * q[1]);
-    if (sin_roll > 1.0f) {
-        sin_roll = 1.0f;
-    } else if (sin_roll < -1.0f) {
-        sin_roll = -1.0f;
+    sin_pitch = 2.0f * (q[0] * q[2] - q[3] * q[1]);
+    if (sin_pitch > 1.0f) {
+        sin_pitch = 1.0f;
+    } else if (sin_pitch < -1.0f) {
+        sin_pitch = -1.0f;
     }
-    *roll = asinf(sin_roll);
+    *pitch = asinf(sin_pitch);
 
     *yaw = atan2f(2.0f * (q[0] * q[3] + q[1] * q[2]),
                   1.0f - 2.0f * (q[2] * q[2] + q[3] * q[3]));
@@ -107,8 +107,8 @@ void sensor_task(void)
 
         /* Publish the newest attitude every sample for motor-control users. */
         quaternion_to_euler(quaternion, &roll, &pitch, &yaw);
-        global_data.imu_roll_rad = roll;
-        global_data.imu_pitch_rad = pitch;
+        global_data.imu_roll_rad = pitch;
+        global_data.imu_pitch_rad = roll;
         global_data.imu_yaw_rad = yaw;
         global_data.imu_update_tick = osKernelGetTickCount();
         global_data.imu_ready = 1U;
@@ -119,7 +119,7 @@ void sensor_task(void)
             if (uart1 != NULL) {
                 (void)uart1->uart_printf(uart1,
                                          "roll:%.2f,pitch:%.2f,yaw:%.2f,temp:%.2f\r\n",
-                                         roll * RAD_TO_DEG, pitch * RAD_TO_DEG,
+                                         global_data.imu_roll_rad * RAD_TO_DEG, global_data.imu_pitch_rad * RAD_TO_DEG,
                                          yaw * RAD_TO_DEG, temperature);
             }
         }
