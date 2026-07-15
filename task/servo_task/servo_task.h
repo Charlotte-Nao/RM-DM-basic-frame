@@ -1,9 +1,19 @@
-//
-// Created by charlotte on 7/15/26.
-//
+/**
+* @file servo_task.h
+ * @brief YB-SD15M servo task interface.
+ */
 
-#ifndef DM_SERVO_TASK_H
-#define DM_SERVO_TASK_H
+#ifndef SERVO_TASK_H
+#define SERVO_TASK_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void servo_task(void);
-#endif //DM_SERVO_TASK_H
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* SERVO_TASK_H */

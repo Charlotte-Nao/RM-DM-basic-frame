@@ -27,6 +27,15 @@ struct uart_device {
     /** Start this device's receive operation. Safe to call more than once. */
     int (*uart_init)(struct uart_device *device);
 
+    /**
+     * Send raw binary data asynchronously.
+     *
+     * This interface should be used by binary protocols such as YB-SD15M.
+     * The data are copied into the UART driver's internal TX buffer before
+     * the function returns.
+     */
+    int (*uart_send_bytes)(struct uart_device *device,const uint8_t *data,uint16_t length);
+
     /** Send a NUL-terminated string asynchronously. */
     int (*uart_send)(struct uart_device *device, const char *message);
 
