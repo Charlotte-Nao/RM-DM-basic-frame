@@ -63,13 +63,6 @@ const osThreadAttr_t printf_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for can_test */
-osThreadId_t can_testHandle;
-const osThreadAttr_t can_test_attributes = {
-  .name = "can_test",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
 /* Definitions for usb_test */
 osThreadId_t usb_testHandle;
 const osThreadAttr_t usb_test_attributes = {
@@ -84,11 +77,11 @@ const osThreadAttr_t test_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
-/* Definitions for motor */
-osThreadId_t motorHandle;
-const osThreadAttr_t motor_attributes = {
-  .name = "motor",
-  .stack_size = 128 * 4,
+/* Definitions for servo */
+osThreadId_t servoHandle;
+const osThreadAttr_t servo_attributes = {
+  .name = "servo",
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
 
@@ -99,10 +92,9 @@ const osThreadAttr_t motor_attributes = {
 
 void seneor_task_entry(void *argument);
 void printf_entry(void *argument);
-void can_test_entry(void *argument);
 void usb_test_entry(void *argument);
 void test_task_entry(void *argument);
-void motor_enter(void *argument);
+void servo_entry(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -168,17 +160,14 @@ void MX_FREERTOS_Init(void) {
   /* creation of printf */
   printfHandle = osThreadNew(printf_entry, NULL, &printf_attributes);
 
-  /* creation of can_test */
-  can_testHandle = osThreadNew(can_test_entry, NULL, &can_test_attributes);
-
   /* creation of usb_test */
   usb_testHandle = osThreadNew(usb_test_entry, NULL, &usb_test_attributes);
 
   /* creation of test */
   testHandle = osThreadNew(test_task_entry, NULL, &test_attributes);
 
-  /* creation of motor */
-  motorHandle = osThreadNew(motor_enter, NULL, &motor_attributes);
+  /* creation of servo */
+  servoHandle = osThreadNew(servo_entry, NULL, &servo_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -228,25 +217,6 @@ void printf_entry(void *argument)
   /* USER CODE END printf_entry */
 }
 
-/* USER CODE BEGIN Header_can_test_entry */
-/**
-* @brief Function implementing the can_test thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_can_test_entry */
-void can_test_entry(void *argument)
-{
-  /* USER CODE BEGIN can_test_entry */
-  /* Infinite loop */
-  for(;;)
-  {
-    /* Motor control is owned by test_task during the GM6020 test. */
-    osDelay(1000);
-  }
-  /* USER CODE END can_test_entry */
-}
-
 /* USER CODE BEGIN Header_usb_test_entry */
 /**
 * @brief Function implementing the usb_test thread.
@@ -284,23 +254,23 @@ void test_task_entry(void *argument)
   /* USER CODE END test_task_entry */
 }
 
-/* USER CODE BEGIN Header_motor_enter */
+/* USER CODE BEGIN Header_servo_entry */
 /**
-* @brief Function implementing the motor thread.
+* @brief Function implementing the servo thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_motor_enter */
-void motor_enter(void *argument)
+/* USER CODE END Header_servo_entry */
+void servo_entry(void *argument)
 {
-  /* USER CODE BEGIN motor_enter */
-  motor_task();
+  /* USER CODE BEGIN servo_entry */
+  servo_task();
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END motor_enter */
+  /* USER CODE END servo_entry */
 }
 
 /* Private application code --------------------------------------------------*/

@@ -24,12 +24,26 @@ set(CMAKE_PROJECT_NAME DM)
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
+set(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR ARM)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
+
+set(MCU_FLAGS
+        -mcpu=cortex-m7
+        -mthumb
+        -mfpu=fpv5-d16
+        -mfloat-abi=hard
+)
+
+add_compile_options(${MCU_FLAGS})
+add_link_options(${MCU_FLAGS})
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME}
@@ -53,10 +67,12 @@ add_executable(${CMAKE_PROJECT_NAME}
         task/sensor_task/sensor_task.h
         application/global_data.c
         application/global_data.h
-        task/motor_task/motor_task.c
-        task/motor_task/motor_task.h
         task/printf_task/printf_task.c
         task/printf_task/printf_task.h
+        device/YB_SD15M/YB_SD15M.c
+        device/YB_SD15M/YB_SD15M.h
+        task/servo_task/servo_task.c
+        task/servo_task/servo_task.h
 )
 
 # Add STM32CubeMX generated sources
@@ -88,11 +104,17 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
-
+    m
     # Add user defined libraries
 )
 
 # Enable float formatting for printf / snprintf / vsnprintf
 target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
+        -T${CMAKE_SOURCE_DIR}/STM32H723xG_flash.ld
+
+        -Wl,--gc-sections
+        -Wl,-Map=${CMAKE_PROJECT_NAME}.map
+        -Wl,--cref
+
         -Wl,-u,_printf_float
 )
