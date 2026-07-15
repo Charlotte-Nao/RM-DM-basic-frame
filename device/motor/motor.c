@@ -560,7 +560,7 @@ static struct motor_device gm6020_pitch = {
 //6020yaw实例化
 static const gm6020_pid_config_t gm6020_yaw_pid_config = {
     .position_pid = {
-        .kp = 100.0f, .ki = 0.0f,
+        .kp = 130.0f, .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 0.0f,
         .output_limit = GM6020_SPEED_LIMIT_RPM,
@@ -570,7 +570,7 @@ static const gm6020_pid_config_t gm6020_yaw_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 80.0f,
+        .kp = 110.0f,
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 3000.0f,

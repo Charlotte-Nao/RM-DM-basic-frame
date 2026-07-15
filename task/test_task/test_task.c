@@ -18,30 +18,38 @@
 
 void test_task(void)
 {
-    struct motor_device *gm6020 = motor_get_device("GM6020_PITCH");
+    struct motor_device *gm6020_pitch = motor_get_device("GM6020_PITCH");
+    struct motor_device *gm6020_yaw = motor_get_device("GM6020_YAW");
     struct uart_device *uart1 = uart_get_device("uart1_dma");
     uint32_t last_diag_tick = 0U;
 
-    if (gm6020 == NULL) {
+    if (gm6020_pitch == NULL) {
+        for (;;) {
+            osDelay(1000U);
+        }
+    }
+
+    if (gm6020_yaw == NULL) {
         for (;;) {
             osDelay(1000U);
         }
     }
 
     /* Do not enable before both CAN feedback and a valid IMU attitude are available. */
-    while (!motor_is_online(gm6020) || global_data.imu_ready == 0U) {
+    while (!motor_is_online(gm6020_pitch) || global_data.imu_ready == 0U) {
         LED_SKY_SET();
         osDelay(1U);
     }
 
     /* enable() synchronises the internal position target. */
-    gm6020->send_enable_cmd(gm6020);
+    gm6020_pitch->send_enable_cmd(gm6020_pitch);
+    gm6020_yaw->send_enable_cmd(gm6020_yaw);
 
     for (;;) {
         float target_rad = 0;
         float angle_rad_differ = global_data.imu_pitch_rad;
         uint16_t now_encoder = 0;
-        gm6020->get_status(gm6020, "ENC", &now_encoder);
+        gm6020_pitch->get_status(gm6020_pitch, "ENC", &now_encoder);
         float encoder_target = now_encoder + angle_rad_differ * 8192 / 2 / 3.1415926;
         if (encoder_target > 8192)
         {
@@ -54,7 +62,25 @@ void test_task(void)
         target_rad = encoder_target * 2 * 3.1415926 / 8192;
 
         /* -90/0/+90 IMU pitch maps continuously to 0/180/360 GM6020 degrees. */
-        gm6020->set_target(gm6020, 2, (double)target_rad,angle_rad_differ);
+        gm6020_pitch->set_target(gm6020_pitch, 1, (double)target_rad);
+
+        angle_rad_differ = global_data.imu_yaw_rad;
+        gm6020_yaw->get_status(gm6020_yaw, "ENC", &now_encoder);
+        encoder_target = now_encoder - angle_rad_differ * 8192 / 2 / 3.1415926;
+        if (encoder_target > 8192)
+        {
+            encoder_target = encoder_target - 8192;
+        }
+        if (encoder_target < 0)
+        {
+            encoder_target = encoder_target + 8192;
+        }
+        target_rad = encoder_target * 2 * 3.1415926 / 8192;
+
+        /* -90/0/+90 IMU pitch maps continuously to 0/180/360 GM6020 degrees. */
+        gm6020_yaw->set_target(gm6020_yaw, 1, (double)target_rad);
+
+
         LED_RED_SET();
         osDelay(1U);
     }
