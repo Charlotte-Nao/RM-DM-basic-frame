@@ -1,5 +1,5 @@
-#ifndef CALCULATION_H
-#define CALCULATION_H
+#ifndef REVRSE_CALCULATION_H
+#define REVRSE_CALCULATION_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,4 +27,4 @@ void Four_degree_of_freedom_calculation(const struct four_axis_robotic_arm *robo
 }
 #endif
 
-#endif /* CALCULATION_H */
+#endif /* REVRSE_CALCULATION_H */

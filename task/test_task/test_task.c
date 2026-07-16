@@ -15,7 +15,7 @@ struct four_axis_robotic_arm arm = {
     .base_height = 107.5f,
     .upper_arm_length = 83.7f,
     .forearm_length = 121.5f,
-    .wrist_length = 60.0f,
+    .wrist_length = 0.0f,
 };
 
 // float target_pose[4] = {
@@ -92,19 +92,19 @@ void test_task(void)
 
     for (;;) {
 
-         Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
+         // Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
 
 
-        // for (int i = 0; i < 4; i++)
-        // {
-        //     servo_angle[i] = 30;
-        // }
-        //
+        for (int i = 0; i < 4; i++)
+        {
+            servo_angle[i] = 15;
+        }
+
         send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
-        //
+
         osDelay(1500U);
 
-        // memset(servo_angle, 0, 4 * sizeof(float));
+        // memset(servo_angle, 30, 4 * sizeof(float));
         //
         // send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
         //

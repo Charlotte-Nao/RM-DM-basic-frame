@@ -77,6 +77,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         dsp/calculation/revrse_calculation.h
         dsp/calculation/positive_calculation.c
         dsp/calculation/positive_calculation.h
+        dsp/calculation/calculation.h
 )
 
 # Add STM32CubeMX generated sources
@@ -112,13 +113,27 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
 )
 
-# Enable float formatting for printf / snprintf / vsnprintf
+
+# STM32H723 linker script
+set(LINKER_SCRIPT
+        ${CMAKE_SOURCE_DIR}/STM32H723xG_flash.ld
+)
+
+if(NOT EXISTS "${LINKER_SCRIPT}")
+    message(FATAL_ERROR
+            "Linker script not found: ${LINKER_SCRIPT}"
+    )
+endif()
+
+# Link options
 target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
-        -T${CMAKE_SOURCE_DIR}/STM32H723xG_flash.ld
+        "-T${LINKER_SCRIPT}"
 
         -Wl,--gc-sections
-        -Wl,-Map=${CMAKE_PROJECT_NAME}.map
-        -Wl,--cref
+
+        "-Wl,-Map=${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.map"
+
+        -Wl,--print-memory-usage
 
         -Wl,-u,_printf_float
 )
