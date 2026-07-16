@@ -1,0 +1,3 @@
+/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/dsp/pid/pid.c:5:14:pid_limit	16	static
+/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/dsp/pid/pid.c:19:6:pid_reset	16	static
+/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/dsp/pid/pid.c:30:7:pid_update	56	static

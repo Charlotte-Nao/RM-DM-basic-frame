@@ -1,0 +1,8 @@
+{
+	"InstallScripts" : 
+	[
+		"/media/charlotte/E2A28D2BA28D04EF/linux\u5171\u4eab\u5206\u533a/\u7535\u8d5b/2024_e/DM-MC/build/Debug/cmake_install.cmake",
+		"/media/charlotte/E2A28D2BA28D04EF/linux\u5171\u4eab\u5206\u533a/\u7535\u8d5b/2024_e/DM-MC/build/Debug/cmake/stm32cubemx/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

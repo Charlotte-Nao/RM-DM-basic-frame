@@ -16,18 +16,11 @@ extern "C" {
 struct uart_device;
 
 /* YB-SD15M protocol range. */
-#define YB_SD15M_DEFAULT_ID          1U
 
 #define YB_SD15M_POSITION_MIN        96U
 #define YB_SD15M_POSITION_MAX        4000U
 #define YB_SD15M_POSITION_CENTER     2048U
 
-/* Device-layer return values. */
-#define YB_SD15M_OK                  0
-#define YB_SD15M_ERR_PARAM          (-1)
-#define YB_SD15M_ERR_NOT_READY      (-2)
-#define YB_SD15M_ERR_RANGE          (-3)
-#define YB_SD15M_ERR_UART           (-4)
 
 /**
  * YB-SD15M device object.
@@ -70,14 +63,14 @@ struct yb_sd15m_device
     /**
      * Send the currently stored target-position command.
      */
-    int (*send_ctrl_cmd)(
+    void (*send_ctrl_cmd)(
         struct yb_sd15m_device *servo
     );
 
     /**
      * Request current position feedback.
      */
-    int (*request_position)(
+    void (*request_position)(
         struct yb_sd15m_device *servo
     );
 
@@ -91,7 +84,7 @@ struct yb_sd15m_device
     /**
      * Change target data without sending immediately.
      */
-    int (*set_target)(
+    void (*set_target)(
         struct yb_sd15m_device *servo,
         uint16_t target_position,
         uint16_t move_time_ms
@@ -100,7 +93,7 @@ struct yb_sd15m_device
     /**
      * Read one status value.
      */
-    int (*get_status)(
+    void (*get_status)(
         const struct yb_sd15m_device *servo,
         const char *which_status,
         void *status_data
@@ -126,7 +119,7 @@ uint32_t YB_SD15M_Get_Count(void);
 /**
  * Initialise UART7 and every registered YB-SD15M instance.
  */
-int YB_SD15M_System_PowerOn_Init(void);
+void YB_SD15M_System_PowerOn_Init(void);
 
 /**
  * Periodically update every registered YB-SD15M instance.
@@ -141,7 +134,7 @@ void YB_SD15M_All_Update(void);
  * This function does not directly send UART data.
  * YB_SD15M_All_Update() sends the command later.
  */
-int yb_sd15m_set_target(
+void yb_sd15m_set_target(
     struct yb_sd15m_device *servo,
     uint16_t target_position,
     uint16_t move_time_ms
@@ -163,7 +156,7 @@ int yb_sd15m_set_target(
  * "CHECKSUM_ERR"   uint32_t
  * "TIMEOUT_COUNT"  uint32_t
  */
-int yb_sd15m_get_status(
+void yb_sd15m_get_status(
     const struct yb_sd15m_device *servo,
     const char *which_status,
     void *status_data

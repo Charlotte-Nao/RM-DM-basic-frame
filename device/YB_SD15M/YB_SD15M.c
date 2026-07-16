@@ -87,11 +87,11 @@ static void yb_sd15m_feedback_calculate(
     uint16_t frame_length
 );
 
-static int yb_sd15m_send_ctrl_cmd(
+static void yb_sd15m_send_ctrl_cmd(
     struct yb_sd15m_device *servo
 );
 
-static int yb_sd15m_request_position(
+static void yb_sd15m_request_position(
     struct yb_sd15m_device *servo
 );
 
@@ -99,13 +99,13 @@ static void yb_sd15m_update(
     struct yb_sd15m_device *servo
 );
 
-static int yb_sd15m_device_set_target(
+static void yb_sd15m_device_set_target(
     struct yb_sd15m_device *servo,
     uint16_t target_position,
     uint16_t move_time_ms
 );
 
-static int yb_sd15m_device_get_status(
+static void yb_sd15m_device_get_status(
     const struct yb_sd15m_device *servo,
     const char *which_status,
     void *status_data
@@ -124,7 +124,7 @@ static yb_sd15m_data_t yb_sd15m_1_data;
 static struct yb_sd15m_device yb_sd15m_1 =
 {
     .servo_name = "YB_SD15M_1",
-    .servo_id = YB_SD15M_DEFAULT_ID,
+    .servo_id = 1U,
     .servo_uart = NULL,
     .servo_data = &yb_sd15m_1_data,
     .last_rx_tick = 0U,
@@ -183,7 +183,7 @@ static struct yb_sd15m_device *yb_sd15m_find_by_id(
     return NULL;
 }
 
-static int yb_sd15m_send_frame(
+static bool yb_sd15m_send_frame(
     struct yb_sd15m_device *servo,
     const uint8_t *frame,
     uint16_t frame_length
@@ -198,7 +198,7 @@ static int yb_sd15m_send_frame(
         servo->servo_uart->uart_send_bytes == NULL ||
         frame == NULL ||
         frame_length == 0U) {
-        return YB_SD15M_ERR_NOT_READY;
+        return false;
     }
 
     servo_data = servo->servo_data;
@@ -210,12 +210,12 @@ static int yb_sd15m_send_frame(
     );
 
     if (result != 0) {
-        return YB_SD15M_ERR_UART;
+        return false;
     }
 
     ++servo_data->tx_frame_count;
 
-    return YB_SD15M_OK;
+    return true;
 }
 static void yb_sd15m_init(struct yb_sd15m_device *servo,uint8_t servo_id,struct uart_device *uart)
 {
@@ -309,7 +309,7 @@ static void yb_sd15m_feedback_calculate(const struct yb_sd15m_device *servo,cons
  *
  * FF FF ID 07 03 2A POS_H POS_L TIME_H TIME_L CHECKSUM
  */
-static int yb_sd15m_send_ctrl_cmd(
+static void yb_sd15m_send_ctrl_cmd(
     struct yb_sd15m_device *servo
 )
 {
@@ -322,17 +322,15 @@ static int yb_sd15m_send_ctrl_cmd(
 
     uint32_t target_revision;
 
-    int result;
-
     if (servo == NULL ||
         servo->servo_data == NULL) {
-        return YB_SD15M_ERR_PARAM;
+        return;
     }
 
     servo_data = servo->servo_data;
 
     if (servo_data->initialised == 0U) {
-        return YB_SD15M_ERR_NOT_READY;
+        return;
     }
     target_revision =
         servo_data->target_revision;
@@ -347,89 +345,52 @@ static int yb_sd15m_send_ctrl_cmd(
 
     frame[0] = YB_SD15M_FRAME_HEADER;
     frame[1] = YB_SD15M_FRAME_HEADER;
-
     frame[2] = servo->servo_id;
-
     frame[3] = YB_SD15M_MOVE_PACKET_LENGTH;
-
     frame[4] = YB_SD15M_INST_WRITE;
-
     frame[5] = YB_SD15M_REG_TARGET_POSITION;
-    frame[6] =
-        (uint8_t)(target_position >> 8);
+    frame[6] = (uint8_t)(target_position >> 8);
+    frame[7] = (uint8_t)(target_position & 0xFFU);
+    frame[8] = (uint8_t)(move_time_ms >> 8);
+    frame[9] = (uint8_t)(move_time_ms & 0xFFU);
+    frame[10] = yb_sd15m_checksum(frame,YB_SD15M_MOVE_FRAME_SIZE);
 
-    frame[7] =
-        (uint8_t)(target_position & 0xFFU);
-
-    frame[8] =
-        (uint8_t)(move_time_ms >> 8);
-
-    frame[9] =
-        (uint8_t)(move_time_ms & 0xFFU);
-
-    frame[10] = yb_sd15m_checksum(
-        frame,
-        YB_SD15M_MOVE_FRAME_SIZE
-    );
-
-    result = yb_sd15m_send_frame(
-        servo,
-        frame,
-        YB_SD15M_MOVE_FRAME_SIZE
-    );
-
-    if (result == YB_SD15M_OK) {
-        servo_data->sent_revision =
-            target_revision;
+    if (yb_sd15m_send_frame(servo,frame,YB_SD15M_MOVE_FRAME_SIZE)) {
+        servo_data->sent_revision = target_revision;
     }
-
-    return result;
 }
 
-static int yb_sd15m_request_position(struct yb_sd15m_device *servo)
+static void yb_sd15m_request_position(struct yb_sd15m_device *servo)
 {
     yb_sd15m_data_t *servo_data;
 
     uint8_t frame[YB_SD15M_READ_FRAME_SIZE];
 
-    int result;
-
     if (servo == NULL ||
         servo->servo_data == NULL) {
-        return YB_SD15M_ERR_PARAM;
+        return;
     }
 
     servo_data = servo->servo_data;
 
     if (servo_data->initialised == 0U) {
-        return YB_SD15M_ERR_NOT_READY;
+        return;
     }
 
     frame[0] = YB_SD15M_FRAME_HEADER;
     frame[1] = YB_SD15M_FRAME_HEADER;
-
     frame[2] = servo->servo_id;
-
     frame[3] = YB_SD15M_READ_PACKET_LENGTH;
-
     frame[4] = YB_SD15M_INST_READ;
-
     frame[5] = YB_SD15M_REG_CURRENT_POSITION;
-
     frame[6] = YB_SD15M_POSITION_READ_SIZE;
+    frame[7] = yb_sd15m_checksum(frame,YB_SD15M_READ_FRAME_SIZE);
 
-    frame[7] = yb_sd15m_checksum(
-        frame,
-        YB_SD15M_READ_FRAME_SIZE
-    );
-
-    result = yb_sd15m_send_frame(
+    if (yb_sd15m_send_frame(
         servo,
         frame,
         YB_SD15M_READ_FRAME_SIZE
-    );
-
-    if (result == YB_SD15M_OK) {
+    )) {
         servo_data->waiting_position_reply = 1U;
 
         servo_data->position_request_tick =
@@ -438,8 +399,6 @@ static int yb_sd15m_request_position(struct yb_sd15m_device *servo)
         servo_data->last_feedback_query_tick =
             servo_data->position_request_tick;
     }
-
-    return result;
 }
 
 static void yb_sd15m_update(struct yb_sd15m_device *servo)
@@ -473,30 +432,30 @@ static void yb_sd15m_update(struct yb_sd15m_device *servo)
 
     if (servo_data->sent_revision !=
         servo_data->target_revision) {
-        (void)servo->send_ctrl_cmd(servo);
+        servo->send_ctrl_cmd(servo);
 
         return;
     }
     if ((uint32_t)(now - servo_data->last_feedback_query_tick) >= YB_SD15M_FEEDBACK_PERIOD_MS) {
-        (void)servo->request_position(servo);
+        servo->request_position(servo);
     }
 }
 
-static int yb_sd15m_device_set_target(struct yb_sd15m_device *servo,uint16_t target_position,uint16_t move_time_ms)
+static void yb_sd15m_device_set_target(struct yb_sd15m_device *servo,uint16_t target_position,uint16_t move_time_ms)
 {
     yb_sd15m_data_t *servo_data;
     if (servo == NULL ||servo->servo_data == NULL) {
-        return YB_SD15M_ERR_PARAM;
+        return;
     }
 
     if (target_position < YB_SD15M_POSITION_MIN ||target_position > YB_SD15M_POSITION_MAX) {
-        return YB_SD15M_ERR_RANGE;
+        return;
     }
 
     servo_data = servo->servo_data;
 
     if (servo_data->initialised == 0U) {
-        return YB_SD15M_ERR_NOT_READY;
+        return;
     }
 
     servo_data->target_position =target_position;
@@ -505,19 +464,17 @@ static int yb_sd15m_device_set_target(struct yb_sd15m_device *servo,uint16_t tar
     __DMB();
 
     ++servo_data->target_revision;
-
-    return YB_SD15M_OK;
 }
 
 /**
  * Read one status value.
  */
-static int yb_sd15m_device_get_status(const struct yb_sd15m_device *servo,const char *which_status,void *status_data)
+static void yb_sd15m_device_get_status(const struct yb_sd15m_device *servo,const char *which_status,void *status_data)
 {
     yb_sd15m_data_t *servo_data;
 
     if (servo == NULL ||servo->servo_data == NULL ||which_status == NULL ||status_data == NULL) {
-        return YB_SD15M_ERR_PARAM;
+        return;
     }
 
     servo_data = servo->servo_data;
@@ -532,9 +489,6 @@ static int yb_sd15m_device_get_status(const struct yb_sd15m_device *servo,const 
     else if (strcmp(which_status, "RX_COUNT") == 0) {*(uint32_t *)status_data = servo_data->rx_frame_count;}
     else if (strcmp(which_status, "CHECKSUM_ERR") == 0) {*(uint32_t *)status_data = servo_data->checksum_error_count;}
     else if (strcmp(which_status, "TIMEOUT_COUNT") == 0) {*(uint32_t *)status_data = servo_data->reply_timeout_count;}
-    else {return YB_SD15M_ERR_PARAM;}
-
-    return YB_SD15M_OK;
 }
 
 static void yb_sd15m_parser_reset(void)
@@ -705,7 +659,7 @@ uint32_t YB_SD15M_Get_Count(void)
 }
 
 
-int YB_SD15M_System_PowerOn_Init(void)
+void YB_SD15M_System_PowerOn_Init(void)
 {
     struct uart_device *uart;
     uint32_t index;
@@ -716,7 +670,7 @@ int YB_SD15M_System_PowerOn_Init(void)
 
     if (uart == NULL ||
         uart->uart_send_bytes == NULL) {
-        return YB_SD15M_ERR_NOT_READY;
+        return;
     }
 
     yb_sd15m_uart7 = uart;
@@ -733,7 +687,6 @@ int YB_SD15M_System_PowerOn_Init(void)
         );
     }
 
-    return YB_SD15M_OK;
 }
 
 void YB_SD15M_All_Update(void)
@@ -752,29 +705,29 @@ void YB_SD15M_All_Update(void)
     }
 }
 
-int yb_sd15m_set_target(struct yb_sd15m_device *servo,uint16_t target_position,uint16_t move_time_ms
+void yb_sd15m_set_target(struct yb_sd15m_device *servo,uint16_t target_position,uint16_t move_time_ms
 )
 {
     if (servo == NULL ||
         servo->set_target == NULL) {
-        return YB_SD15M_ERR_PARAM;
+        return;
     }
 
-    return servo->set_target(
+    servo->set_target(
         servo,
         target_position,
         move_time_ms
     );
 }
 
-int yb_sd15m_get_status(const struct yb_sd15m_device *servo,const char *which_status,void *status_data)
+void yb_sd15m_get_status(const struct yb_sd15m_device *servo,const char *which_status,void *status_data)
 {
     if (servo == NULL ||
         servo->get_status == NULL) {
-        return YB_SD15M_ERR_PARAM;
+        return;
     }
 
-    return servo->get_status(
+    servo->get_status(
         servo,
         which_status,
         status_data
