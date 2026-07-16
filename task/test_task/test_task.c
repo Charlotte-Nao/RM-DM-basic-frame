@@ -55,12 +55,7 @@ void test_task(void)
     osDelay(1500U);
 
     for (;;) {
-        /*
-         * 向一个方向运动。
-         *
-         * 这里只修改设备层目标。
-         * 真正发送由 servo_task 完成。
-         */
+
         (void)yb_sd15m_set_target(
             servo,
             1500U,
