@@ -120,6 +120,7 @@ static void yb_sd15m_uart_receive_callback(
 /* -------------------------------------------------------------------------- */
 /* Static physical servo instances                                            */
 /* -------------------------------------------------------------------------- */
+// yb_sd15m_1
 static yb_sd15m_data_t yb_sd15m_1_data;
 static struct yb_sd15m_device yb_sd15m_1 =
 {
@@ -137,11 +138,66 @@ static struct yb_sd15m_device yb_sd15m_1 =
     .get_status = yb_sd15m_device_get_status,
 };
 
-static struct yb_sd15m_device *const yb_sd15m_list[] =
+
+// yb_sd15m_2
+static yb_sd15m_data_t yb_sd15m_2_data;
+static struct yb_sd15m_device yb_sd15m_2 =
 {
-    &yb_sd15m_1,
+    .servo_name = "YB_SD15M_2",
+    .servo_id = 2U,
+    .servo_uart = NULL,
+    .servo_data = &yb_sd15m_2_data,
+    .last_rx_tick = 0U,
+    .init = yb_sd15m_init,
+    .feedback_calculate = yb_sd15m_feedback_calculate,
+    .send_ctrl_cmd = yb_sd15m_send_ctrl_cmd,
+    .request_position = yb_sd15m_request_position,
+    .update = yb_sd15m_update,
+    .set_target = yb_sd15m_device_set_target,
+    .get_status = yb_sd15m_device_get_status,
 };
 
+
+// yb_sd15m_3
+static yb_sd15m_data_t yb_sd15m_3_data;
+static struct yb_sd15m_device yb_sd15m_3 =
+{
+    .servo_name = "YB_SD15M_3",
+    .servo_id = 3U,
+    .servo_uart = NULL,
+    .servo_data = &yb_sd15m_3_data,
+    .last_rx_tick = 0U,
+    .init = yb_sd15m_init,
+    .feedback_calculate = yb_sd15m_feedback_calculate,
+    .send_ctrl_cmd = yb_sd15m_send_ctrl_cmd,
+    .request_position = yb_sd15m_request_position,
+    .update = yb_sd15m_update,
+    .set_target = yb_sd15m_device_set_target,
+    .get_status = yb_sd15m_device_get_status,
+};
+
+// yb_sd15m_4
+static yb_sd15m_data_t yb_sd15m_4_data;
+static struct yb_sd15m_device yb_sd15m_4 =
+{
+    .servo_name = "YB_SD15M_4",
+    .servo_id = 4U,
+    .servo_uart = NULL,
+    .servo_data = &yb_sd15m_4_data,
+    .last_rx_tick = 0U,
+    .init = yb_sd15m_init,
+    .feedback_calculate = yb_sd15m_feedback_calculate,
+    .send_ctrl_cmd = yb_sd15m_send_ctrl_cmd,
+    .request_position = yb_sd15m_request_position,
+    .update = yb_sd15m_update,
+    .set_target = yb_sd15m_device_set_target,
+    .get_status = yb_sd15m_device_get_status,
+};
+
+static struct yb_sd15m_device *const yb_sd15m_list[] =
+{
+    &yb_sd15m_1,&yb_sd15m_2,&yb_sd15m_3,&yb_sd15m_4,
+};
 
 /* -------------------------------------------------------------------------- */
 /* Utility functions                                                          */
@@ -181,6 +237,34 @@ static struct yb_sd15m_device *yb_sd15m_find_by_id(
     }
 
     return NULL;
+}
+
+uint16_t yb_sd15m_angle_to_position(int16_t target_angle)
+{
+    uint32_t position_range;
+    uint32_t angle_range;
+    uint32_t angle_offset;
+    uint32_t target_position;
+
+    if (target_angle < YB_SD15M_ANGLE_MIN) {
+        target_angle = YB_SD15M_ANGLE_MIN;
+    } else if (target_angle > YB_SD15M_ANGLE_MAX) {
+        target_angle = YB_SD15M_ANGLE_MAX;
+    }
+
+    position_range =
+        (uint32_t)(YB_SD15M_POSITION_MAX - YB_SD15M_POSITION_MIN);
+    angle_range =
+        (uint32_t)(YB_SD15M_ANGLE_MAX - YB_SD15M_ANGLE_MIN);
+    angle_offset =
+        (uint32_t)((int32_t)target_angle - (int32_t)YB_SD15M_ANGLE_MIN);
+
+    target_position =
+        (uint32_t)YB_SD15M_POSITION_MIN +
+        ((angle_offset * position_range) + (angle_range / 2U)) /
+        angle_range;
+
+    return (uint16_t)target_position;
 }
 
 static bool yb_sd15m_send_frame(
@@ -705,13 +789,22 @@ void YB_SD15M_All_Update(void)
     }
 }
 
-void yb_sd15m_set_target(struct yb_sd15m_device *servo,uint16_t target_position,uint16_t move_time_ms
+void yb_sd15m_set_target(struct yb_sd15m_device *servo,int16_t target_angle,uint16_t move_time_ms
 )
 {
+    uint16_t target_position;
+
     if (servo == NULL ||
         servo->set_target == NULL) {
         return;
     }
+
+    if (target_angle < YB_SD15M_ANGLE_MIN ||
+        target_angle > YB_SD15M_ANGLE_MAX) {
+        return;
+    }
+
+    target_position = yb_sd15m_angle_to_position(target_angle);
 
     servo->set_target(
         servo,

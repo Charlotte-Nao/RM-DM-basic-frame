@@ -21,6 +21,10 @@ struct uart_device;
 #define YB_SD15M_POSITION_MAX        4000U
 #define YB_SD15M_POSITION_CENTER     2048U
 
+#define YB_SD15M_ANGLE_MIN           (-135)
+#define YB_SD15M_ANGLE_MAX           135
+#define YB_SD15M_ANGLE_CENTER        0
+
 
 /**
  * YB-SD15M device object.
@@ -129,14 +133,21 @@ void YB_SD15M_System_PowerOn_Init(void);
 void YB_SD15M_All_Update(void);
 
 /**
- * Update the desired position and movement time.
+ * Map a target angle to the YB-SD15M protocol position command.
+ */
+uint16_t yb_sd15m_angle_to_position(
+    int16_t target_angle
+);
+
+/**
+ * Update the desired angle and movement time.
  *
  * This function does not directly send UART data.
  * YB_SD15M_All_Update() sends the command later.
  */
 void yb_sd15m_set_target(
     struct yb_sd15m_device *servo,
-    uint16_t target_position,
+    int16_t target_angle,
     uint16_t move_time_ms
 );
 
