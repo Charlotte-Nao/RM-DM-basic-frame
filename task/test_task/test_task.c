@@ -6,6 +6,21 @@
 #include "test_task.h"
 #include "cmsis_os2.h"
 #include "../../device/YB_SD15M/YB_SD15M.h"
+#include "../../dsp/calculation/calculation.h"
+
+struct four_axis_robotic_arm arm = {
+    .base_height = 100.0f,
+    .upper_arm_length = 120.0f,
+    .forearm_length = 120.0f,
+    .wrist_length = 60.0f,
+};
+
+float target_pose[4] = {
+    150.0f,  // x
+    0.0f,    // y
+    120.0f,  // z
+    0.0f,    // 末端 pitch 角度，单位 degree
+};
 
 void test_task(void)
 {
@@ -28,6 +43,8 @@ void test_task(void)
         osDelay(1000U);
     }
 
+    float servo_angle[4] = {0};
+
     osDelay(100U);
     yb_sd15m_set_target(servo_1,0,1000U);
     yb_sd15m_set_target(servo_2,0,1000U);
@@ -37,16 +54,8 @@ void test_task(void)
     osDelay(1500U);
 
     for (;;) {
-        yb_sd15m_set_target(servo_1,0,1000U);
-        yb_sd15m_set_target(servo_2,0,1000U);
-        yb_sd15m_set_target(servo_3,0,1000U);
-        yb_sd15m_set_target(servo_4,0,1000U);
-        osDelay(1500U);
 
-        yb_sd15m_set_target(servo_1,30,1000U);
-        yb_sd15m_set_target(servo_2,30,1000U);
-        yb_sd15m_set_target(servo_3,30,1000U);
-        yb_sd15m_set_target(servo_4,30,1000U);
+        Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
 
         osDelay(1500U);
 
