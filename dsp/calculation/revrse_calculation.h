@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#define FOUR_AXIS_TARGET_POSE_SIZE      4U
+#define FOUR_AXIS_SERVO_COUNT           4U
 
 #define FOUR_AXIS_SERVO_ANGLE_MIN_DEG  (-135.0f)
 #define FOUR_AXIS_SERVO_ANGLE_MAX_DEG   (135.0f)

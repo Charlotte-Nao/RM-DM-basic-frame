@@ -73,8 +73,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         device/YB_SD15M/YB_SD15M.h
         task/servo_task/servo_task.c
         task/servo_task/servo_task.h
-        dsp/calculation/calculation.c
-        dsp/calculation/calculation.h
+        dsp/calculation/revrse_calculation.c
+        dsp/calculation/revrse_calculation.h
+        dsp/calculation/positive_calculation.c
+        dsp/calculation/positive_calculation.h
 )
 
 # Add STM32CubeMX generated sources
