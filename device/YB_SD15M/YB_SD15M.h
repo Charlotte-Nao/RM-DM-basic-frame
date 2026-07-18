@@ -140,6 +140,14 @@ uint16_t yb_sd15m_angle_to_position(
 );
 
 /**
+ * Map a protocol position to its corresponding target angle.
+ * Position center 2048 maps to 0 degrees.
+ */
+int16_t yb_sd15m_position_to_angle(
+    uint16_t target_position
+);
+
+/**
  * Update the desired angle and movement time.
  *
  * This function does not directly send UART data.
@@ -158,6 +166,7 @@ void yb_sd15m_set_target(
  *
  * "POS"            uint16_t
  * "TARGET"         uint16_t
+ * "TARGET_ANGLE"   int16_t
  * "TIME"           uint16_t
  * "ERR"            uint8_t
  * "POS_VALID"      bool

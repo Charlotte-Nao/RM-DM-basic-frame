@@ -5,9 +5,8 @@
 #include <math.h>
 #include <stddef.h>
 
-#define FOUR_AXIS_PI                  3.14159265358979323846f
-#define FOUR_AXIS_DEG_TO_RAD          (FOUR_AXIS_PI / 180.0f)
-#define FOUR_AXIS_RAD_TO_DEG          (180.0f / FOUR_AXIS_PI)
+#include "../math.h"
+
 
 #define FOUR_AXIS_LENGTH_EPSILON      1.0e-6f
 #define FOUR_AXIS_REACH_EPSILON       1.0e-5f
@@ -124,14 +123,14 @@ void Four_degree_of_freedom_calculation(const struct four_axis_robotic_arm *robo
         return;
     }
 
-    if (!isfinite(robotic_arm->base_height) ||
-        !isfinite(robotic_arm->upper_arm_length) ||
-        !isfinite(robotic_arm->forearm_length) ||
-        !isfinite(robotic_arm->wrist_length) ||
-        robotic_arm->base_height < 0.0f ||
-        robotic_arm->upper_arm_length <= FOUR_AXIS_LENGTH_EPSILON ||
-        robotic_arm->forearm_length <= FOUR_AXIS_LENGTH_EPSILON ||
-        robotic_arm->wrist_length < 0.0f) {
+    if (!isfinite(robotic_arm->l_1) ||
+        !isfinite(robotic_arm->l_2) ||
+        !isfinite(robotic_arm->l_3) ||
+        !isfinite(robotic_arm->l_4) ||
+        robotic_arm->l_1 < 0.0f ||
+        robotic_arm->l_2 <= FOUR_AXIS_LENGTH_EPSILON ||
+        robotic_arm->l_3 <= FOUR_AXIS_LENGTH_EPSILON ||
+        robotic_arm->l_4 < 0.0f) {
         return;
     }
 
@@ -152,19 +151,19 @@ void Four_degree_of_freedom_calculation(const struct four_axis_robotic_arm *robo
     q1_rad = atan2f(y, x);
 
     wrist_radius = radial_distance
-                 - robotic_arm->wrist_length * cosf(target_pitch_rad);
+                 - robotic_arm->l_4 * cosf(target_pitch_rad);
     wrist_height = z
-                 - robotic_arm->base_height
-                 - robotic_arm->wrist_length * sinf(target_pitch_rad);
+                 - robotic_arm->l_1
+                 - robotic_arm->l_4 * sinf(target_pitch_rad);
 
     denominator = 2.0f
-                * robotic_arm->upper_arm_length
-                * robotic_arm->forearm_length;
+                * robotic_arm->l_2
+                * robotic_arm->l_3;
 
     cosine_q3 = (wrist_radius * wrist_radius
               + wrist_height * wrist_height
-              - robotic_arm->upper_arm_length * robotic_arm->upper_arm_length
-              - robotic_arm->forearm_length * robotic_arm->forearm_length)
+              - robotic_arm->l_2 * robotic_arm->l_2
+              - robotic_arm->l_3 * robotic_arm->l_3)
               / denominator;
 
     if (cosine_q3 < (-1.0f - FOUR_AXIS_REACH_EPSILON) ||
@@ -179,8 +178,8 @@ void Four_degree_of_freedom_calculation(const struct four_axis_robotic_arm *robo
             wrist_radius,
             wrist_height,
             target_pitch_rad,
-            robotic_arm->upper_arm_length,
-            robotic_arm->forearm_length,
+            robotic_arm->l_2,
+            robotic_arm->l_3,
             cosine_q3,
             FOUR_AXIS_DEFAULT_ELBOW_SIGN,
             target_servo_angle)) {
@@ -192,8 +191,8 @@ void Four_degree_of_freedom_calculation(const struct four_axis_robotic_arm *robo
         wrist_radius,
         wrist_height,
         target_pitch_rad,
-        robotic_arm->upper_arm_length,
-        robotic_arm->forearm_length,
+        robotic_arm->l_2,
+        robotic_arm->l_3,
         cosine_q3,
         -FOUR_AXIS_DEFAULT_ELBOW_SIGN,
         target_servo_angle

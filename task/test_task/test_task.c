@@ -12,10 +12,10 @@
 #include "../../dsp/calculation/calculation.h"
 
 struct four_axis_robotic_arm arm = {
-    .base_height = 107.5f,
-    .upper_arm_length = 83.7f,
-    .forearm_length = 121.5f,
-    .wrist_length = 0.0f,
+    .l_1 = 107.5f,
+    .l_2 = 83.7f,
+    .l_3 = 121.5f,
+    .l_4 = 0.0f,
 };
 
 // float target_pose[4] = {
@@ -97,7 +97,7 @@ void test_task(void)
 
         for (int i = 0; i < 4; i++)
         {
-            servo_angle[i] = 15;
+            servo_angle[i] = 20;
         }
 
         send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);

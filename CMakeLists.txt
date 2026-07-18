@@ -78,6 +78,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         dsp/calculation/positive_calculation.c
         dsp/calculation/positive_calculation.h
         dsp/calculation/calculation.h
+        dsp/math.h
 )
 
 # Add STM32CubeMX generated sources

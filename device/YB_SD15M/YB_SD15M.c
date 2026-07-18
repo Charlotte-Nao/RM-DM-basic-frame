@@ -38,6 +38,7 @@
 typedef struct
 {
     volatile uint16_t target_position;
+    volatile int16_t target_angle;
     volatile uint16_t move_time_ms;
     volatile uint32_t target_revision;
     uint32_t sent_revision;
@@ -267,6 +268,35 @@ uint16_t yb_sd15m_angle_to_position(int16_t target_angle)
     return (uint16_t)target_position;
 }
 
+int16_t yb_sd15m_position_to_angle(uint16_t target_position)
+{
+    uint32_t position_range;
+    uint32_t angle_range;
+    uint32_t position_offset;
+    int32_t target_angle;
+
+    if (target_position < YB_SD15M_POSITION_MIN) {
+        target_position = YB_SD15M_POSITION_MIN;
+    } else if (target_position > YB_SD15M_POSITION_MAX) {
+        target_position = YB_SD15M_POSITION_MAX;
+    }
+
+    position_range =
+        (uint32_t)(YB_SD15M_POSITION_MAX - YB_SD15M_POSITION_MIN);
+    angle_range =
+        (uint32_t)(YB_SD15M_ANGLE_MAX - YB_SD15M_ANGLE_MIN);
+    position_offset =
+        (uint32_t)(target_position - YB_SD15M_POSITION_MIN);
+
+    target_angle =
+        (int32_t)YB_SD15M_ANGLE_MIN +
+        (int32_t)(((position_offset * angle_range) +
+                   (position_range / 2U)) /
+                  position_range);
+
+    return (int16_t)target_angle;
+}
+
 static bool yb_sd15m_send_frame(
     struct yb_sd15m_device *servo,
     const uint8_t *frame,
@@ -323,8 +353,8 @@ static void yb_sd15m_init(struct yb_sd15m_device *servo,uint8_t servo_id,struct 
     servo->servo_id = servo_id;
     servo->servo_uart = uart;
     servo->last_rx_tick = 0U;
-    servo_data->target_position =
-        YB_SD15M_POSITION_CENTER;
+    servo_data->target_position = YB_SD15M_POSITION_CENTER;
+    servo_data->target_angle = yb_sd15m_position_to_angle(servo_data->target_position);
 
     servo_data->move_time_ms = 500U;
 
@@ -542,8 +572,9 @@ static void yb_sd15m_device_set_target(struct yb_sd15m_device *servo,uint16_t ta
         return;
     }
 
-    servo_data->target_position =target_position;
-    servo_data->move_time_ms =move_time_ms;
+    servo_data->target_position = target_position;
+    servo_data->target_angle = yb_sd15m_position_to_angle(target_position);
+    servo_data->move_time_ms = move_time_ms;
 
     __DMB();
 
@@ -565,6 +596,7 @@ static void yb_sd15m_device_get_status(const struct yb_sd15m_device *servo,const
 
     if (strcmp(which_status, "POS") == 0) {*(uint16_t *)status_data = servo_data->current_position;}
     else if (strcmp(which_status, "TARGET") == 0) {*(uint16_t *)status_data = servo_data->target_position;}
+    else if (strcmp(which_status, "TARGET_ANGLE") == 0) {*(int16_t *)status_data = servo_data->target_angle;}
     else if (strcmp(which_status, "TIME") == 0) {*(uint16_t *)status_data = servo_data->move_time_ms;}
     else if (strcmp(which_status, "ERR") == 0) {*(uint8_t *)status_data = servo_data->error;}
     else if (strcmp(which_status, "POS_VALID") == 0) {*(bool *)status_data = (servo_data->position_valid != 0U);}

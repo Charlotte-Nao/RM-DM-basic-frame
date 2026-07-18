@@ -13,10 +13,10 @@ extern "C" {
 
 struct four_axis_robotic_arm
 {
-    float base_height;
-    float upper_arm_length;
-    float forearm_length;
-    float wrist_length;
+    float l_1;
+    float l_2;
+    float l_3;
+    float l_4;
 };
 
 void Four_degree_of_freedom_calculation(const struct four_axis_robotic_arm *robotic_arm,

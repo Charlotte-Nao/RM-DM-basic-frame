@@ -14,13 +14,13 @@
 #define DEG_TO_RAD                    0.01745329251994329577f
 
 static const struct four_axis_robotic_arm printf_arm = {
-    .base_height = 107.5f,
-    .upper_arm_length = 83.7f,
-    .forearm_length = 121.5f,
-    .wrist_length = 0.0f,
+    .l_1 = 107.5f,
+    .l_2 = 83.7f,
+    .l_3 = 121.5f,
+    .l_4 = 0.0f,
 };
 
-static float yb_sd15m_position_to_angle(uint16_t target_position)
+static float yb_sd15m_position_to_angle_float(uint16_t target_position)
 {
     float position_range;
     float angle_range;
@@ -123,25 +123,20 @@ void printf_task(void)
         if (servo_4 == NULL) {(void)uart1->uart_printf(uart1,"YB_SD15M_4未连接");}
         if (servo_1 != NULL && servo_2 != NULL && servo_3 != NULL && servo_4 != NULL)
         {
-            servo_1->get_status(servo_1, "POS", &servo_target[0]);
-            servo_2->get_status(servo_2, "POS", &servo_target[1]);
-            servo_3->get_status(servo_3, "POS", &servo_target[2]);
-            servo_4->get_status(servo_4, "POS", &servo_target[3]);
+            servo_1->get_status(servo_1, "TARGET_ANGLE", &servo_target[0]);
+            servo_2->get_status(servo_2, "TARGET_ANGLE", &servo_target[1]);
+            servo_3->get_status(servo_3, "TARGET_ANGLE", &servo_target[2]);
+            servo_4->get_status(servo_4, "TARGET_ANGLE", &servo_target[3]);
 
-            servo_angle[0] = yb_sd15m_position_to_angle(servo_target[0]);
-            servo_angle[1] = yb_sd15m_position_to_angle(servo_target[1]);
-            servo_angle[2] = yb_sd15m_position_to_angle(servo_target[2]);
-            servo_angle[3] = yb_sd15m_position_to_angle(servo_target[3]);
-
-            Four_degree_of_freedom_positive_calculation(&printf_arm, servo_angle, servo_pose);
+            Four_degree_of_freedom_positive_calculation(&printf_arm, servo_target, servo_pose);
 
             (void)uart1->uart_printf(uart1,
-            "YB_SD15M: angle1=%.2f angle2=%.2f angle3=%.2f angle4=%.2f "
+            "YB_SD15M: angle1=%d angle2=%d angle3=%d angle4=%d "
             "x=%.2f y=%.2f z=%.2f phi=%.2f\r\n",
-            servo_angle[0],
-            servo_angle[1],
-            servo_angle[2],
-            servo_angle[3],
+            servo_target[0],
+            servo_target[1],
+            servo_target[2],
+            servo_target[3],
             servo_pose[0],
             servo_pose[1],
             servo_pose[2],
