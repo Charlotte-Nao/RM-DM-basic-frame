@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+struct four_axis_robotic_arm;
+
 /* Shared IMU attitude.  The sensor task is the sole writer. */
 typedef struct {
     volatile float imu_roll_rad;
@@ -17,5 +19,6 @@ typedef struct {
 } global_data_t;
 
 extern volatile global_data_t global_data;
+extern struct four_axis_robotic_arm arm;
 
 #endif //DM_GLOBAL_DATA_H

@@ -10,20 +10,8 @@
 #include "cmsis_os2.h"
 #include "../../device/YB_SD15M/YB_SD15M.h"
 #include "../../dsp/calculation/calculation.h"
+#include "../../application/global_data.h"
 
-struct four_axis_robotic_arm arm = {
-    .l_1 = 107.5f,
-    .l_2 = 83.7f,
-    .l_3 = 121.5f,
-    .l_4 = 0.0f,
-};
-
-// float target_pose[4] = {
-//     125.0f          ,  // x
-//     93.0f,    // y
-//     82.0f,  // z
-//     0.0f,    // 末端 pitch 角度，单位 degree
-// };
 
 float target_pose[4] = {
     0.0f,  // x
@@ -95,10 +83,15 @@ void test_task(void)
          // Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
 
 
-        for (int i = 0; i < 4; i++)
-        {
-            servo_angle[i] = 20;
-        }
+        // for (int i = 0; i < 4; i++)
+        // {
+        //     servo_angle[i] = 20;
+        // }
+
+        servo_angle[0] = 20;
+        servo_angle[1] = 20;
+        servo_angle[2] = 20;
+        servo_angle[3] = 30;
 
         send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
 

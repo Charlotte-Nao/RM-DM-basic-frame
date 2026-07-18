@@ -6,7 +6,9 @@
 #include <stddef.h>
 
 #include "../math.h"
-
+#define FOUR_AXIS_PI                  3.14159265358979323846f
+#define FOUR_AXIS_DEG_TO_RAD          (FOUR_AXIS_PI / 180.0f)
+#define FOUR_AXIS_RAD_TO_DEG          (180.0f / FOUR_AXIS_PI)
 
 #define FOUR_AXIS_LENGTH_EPSILON      1.0e-6f
 #define FOUR_AXIS_REACH_EPSILON       1.0e-5f
@@ -105,32 +107,32 @@ void Four_degree_of_freedom_calculation(const struct four_axis_robotic_arm *robo
     float x;
     float y;
     float z;
-
     float target_pitch_rad;
-
     float radial_distance;
     float wrist_radius;
     float wrist_height;
-
+    float effective_forearm_length;
+    float fixed_offset_angle;
     float denominator;
-    float cosine_q3;
-
+    float cosine_effective_q3;
+    float sine_effective_q3;
     float q1_rad;
+    float q2_rad;
+    float q3_rad;
+    float q4_rad;
+    float candidate[FOUR_AXIS_SERVO_COUNT];
+    float elbow_sign;
+    unsigned int configuration;
+    unsigned int index;
 
-    if (robotic_arm == NULL ||
-        target_pose == NULL ||
-        target_servo_angle == NULL) {
+    if (robotic_arm == NULL || target_pose == NULL || target_servo_angle == NULL) {
         return;
     }
 
-    if (!isfinite(robotic_arm->l_1) ||
-        !isfinite(robotic_arm->l_2) ||
-        !isfinite(robotic_arm->l_3) ||
-        !isfinite(robotic_arm->l_4) ||
-        robotic_arm->l_1 < 0.0f ||
-        robotic_arm->l_2 <= FOUR_AXIS_LENGTH_EPSILON ||
-        robotic_arm->l_3 <= FOUR_AXIS_LENGTH_EPSILON ||
-        robotic_arm->l_4 < 0.0f) {
+    if (!isfinite(robotic_arm->l_1) || !isfinite(robotic_arm->l_2) || !isfinite(robotic_arm->l_3) ||
+        !isfinite(robotic_arm->l_4_p) || !isfinite(robotic_arm->l_4_z) || robotic_arm->l_1 < 0.0f ||
+        robotic_arm->l_2 <= FOUR_AXIS_LENGTH_EPSILON || robotic_arm->l_3 <= FOUR_AXIS_LENGTH_EPSILON ||
+        robotic_arm->l_4_p < 0.0f || robotic_arm->l_4_z < 0.0f) {
         return;
     }
 
@@ -138,63 +140,48 @@ void Four_degree_of_freedom_calculation(const struct four_axis_robotic_arm *robo
     y = target_pose[1];
     z = target_pose[2];
 
-    if (!isfinite(x) ||
-        !isfinite(y) ||
-        !isfinite(z) ||
-        !isfinite(target_pose[3])) {
+    if (!isfinite(x) || !isfinite(y) || !isfinite(z) || !isfinite(target_pose[3])) {
         return;
     }
 
-    target_pitch_rad = target_pose[3] * FOUR_AXIS_DEG_TO_RAD;
-
+    target_pitch_rad = target_pose[3] * DEG_TO_RAD;
     radial_distance = hypotf(x, y);
     q1_rad = atan2f(y, x);
+    wrist_radius = radial_distance - robotic_arm->l_4_p * sinf(target_pitch_rad);
+    wrist_height = z - robotic_arm->l_1 - robotic_arm->l_4_p * cosf(target_pitch_rad);
+    effective_forearm_length = hypotf(robotic_arm->l_3, robotic_arm->l_4_z);
+    fixed_offset_angle = atan2f(robotic_arm->l_4_z, robotic_arm->l_3);
+    denominator = 2.0f * robotic_arm->l_2 * effective_forearm_length;
+    cosine_effective_q3 = (wrist_radius * wrist_radius + wrist_height * wrist_height -
+                           robotic_arm->l_2 * robotic_arm->l_2 - effective_forearm_length * effective_forearm_length) / denominator;
 
-    wrist_radius = radial_distance
-                 - robotic_arm->l_4 * cosf(target_pitch_rad);
-    wrist_height = z
-                 - robotic_arm->l_1
-                 - robotic_arm->l_4 * sinf(target_pitch_rad);
-
-    denominator = 2.0f
-                * robotic_arm->l_2
-                * robotic_arm->l_3;
-
-    cosine_q3 = (wrist_radius * wrist_radius
-              + wrist_height * wrist_height
-              - robotic_arm->l_2 * robotic_arm->l_2
-              - robotic_arm->l_3 * robotic_arm->l_3)
-              / denominator;
-
-    if (cosine_q3 < (-1.0f - FOUR_AXIS_REACH_EPSILON) ||
-        cosine_q3 > (1.0f + FOUR_AXIS_REACH_EPSILON)) {
+    if (cosine_effective_q3 < (-1.0f - FOUR_AXIS_REACH_EPSILON) || cosine_effective_q3 > (1.0f + FOUR_AXIS_REACH_EPSILON)) {
         return;
     }
 
-    cosine_q3 = four_axis_clamp(cosine_q3, -1.0f, 1.0f);
+    cosine_effective_q3 = four_axis_clamp(cosine_effective_q3, -1.0f, 1.0f);
+    for (configuration = 0U; configuration < 2U; ++configuration) {
+        elbow_sign = (configuration == 0U) ? FOUR_AXIS_DEFAULT_ELBOW_SIGN : -FOUR_AXIS_DEFAULT_ELBOW_SIGN;
+        sine_effective_q3 = elbow_sign * sqrtf(four_axis_clamp(1.0f - cosine_effective_q3 * cosine_effective_q3, 0.0f, 1.0f));
+        q3_rad = atan2f(sine_effective_q3, cosine_effective_q3) - fixed_offset_angle;
+        q2_rad = atan2f(wrist_radius, wrist_height) - atan2f(effective_forearm_length * sine_effective_q3,
+                   robotic_arm->l_2 + effective_forearm_length * cosine_effective_q3);
+        q4_rad = target_pitch_rad - q2_rad - q3_rad;
 
-    if (four_axis_solve_one_configuration(
-            q1_rad,
-            wrist_radius,
-            wrist_height,
-            target_pitch_rad,
-            robotic_arm->l_2,
-            robotic_arm->l_3,
-            cosine_q3,
-            FOUR_AXIS_DEFAULT_ELBOW_SIGN,
-            target_servo_angle)) {
-        return;
+        candidate[0] = four_axis_normalize_degree(q1_rad * RAD_TO_DEG);
+        candidate[1] = four_axis_normalize_degree(q2_rad * RAD_TO_DEG);
+        candidate[2] = four_axis_normalize_degree(q3_rad * RAD_TO_DEG);
+        candidate[3] = four_axis_normalize_degree(q4_rad * RAD_TO_DEG);
+        for (index = 0U; index < FOUR_AXIS_SERVO_COUNT; ++index) {
+            if (!four_axis_angle_is_valid(candidate[index])) {
+                break;
+            }
+        }
+        if (index == FOUR_AXIS_SERVO_COUNT) {
+            for (index = 0U; index < FOUR_AXIS_SERVO_COUNT; ++index) {
+                target_servo_angle[index] = candidate[index];
+            }
+            return;
+        }
     }
-
-    (void)four_axis_solve_one_configuration(
-        q1_rad,
-        wrist_radius,
-        wrist_height,
-        target_pitch_rad,
-        robotic_arm->l_2,
-        robotic_arm->l_3,
-        cosine_q3,
-        -FOUR_AXIS_DEFAULT_ELBOW_SIGN,
-        target_servo_angle
-    );
 }

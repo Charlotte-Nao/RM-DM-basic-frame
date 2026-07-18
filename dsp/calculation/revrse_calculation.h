@@ -16,7 +16,8 @@ struct four_axis_robotic_arm
     float l_1;
     float l_2;
     float l_3;
-    float l_4;
+    float l_4_p;
+    float l_4_z;
 };
 
 void Four_degree_of_freedom_calculation(const struct four_axis_robotic_arm *robotic_arm,

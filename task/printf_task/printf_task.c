@@ -13,12 +13,6 @@
 #define RAD_TO_DEG                    57.295779513082320876f
 #define DEG_TO_RAD                    0.01745329251994329577f
 
-static const struct four_axis_robotic_arm printf_arm = {
-    .l_1 = 107.5f,
-    .l_2 = 83.7f,
-    .l_3 = 121.5f,
-    .l_4 = 0.0f,
-};
 
 static float yb_sd15m_position_to_angle_float(uint16_t target_position)
 {
@@ -55,7 +49,7 @@ void printf_task(void)
     float velocity_rpm = 0.0f;
     uint8_t temperature = 0U;
     uint16_t encoder = 0U;
-    uint16_t servo_target[FOUR_AXIS_SERVO_COUNT] = {0};
+    int16_t servo_target[FOUR_AXIS_SERVO_COUNT] = {0};
     float servo_angle[FOUR_AXIS_SERVO_COUNT] = {0.0f};
     float servo_pose[FOUR_AXIS_TARGET_POSE_SIZE] = {0.0f};
 
@@ -128,7 +122,7 @@ void printf_task(void)
             servo_3->get_status(servo_3, "TARGET_ANGLE", &servo_target[2]);
             servo_4->get_status(servo_4, "TARGET_ANGLE", &servo_target[3]);
 
-            Four_degree_of_freedom_positive_calculation(&printf_arm, servo_target, servo_pose);
+            Four_degree_of_freedom_positive_calculation(&arm, servo_target, servo_pose);
 
             (void)uart1->uart_printf(uart1,
             "YB_SD15M: angle1=%d angle2=%d angle3=%d angle4=%d "
