@@ -83,15 +83,15 @@ void test_task(void)
          // Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
 
 
-        // for (int i = 0; i < 4; i++)
-        // {
-        //     servo_angle[i] = 20;
-        // }
+        for (int i = 0; i < 4; i++)
+        {
+            servo_angle[i] = 0;
+        }
 
-        servo_angle[0] = 20;
-        servo_angle[1] = 20;
-        servo_angle[2] = 20;
-        servo_angle[3] = 30;
+        // servo_angle[0] = 20;
+        // servo_angle[1] = 20;
+        // servo_angle[2] = 20;
+        // servo_angle[3] = 30;
 
         send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
 

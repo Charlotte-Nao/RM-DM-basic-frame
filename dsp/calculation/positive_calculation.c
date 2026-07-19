@@ -49,7 +49,7 @@ void Four_degree_of_freedom_positive_calculation(const struct four_axis_robotic_
     q23 = (float)(current_servo_angle[1] + current_servo_angle[2]) * DEG_TO_RAD;
     q234 = (float)(current_servo_angle[1] + current_servo_angle[2] + current_servo_angle[3]) * DEG_TO_RAD;
 
-    radial_distance = robotic_arm->l_2 * sinf(q2) + robotic_arm->l_3 * sinf(q23) + robotic_arm->l_4_p * sinf(q234) + robotic_arm->l_4_z * cosf(q23);
+    radial_distance = robotic_arm->l_2 * sinf(q2) + robotic_arm->l_3 * sinf(q23) + robotic_arm->l_4_p * sinf(q234) + robotic_arm->l_4_z * cosf(q234);
 
     current_pose[0] = radial_distance * cosf(q1);
     current_pose[1] = radial_distance * sinf(q1);

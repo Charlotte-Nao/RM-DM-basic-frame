@@ -40,6 +40,9 @@ struct yb_sd15m_device
 
     uint8_t servo_id;
 
+    /* Mechanical zero offset in degrees. */
+    int16_t offset;
+
     struct uart_device *servo_uart;
 
     void *servo_data;
@@ -91,6 +94,7 @@ struct yb_sd15m_device
     void (*set_target)(
         struct yb_sd15m_device *servo,
         uint16_t target_position,
+        int16_t target_angle,
         uint16_t move_time_ms
     );
 
@@ -149,6 +153,7 @@ int16_t yb_sd15m_position_to_angle(
 
 /**
  * Update the desired angle and movement time.
+ * The instance offset is subtracted from target_angle before conversion.
  *
  * This function does not directly send UART data.
  * YB_SD15M_All_Update() sends the command later.
