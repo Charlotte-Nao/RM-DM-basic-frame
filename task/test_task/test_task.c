@@ -77,26 +77,16 @@ void test_task(void)
 
     float servo_angle[4] = {0};
 
-    float target_pose[4] = {
-        255.0f,
-        - 35.0f,
-        65.0f,
-        75.0f,
-    };
-
     float zero_pose[4] =    {160.0f,    0.0f,    180.0f, 75.0f};
-
-    float one_pose[4] =     {255.0f,    35.0f,   85.0f, 75.0f};
-    float two_pose[4] =     {255.0f,    0.0f,    85.0f, 75.0f};
-    float three_pose[4] =   {255.0f,    - 35.0f, 85.0f, 75.0f};
-
-    float four_pose[4] =    {225.0f,    30.0f,   70.0f, 75.0f};
-    float five_pose[4] =    {225.0f,    0.0f,    70.0f, 75.0f};
-    float six_pose[4] =     {225.0f,    - 30.0f, 70.0f, 75.0f};
-
-    float seven_pose[4] =   {200.0f,    35.0f,   70.0f, 75.0f};
-    float eight_pose[4] =   {200.0f,    0.0f,    70.0f, 75.0f};
-    float nine_pose[4] =    {202.0f,    - 35.0f, 70.0f, 75.0f};
+    float one_pose[4] =     {250.0f,    35.0f,   75.0f, 75.0f};
+    float two_pose[4] =     {255.0f,    0.0f,    75.0f, 75.0f};
+    float three_pose[4] =   {255.0f,    - 35.0f, 75.0f, 75.0f};
+    float four_pose[4] =    {223.0f,    32.0f,   65.0f, 75.0f};
+    float five_pose[4] =    {225.0f,    0.0f,    65.0f, 75.0f};
+    float six_pose[4] =     {225.0f,    - 30.0f, 65.0f, 75.0f};
+    float seven_pose[4] =   {200.0f,    40.0f,   62.0f, 75.0f};
+    float eight_pose[4] =   {200.0f,    0.0f,    62.0f, 75.0f};
+    float nine_pose[4] =    {202.0f,    - 55.0f, 62.0f, 75.0f};
 
     float *board_pose_list[10] = {
         zero_pose,
@@ -111,38 +101,81 @@ void test_task(void)
         nine_pose,
     };
 
-    int temp_i = 0 ;
+    float black_one[4]   =    {245.0f,   85.0f,  80.0f,  75.0f};
+    float black_two[4]   =    {220.0f,   95.0f,  75.0f,  75.0f};
+    float black_three[4] =    {193.0f,   95.0f,  70.0f,  75.0f};
+    float black_four[4]  =   {165.0f,    95.0f,  65.0f,  75.0f};
+    float black_five[4]  =   {135.0f,    95.0f,  65.0f,  75.0f};
+    float white_one[4]   =  {250.0f,    - 85.0f,    80.0f,  75.0f};
+    float white_two[4]   =  {230.0f,    - 95.0f,    67.0f,  75.0f};
+    float white_three[4] =  {200.0f ,   - 95.0f,    67.0f,  75.0f};
+    float white_four[4]  =  {175.0f ,   - 100.0f,    67.0f,  75.0f};
+    float white_five[4]  =  {150.0f ,   - 105.0f,   67.0f,  75.0f};
+
+    float *chess_pos_list[10] = {
+        black_one,
+        black_two,
+        black_three,
+        black_four,
+        black_five,
+        white_one,
+        white_two,
+        white_three,
+        white_four,
+        white_five,
+    };
+    float target_pose[4] = {
+        250.0f,
+        -80.0f,
+        85.0f,
+        75.0f,
+    };
+    int temp_i = 1 ;
+    int temp_j = 0;
+    Four_degree_of_freedom_calculation(&arm, board_pose_list[0], servo_angle);
+    send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+    osDelay(2000U);
 
     for (;;) {
 
         // Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
-        Four_degree_of_freedom_calculation(&arm, board_pose_list[0], servo_angle);
-        // Four_degree_of_freedom_calculation(&arm, board_pose_list[5], servo_angle);
+        // Four_degree_of_freedom_calculation(&arm, board_pose_list[8], servo_angle);
+        // Four_degree_of_freedom_calculation(&arm, board_pose_list[9], servo_angle);
+
+        // Four_degree_of_freedom_calculation(&arm , chess_pos_list[0], servo_angle);
+        send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+        osDelay(2000U);
+
+        //
+        // Four_degree_of_freedom_calculation(&arm,chess_pos_list[temp_j],servo_angle);
+        // temp_j++;
+        // temp_j = temp_j % 10;
+        // send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+        // pick_chess(pump,valve);
+        // osDelay(3000U);
+        //
+        //
+        // osDelay(2000U);
+        //
         // Four_degree_of_freedom_calculation(&arm, board_pose_list[temp_i], servo_angle);
-        temp_i ++ ;
-        temp_i = temp_i % 10;
-
-        send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
-
-        pick_chess(pump, valve);
-        osDelay(3000U);
-        put_chess(pump, valve);
-
-
-        // for (int i = 0; i < 4; i++)
+        // temp_i ++ ;
+        // temp_i = temp_i % 10;
+        // if (temp_i == 0)
         // {
-        //     servo_angle[i] = 30;
+        //     temp_i ++;
         // }
+        // send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+        // osDelay(3000U);
+        //
+        // put_chess(pump,valve);
+        // osDelay(2000U);
+        //
+        // Four_degree_of_freedom_calculation(&arm, board_pose_list[0], servo_angle);
+        // send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+        // osDelay(3000U);
 
-        // servo_angle[0] = 0;
-        // servo_angle[1] = 20;
-        // servo_angle[2] = 30;
-        // servo_angle[3] = 20;
 
-        Four_degree_of_freedom_calculation(&arm, board_pose_list[0], servo_angle);
-        send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
 
-        osDelay(3000U);
 
     }
 }
