@@ -150,3 +150,4 @@
 6000	6041	1784531909093220400	cmake/stm32cubemx/CMakeFiles/FreeRTOS.dir/__/__/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c.obj	d3ee6a3192fb3fb6
 5900	6133	1784531908993125000	cmake/stm32cubemx/CMakeFiles/FreeRTOS.dir/__/__/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c.obj	e4f5aa9261185c53
 7	110	1784533739439950200	CMakeFiles/DM.dir/task/test_task/test_task.c.obj	a6d6f7cfd2d3eeab
+5	82	1784561616818241200	CMakeFiles/DM.dir/task/test_task/test_task.c.obj	a6d6f7cfd2d3eeab
