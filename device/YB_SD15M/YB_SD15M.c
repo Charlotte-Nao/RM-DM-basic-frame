@@ -128,7 +128,7 @@ static struct yb_sd15m_device yb_sd15m_1 =
 {
     .servo_name = "YB_SD15M_1",
     .servo_id = 1U,
-    .offset = 8,
+    .offset = 3,
     .servo_uart = NULL,
     .servo_data = &yb_sd15m_1_data,
     .last_rx_tick = 0U,

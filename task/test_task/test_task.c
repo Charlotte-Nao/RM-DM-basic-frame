@@ -78,15 +78,15 @@ void test_task(void)
     float servo_angle[4] = {0};
 
     float zero_pose[4] =    {160.0f,    0.0f,    180.0f, 75.0f};
-    float one_pose[4] =     {250.0f,    35.0f,   75.0f, 75.0f};
-    float two_pose[4] =     {255.0f,    0.0f,    75.0f, 75.0f};
-    float three_pose[4] =   {255.0f,    - 35.0f, 75.0f, 75.0f};
-    float four_pose[4] =    {223.0f,    32.0f,   65.0f, 75.0f};
-    float five_pose[4] =    {225.0f,    0.0f,    65.0f, 75.0f};
-    float six_pose[4] =     {225.0f,    - 30.0f, 65.0f, 75.0f};
-    float seven_pose[4] =   {200.0f,    40.0f,   62.0f, 75.0f};
-    float eight_pose[4] =   {200.0f,    0.0f,    62.0f, 75.0f};
-    float nine_pose[4] =    {202.0f,    - 55.0f, 62.0f, 75.0f};
+    float one_pose[4] =     {250.0f,    15.0f,    75.0f, 75.0f};
+    float two_pose[4] =     {250.0f,    - 25.0f, 75.0f, 75.0f};
+    float three_pose[4] =   {250.0f,    - 55.0f, 75.0f, 75.0f};
+    float four_pose[4] =    {225.0f,    15.0f,   65.0f, 75.0f};
+    float five_pose[4] =    {225.0f,    -25.0f,    65.0f, 75.0f};
+    float six_pose[4] =     {225.0f,    - 55.0f, 65.0f, 75.0f};
+    float seven_pose[4] =   {200.0f,    15.0f,   62.0f, 75.0f};
+    float eight_pose[4] =   {200.0f,    -25.0f,    62.0f, 75.0f};
+    float nine_pose[4] =    {200.0f,    - 57.0f, 62.0f, 75.0f};
 
     float *board_pose_list[10] = {
         zero_pose,
@@ -101,16 +101,16 @@ void test_task(void)
         nine_pose,
     };
 
-    float black_one[4]   =    {245.0f,   85.0f,  80.0f,  75.0f};
-    float black_two[4]   =    {220.0f,   95.0f,  75.0f,  75.0f};
-    float black_three[4] =    {193.0f,   95.0f,  70.0f,  75.0f};
-    float black_four[4]  =   {165.0f,    95.0f,  65.0f,  75.0f};
-    float black_five[4]  =   {135.0f,    95.0f,  65.0f,  75.0f};
-    float white_one[4]   =  {250.0f,    - 85.0f,    80.0f,  75.0f};
-    float white_two[4]   =  {230.0f,    - 95.0f,    67.0f,  75.0f};
-    float white_three[4] =  {200.0f ,   - 95.0f,    67.0f,  75.0f};
-    float white_four[4]  =  {175.0f ,   - 100.0f,    67.0f,  75.0f};
-    float white_five[4]  =  {150.0f ,   - 105.0f,   67.0f,  75.0f};
+    float black_one[4]   =    {250.0f,   60.0f,  80.0f,  75.0f};
+    float black_two[4]   =    {225.0f,   65.0f,  65.0f,  75.0f};
+    float black_three[4] =    {200.0f,   70.0f,  65.0f,  75.0f};
+    float black_four[4]  =   {175.0f,    75.0f,  65.0f,  75.0f};
+    float black_five[4]  =   {140.0f,    85.0f,  65.0f,  75.0f};
+    float white_one[4]   =  {240.0f,    - 105.0f,75.0f,  75.0f};
+    float white_two[4]   =  {220.0f,    - 105.0f,    67.0f,  75.0f};
+    float white_three[4] =  {190.0f ,   - 110.0f,    65.0f,  75.0f};
+    float white_four[4]  =  {165.0f ,   - 115.0f,    60.0f,  75.0f};
+    float white_five[4]  =  {135.0f ,   - 120.0f,   60.0f,  75.0f};
 
     float *chess_pos_list[10] = {
         black_one,
@@ -139,12 +139,12 @@ void test_task(void)
     for (;;) {
 
         // Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
-        // Four_degree_of_freedom_calculation(&arm, board_pose_list[8], servo_angle);
         // Four_degree_of_freedom_calculation(&arm, board_pose_list[9], servo_angle);
-
-        // Four_degree_of_freedom_calculation(&arm , chess_pos_list[0], servo_angle);
-        send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
-        osDelay(2000U);
+        // Four_degree_of_freedom_calculation(&arm, board_pose_list[9], servo_angle);
+        //
+        // Four_degree_of_freedom_calculation(&arm , chess_pos_list[9], servo_angle);
+        // send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+        // osDelay(2000U);
 
         //
         // Four_degree_of_freedom_calculation(&arm,chess_pos_list[temp_j],servo_angle);
