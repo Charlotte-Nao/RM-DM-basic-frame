@@ -79,6 +79,12 @@ add_executable(${CMAKE_PROJECT_NAME}
         dsp/calculation/positive_calculation.h
         dsp/calculation/calculation.h
         dsp/math.h
+        bsp/pwm/pwm.c
+        bsp/pwm/pwm.h
+        device/vacuum/vacuum.c
+        device/vacuum/vacuum.h
+        task/vacuum_task/vacuum_task.c
+        task/vacuum_task/vacuum_task.h
 )
 
 # Add STM32CubeMX generated sources

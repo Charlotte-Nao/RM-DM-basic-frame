@@ -84,6 +84,13 @@ const osThreadAttr_t servo_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
+/* Definitions for vacuum */
+osThreadId_t vacuumHandle;
+const osThreadAttr_t vacuum_attributes = {
+  .name = "vacuum",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -95,6 +102,7 @@ void printf_entry(void *argument);
 void usb_test_entry(void *argument);
 void test_task_entry(void *argument);
 void servo_entry(void *argument);
+void vacuum_entry(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -168,6 +176,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of servo */
   servoHandle = osThreadNew(servo_entry, NULL, &servo_attributes);
+
+  /* creation of vacuum */
+  vacuumHandle = osThreadNew(vacuum_entry, NULL, &vacuum_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -271,6 +282,25 @@ void servo_entry(void *argument)
     osDelay(1);
   }
   /* USER CODE END servo_entry */
+}
+
+/* USER CODE BEGIN Header_vacuum_entry */
+/**
+* @brief Function implementing the vacuum thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_vacuum_entry */
+void vacuum_entry(void *argument)
+{
+  /* USER CODE BEGIN vacuum_entry */
+  vacuum_task();
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END vacuum_entry */
 }
 
 /* Private application code --------------------------------------------------*/

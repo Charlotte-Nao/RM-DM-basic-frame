@@ -9,18 +9,9 @@
 
 #include "cmsis_os2.h"
 #include "../../device/YB_SD15M/YB_SD15M.h"
+#include "../../device/vacuum/vacuum.h"
 #include "../../dsp/calculation/calculation.h"
 #include "../../application/global_data.h"
-
-
-
-// 静态返回地址
-// float target_pose[4] = {
-//     160.0f,  // x
-//     0.0f,    // y
-//     180.0f,  // z
-//     75.0f,    // 末端 pitch 角度，单位 degree
-// };
 
 static int16_t servo_angle_to_command(float angle)
 {
@@ -49,12 +40,26 @@ static void send_all_servo(struct yb_sd15m_device *servo_1,
     yb_sd15m_set_target(servo_4, servo_angle_to_command(servo_angle[3]), move_time_ms);
 }
 
+static void pick_chess(struct vacuum_device *pump, struct vacuum_device *valve)
+{
+    valve->disable(valve);
+    pump->enable(pump);
+}
+
+static void put_chess(struct vacuum_device *pump, struct vacuum_device *valve)
+{
+    valve->enable(valve);
+    pump->disable(pump);
+}
+
 void test_task(void)
 {
     struct yb_sd15m_device *servo_1;
     struct yb_sd15m_device *servo_2;
     struct yb_sd15m_device *servo_3;
     struct yb_sd15m_device *servo_4;
+    struct vacuum_device *pump = vacuum_get_device("VACUUM_PUMP");
+    struct vacuum_device *valve = vacuum_get_device("VACUUM_VALVE");
 
     servo_1 = yb_sd15m_get_device("YB_SD15M_1");
     servo_2 = yb_sd15m_get_device("YB_SD15M_2");
@@ -111,7 +116,7 @@ void test_task(void)
     for (;;) {
 
         // Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
-        Four_degree_of_freedom_calculation(&arm, board_pose_list[temp_i], servo_angle);
+        Four_degree_of_freedom_calculation(&arm, board_pose_list[0], servo_angle);
         // Four_degree_of_freedom_calculation(&arm, board_pose_list[5], servo_angle);
         // Four_degree_of_freedom_calculation(&arm, board_pose_list[temp_i], servo_angle);
         temp_i ++ ;
@@ -119,7 +124,10 @@ void test_task(void)
 
         send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
 
+        pick_chess(pump, valve);
         osDelay(3000U);
+        put_chess(pump, valve);
+
 
         // for (int i = 0; i < 4; i++)
         // {

@@ -9,5 +9,6 @@
 #include "sensor_task/sensor_task.h"
 #include "printf_task/printf_task.h"
 #include "servo_task/servo_task.h"
+#include "vacuum_task/vacuum_task.h"
 
 #endif //DM_ALL_TASK_H
