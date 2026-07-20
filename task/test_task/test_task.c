@@ -13,12 +13,14 @@
 #include "../../application/global_data.h"
 
 
-float target_pose[4] = {
-    0.0f,  // x
-    0.0f,    // y
-    0.0f,  // z
-    0.0f,    // 末端 pitch 角度，单位 degree
-};
+
+// 静态返回地址
+// float target_pose[4] = {
+//     160.0f,  // x
+//     0.0f,    // y
+//     180.0f,  // z
+//     75.0f,    // 末端 pitch 角度，单位 degree
+// };
 
 static int16_t servo_angle_to_command(float angle)
 {
@@ -70,38 +72,69 @@ void test_task(void)
 
     float servo_angle[4] = {0};
 
-    // osDelay(100U);
-    // yb_sd15m_set_target(servo_1,0,1000U);
-    // yb_sd15m_set_target(servo_2,0,1000U);
-    // yb_sd15m_set_target(servo_3,0,1000U);
-    // yb_sd15m_set_target(servo_4,0,1000U);
+    float target_pose[4] = {
+        255.0f,
+        - 35.0f,
+        65.0f,
+        75.0f,
+    };
 
-    // osDelay(1500U);
+    float zero_pose[4] =    {160.0f,    0.0f,    180.0f, 75.0f};
+
+    float one_pose[4] =     {255.0f,    35.0f,   85.0f, 75.0f};
+    float two_pose[4] =     {255.0f,    0.0f,    85.0f, 75.0f};
+    float three_pose[4] =   {255.0f,    - 35.0f, 85.0f, 75.0f};
+
+    float four_pose[4] =    {225.0f,    30.0f,   70.0f, 75.0f};
+    float five_pose[4] =    {225.0f,    0.0f,    70.0f, 75.0f};
+    float six_pose[4] =     {225.0f,    - 30.0f, 70.0f, 75.0f};
+
+    float seven_pose[4] =   {200.0f,    35.0f,   70.0f, 75.0f};
+    float eight_pose[4] =   {200.0f,    0.0f,    70.0f, 75.0f};
+    float nine_pose[4] =    {202.0f,    - 35.0f, 70.0f, 75.0f};
+
+    float *board_pose_list[10] = {
+        zero_pose,
+        one_pose,
+        two_pose,
+        three_pose,
+        four_pose,
+        five_pose,
+        six_pose,
+        seven_pose,
+        eight_pose,
+        nine_pose,
+    };
+
+    int temp_i = 0 ;
 
     for (;;) {
 
-         // Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
-
-
-        for (int i = 0; i < 4; i++)
-        {
-            servo_angle[i] = 0;
-        }
-
-        // servo_angle[0] = 20;
-        // servo_angle[1] = 20;
-        // servo_angle[2] = 20;
-        // servo_angle[3] = 30;
+        // Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
+        Four_degree_of_freedom_calculation(&arm, board_pose_list[temp_i], servo_angle);
+        // Four_degree_of_freedom_calculation(&arm, board_pose_list[5], servo_angle);
+        // Four_degree_of_freedom_calculation(&arm, board_pose_list[temp_i], servo_angle);
+        temp_i ++ ;
+        temp_i = temp_i % 10;
 
         send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
 
-        osDelay(1500U);
+        osDelay(3000U);
 
-        // memset(servo_angle, 30, 4 * sizeof(float));
-        //
-        // send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
-        //
-        // osDelay(1500U);
+        // for (int i = 0; i < 4; i++)
+        // {
+        //     servo_angle[i] = 30;
+        // }
+
+        // servo_angle[0] = 0;
+        // servo_angle[1] = 20;
+        // servo_angle[2] = 30;
+        // servo_angle[3] = 20;
+
+        Four_degree_of_freedom_calculation(&arm, board_pose_list[0], servo_angle);
+        send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+
+        osDelay(3000U);
 
     }
 }
