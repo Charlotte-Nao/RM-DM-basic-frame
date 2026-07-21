@@ -85,6 +85,11 @@ add_executable(${CMAKE_PROJECT_NAME}
         device/vacuum/vacuum.h
         task/vacuum_task/vacuum_task.c
         task/vacuum_task/vacuum_task.h
+        task/usb_task/usb_task.c
+        task/usb_task/usb_task.h
+        task/usb_task/usb_task.h
+        bsp/usb/usb.c
+        bsp/usb/usb.h
 )
 
 # Add STM32CubeMX generated sources

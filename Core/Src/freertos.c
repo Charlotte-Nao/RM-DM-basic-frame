@@ -63,12 +63,12 @@ const osThreadAttr_t printf_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for usb_test */
-osThreadId_t usb_testHandle;
-const osThreadAttr_t usb_test_attributes = {
-  .name = "usb_test",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+/* Definitions for usb */
+osThreadId_t usbHandle;
+const osThreadAttr_t usb_attributes = {
+  .name = "usb",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 /* Definitions for test */
 osThreadId_t testHandle;
@@ -99,11 +99,12 @@ const osThreadAttr_t vacuum_attributes = {
 
 void seneor_task_entry(void *argument);
 void printf_entry(void *argument);
-void usb_test_entry(void *argument);
+void usb_entry(void *argument);
 void test_task_entry(void *argument);
 void servo_entry(void *argument);
 void vacuum_entry(void *argument);
 
+extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
 /* Hook prototypes */
@@ -168,8 +169,8 @@ void MX_FREERTOS_Init(void) {
   /* creation of printf */
   printfHandle = osThreadNew(printf_entry, NULL, &printf_attributes);
 
-  /* creation of usb_test */
-  usb_testHandle = osThreadNew(usb_test_entry, NULL, &usb_test_attributes);
+  /* creation of usb */
+  usbHandle = osThreadNew(usb_entry, NULL, &usb_attributes);
 
   /* creation of test */
   testHandle = osThreadNew(test_task_entry, NULL, &test_attributes);
@@ -199,6 +200,8 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE END Header_seneor_task_entry */
 void seneor_task_entry(void *argument)
 {
+  /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN seneor_task_entry */
   sensor_task();
   /* Infinite loop */
@@ -228,22 +231,23 @@ void printf_entry(void *argument)
   /* USER CODE END printf_entry */
 }
 
-/* USER CODE BEGIN Header_usb_test_entry */
+/* USER CODE BEGIN Header_usb_entry */
 /**
-* @brief Function implementing the usb_test thread.
+* @brief Function implementing the usb thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_usb_test_entry */
-void usb_test_entry(void *argument)
+/* USER CODE END Header_usb_entry */
+void usb_entry(void *argument)
 {
-  /* USER CODE BEGIN usb_test_entry */
+  /* USER CODE BEGIN usb_entry */
+  usb_task();
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END usb_test_entry */
+  /* USER CODE END usb_entry */
 }
 
 /* USER CODE BEGIN Header_test_task_entry */

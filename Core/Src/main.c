@@ -27,7 +27,7 @@
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
-#include "usb_otg.h"
+#include "usb_device.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -122,7 +122,6 @@ int main(void)
   MX_FDCAN1_Init();
   MX_FDCAN2_Init();
   MX_FDCAN3_Init();
-  MX_USB_OTG_HS_PCD_Init();
   MX_SPI6_Init();
   MX_TIM1_Init();
   MX_TIM2_Init();
@@ -243,9 +242,9 @@ void PeriphCommonClock_Config(void)
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
   PeriphClkInitStruct.PLL3.PLL3M = 12;
-  PeriphClkInitStruct.PLL3.PLL3N = 160;
-  PeriphClkInitStruct.PLL3.PLL3P = 4;
-  PeriphClkInitStruct.PLL3.PLL3Q = 8;
+  PeriphClkInitStruct.PLL3.PLL3N = 120;
+  PeriphClkInitStruct.PLL3.PLL3P = 3;
+  PeriphClkInitStruct.PLL3.PLL3Q = 5;
   PeriphClkInitStruct.PLL3.PLL3R = 2;
   PeriphClkInitStruct.PLL3.PLL3RGE = RCC_PLL3VCIRANGE_1;
   PeriphClkInitStruct.PLL3.PLL3VCOSEL = RCC_PLL3VCOWIDE;
