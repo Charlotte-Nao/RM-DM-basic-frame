@@ -158,36 +158,39 @@ void test_task(void)
         white_five,
     };
     float target_pose[4] = {
-        250.0f,
-        -80.0f,
-        85.0f,
-        75.0f,
+        220.0f,
+       -10.0f,
+        25.0f,
+        90.0f,
     };
     int temp_i = 1 ;
-    int temp_j = 0;
+    int temp_j = 0 ;
     Four_degree_of_freedom_calculation(&arm, board_pose_list[0], servo_angle);
     send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
     osDelay(2000U);
 
+
+
     for (;;) {
 
-        for (int i = 0 ;i <4 ;i ++)
-        {
-            servo_angle[i] = 0;
-        }
-        send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
-        osDelay(1000U);
+        // osDelay(2000U);
+        //
+        // servo_angle[0] = 0;
+        // servo_angle[1] = 30;
+        // servo_angle[2] = 30;
+        // servo_angle[3] = 30;
+        //
+        // send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+        // osDelay(1000U);
 
-
-
-        // Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
+        Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
         // Four_degree_of_freedom_calculation(&arm, board_pose_list[9], servo_angle);
         // Four_degree_of_freedom_calculation(&arm, board_pose_list[9], servo_angle);
         //
-        // Four_degree_of_freedom_calculation(&arm , chess_pos_list[9], servo_angle);
-        // send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
-        // osDelay(2000U);
-
+        // Four_degree_of_freedom_calculation(&arm , chess_pose_list[9], servo_angle);
+        send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+        osDelay(2000U);
+        //
         // move_a_to_b(servo_1, servo_2, servo_3, servo_4,board_pose_list[0], chess_pose_list[temp_j]);
         // pick_chess(pump,valve);
         // osDelay(2000U);

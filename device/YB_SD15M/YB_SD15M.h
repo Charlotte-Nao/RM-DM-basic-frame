@@ -43,6 +43,13 @@ struct yb_sd15m_device
     /* Mechanical zero offset in degrees. */
     int16_t offset;
 
+    /*
+     * Command-angle scale used to correct the servo's linear gain error.
+     *
+     * calibrated command angle = target angle * angle_scale - offset
+     */
+    float angle_correct_scale;
+
     struct uart_device *servo_uart;
 
     void *servo_data;
@@ -152,8 +159,8 @@ int16_t yb_sd15m_position_to_angle(
 );
 
 /**
- * Update the desired angle and movement time.
- * The instance offset is subtracted from target_angle before conversion.
+ * Update the desired physical angle and movement time.
+ * The instance angle scale and zero offset are applied before conversion.
  *
  * This function does not directly send UART data.
  * YB_SD15M_All_Update() sends the command later.

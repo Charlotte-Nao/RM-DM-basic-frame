@@ -90,6 +90,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         task/usb_task/usb_task.h
         bsp/usb/usb.c
         bsp/usb/usb.h
+        protocol/protocol.c
+        protocol/protocol.h
 )
 
 # Add STM32CubeMX generated sources
