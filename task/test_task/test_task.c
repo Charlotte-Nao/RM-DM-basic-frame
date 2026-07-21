@@ -171,6 +171,15 @@ void test_task(void)
 
     for (;;) {
 
+        for (int i = 0 ;i <4 ;i ++)
+        {
+            servo_angle[i] = 0;
+        }
+        send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+        osDelay(1000U);
+
+
+
         // Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
         // Four_degree_of_freedom_calculation(&arm, board_pose_list[9], servo_angle);
         // Four_degree_of_freedom_calculation(&arm, board_pose_list[9], servo_angle);
@@ -179,25 +188,25 @@ void test_task(void)
         // send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
         // osDelay(2000U);
 
-        move_a_to_b(servo_1, servo_2, servo_3, servo_4,board_pose_list[0], chess_pose_list[temp_j]);
-        pick_chess(pump,valve);
-        osDelay(2000U);
-
-        move_a_to_b(servo_1,servo_2,servo_3,servo_4,chess_pose_list[temp_j],board_pose_list[temp_i]);
-        put_chess(pump,valve);
-        osDelay(2000U);
-
-        move_a_to_b(servo_1,servo_2,servo_3,servo_4,board_pose_list[temp_i],board_pose_list[0]);
-
-        temp_j++;
-        temp_j = temp_j % 10;
-
-        temp_i ++ ;
-        temp_i = temp_i % 10;
-        if (temp_i == 0)
-        {
-            temp_i ++;
-        }
+        // move_a_to_b(servo_1, servo_2, servo_3, servo_4,board_pose_list[0], chess_pose_list[temp_j]);
+        // pick_chess(pump,valve);
+        // osDelay(2000U);
+        //
+        // move_a_to_b(servo_1,servo_2,servo_3,servo_4,chess_pose_list[temp_j],board_pose_list[temp_i]);
+        // put_chess(pump,valve);
+        // osDelay(2000U);
+        //
+        // move_a_to_b(servo_1,servo_2,servo_3,servo_4,board_pose_list[temp_i],board_pose_list[0]);
+        //
+        // temp_j++;
+        // temp_j = temp_j % 10;
+        //
+        // temp_i ++ ;
+        // temp_i = temp_i % 10;
+        // if (temp_i == 0)
+        // {
+        //     temp_i ++;
+        // }
 
     }
 }
