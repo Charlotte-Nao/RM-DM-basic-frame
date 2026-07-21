@@ -24,7 +24,8 @@ void usb_task(void)
         }
     }
 
-    for (;;) {
+    for (;;)
+    {
         result = usb->usb_read(usb, rx_buffer, sizeof(rx_buffer));
 
         if (result > 0) {
@@ -33,9 +34,10 @@ void usb_task(void)
                 aim_pose.y = received_data.y;
                 aim_pose.z = received_data.z;
                 aim_pose.phi = (float)received_data.phi / 10.0f;
-                aim_pose.command = received_data.action;
-        }
+                aim_pose.action= received_data.action;
+            }
 
-        osDelay(2U);
+            osDelay(2U);
+        }
     }
 }

@@ -22,7 +22,7 @@ static int16_t servo_angle_to_command(float angle)
     return (int16_t)(angle - 0.5f);
 }
 
-static void send_all_servo(struct yb_sd15m_device *servo_1,
+static void set_all_target(struct yb_sd15m_device *servo_1,
                            struct yb_sd15m_device *servo_2,
                            struct yb_sd15m_device *servo_3,
                            struct yb_sd15m_device *servo_4,
@@ -73,15 +73,15 @@ static void move_a_to_b(struct yb_sd15m_device *servo_1,
     if (b_above_pose[2] < 120 ){   b_above_pose[2] += 30.0f;}
 
     Four_degree_of_freedom_calculation(&arm, a_above_pose, servo_angle);
-    send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+    set_all_target(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
     osDelay(1000U);
 
     Four_degree_of_freedom_calculation(&arm, b_above_pose, servo_angle);
-    send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+    set_all_target(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
     osDelay(1000U);
 
     Four_degree_of_freedom_calculation(&arm, b_pose, servo_angle);
-    send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+    set_all_target(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
     osDelay(2000U);
 }
 
@@ -166,7 +166,7 @@ void test_task(void)
     int temp_i = 1 ;
     int temp_j = 0 ;
     Four_degree_of_freedom_calculation(&arm, board_pose_list[0], servo_angle);
-    send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+    set_all_target(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
     osDelay(2000U);
 
 
@@ -188,7 +188,7 @@ void test_task(void)
         // Four_degree_of_freedom_calculation(&arm, board_pose_list[9], servo_angle);
         //
         // Four_degree_of_freedom_calculation(&arm , chess_pose_list[9], servo_angle);
-        send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
+        set_all_target(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
         osDelay(2000U);
         //
         // move_a_to_b(servo_1, servo_2, servo_3, servo_4,board_pose_list[0], chess_pose_list[temp_j]);
