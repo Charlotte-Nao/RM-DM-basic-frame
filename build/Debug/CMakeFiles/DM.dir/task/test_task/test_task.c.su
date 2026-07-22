@@ -1,6 +1,6 @@
 /media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/task/test_task/test_task.c:16:16:servo_angle_to_command	16	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/task/test_task/test_task.c:25:13:send_all_servo	24	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/task/test_task/test_task.c:43:13:pick_chess	16	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/task/test_task/test_task.c:49:13:put_chess	16	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/task/test_task/test_task.c:55:13:move_a_to_b	80	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/task/test_task/test_task.c:88:6:test_task	488	static
+/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/task/test_task/test_task.c:24:13:set_all_target	24	static
+/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/task/test_task/test_task.c:42:13:pick_chess	16	static
+/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/task/test_task/test_task.c:48:13:put_chess	16	static
+/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/task/test_task/test_task.c:54:13:move_a_to_b	80	static
+/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/task/test_task/test_task.c:87:6:test_task	56	static

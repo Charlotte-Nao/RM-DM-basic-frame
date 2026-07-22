@@ -36,8 +36,7 @@ void usb_task(void)
                 aim_pose.phi = (float)received_data.phi / 10.0f;
                 aim_pose.action= received_data.action;
             }
-
-            osDelay(2U);
         }
+        osDelay(1U);
     }
 }

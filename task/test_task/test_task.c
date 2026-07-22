@@ -12,13 +12,14 @@
 #include "../../device/vacuum/vacuum.h"
 #include "../../dsp/calculation/calculation.h"
 #include "../../application/global_data.h"
+#include "../../bsp/LED/LED.h"
+#include "../../bsp/usb/usb.h"
 
 static int16_t servo_angle_to_command(float angle)
 {
     if (angle >= 0.0f) {
         return (int16_t)(angle + 0.5f);
     }
-
     return (int16_t)(angle - 0.5f);
 }
 
@@ -87,6 +88,7 @@ static void move_a_to_b(struct yb_sd15m_device *servo_1,
 
 void test_task(void)
 {
+    struct usb_device *usb;
     struct yb_sd15m_device *servo_1;
     struct yb_sd15m_device *servo_2;
     struct yb_sd15m_device *servo_3;
@@ -94,6 +96,7 @@ void test_task(void)
     struct vacuum_device *pump = vacuum_get_device("VACUUM_PUMP");
     struct vacuum_device *valve = vacuum_get_device("VACUUM_VALVE");
 
+    usb = usb_get_device("usb_cdc");
     servo_1 = yb_sd15m_get_device("YB_SD15M_1");
     servo_2 = yb_sd15m_get_device("YB_SD15M_2");
     servo_3 = yb_sd15m_get_device("YB_SD15M_3");
@@ -109,107 +112,48 @@ void test_task(void)
     }
 
     float servo_angle[4] = {0};
-
-    float zero_pose[4] =    {160.0f,    0.0f,    180.0f, 75.0f};
-    float one_pose[4] =     {250.0f,    15.0f,    75.0f, 75.0f};
-    float two_pose[4] =     {250.0f,    - 25.0f, 75.0f, 75.0f};
-    float three_pose[4] =   {245.0f,    - 55.0f, 75.0f, 75.0f};
-    float four_pose[4] =    {225.0f,    15.0f,   65.0f, 75.0f};
-    float five_pose[4] =    {225.0f,    -25.0f,    65.0f, 75.0f};
-    float six_pose[4] =     {225.0f,    - 55.0f, 62.0f, 75.0f};
-    float seven_pose[4] =   {200.0f,    20.0f,   62.0f, 75.0f};
-    float eight_pose[4] =   {200.0f,    -20.0f,    62.0f, 75.0f};
-    float nine_pose[4] =    {200.0f,    - 55.0f, 62.0f, 75.0f};
-
-    float *board_pose_list[10] = {
-        zero_pose,
-        one_pose,
-        two_pose,
-        three_pose,
-        four_pose,
-        five_pose,
-        six_pose,
-        seven_pose,
-        eight_pose,
-        nine_pose,
-    };
-
-    float black_one[4]   =    {250.0f,   60.0f,  80.0f,  75.0f};
-    float black_two[4]   =    {225.0f,   65.0f,  65.0f,  75.0f};
-    float black_three[4] =    {200.0f,   70.0f,  60.0f,  75.0f};
-    float black_four[4]  =   {175.0f,    75.0f,  60.0f,  75.0f};
-    float black_five[4]  =   {140.0f,    85.0f,  60.0f,  75.0f};
-    float white_one[4]   =  {240.0f,    - 105.0f,75.0f,  75.0f};
-    float white_two[4]   =  {220.0f,    - 105.0f,    67.0f,  75.0f};
-    float white_three[4] =  {190.0f ,   - 110.0f,    65.0f,  75.0f};
-    float white_four[4]  =  {165.0f ,   - 115.0f,    60.0f,  75.0f};
-    float white_five[4]  =  {135.0f ,   - 120.0f,   60.0f,  75.0f};
-
-    float *chess_pose_list[10] = {
-        black_one,
-        black_two,
-        black_three,
-        black_four,
-        black_five,
-        white_one,
-        white_two,
-        white_three,
-        white_four,
-        white_five,
-    };
-    float target_pose[4] = {
-        220.0f,
-       -10.0f,
-        25.0f,
-        90.0f,
-    };
-    int temp_i = 1 ;
-    int temp_j = 0 ;
-    Four_degree_of_freedom_calculation(&arm, board_pose_list[0], servo_angle);
-    set_all_target(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
-    osDelay(2000U);
-
-
+    float aim_pose_array[4] = {0};
+    uint8_t last_action = 0;
+    float last_aim_pose_array[4] = {0};
 
     for (;;) {
+        aim_pose_array[0] = aim_pose.x;
+        aim_pose_array[1] = aim_pose.y;
+        aim_pose_array[2] = aim_pose.z;
+        aim_pose_array[3] = aim_pose.phi;
 
-        // osDelay(2000U);
-        //
-        // servo_angle[0] = 0;
-        // servo_angle[1] = 30;
-        // servo_angle[2] = 30;
-        // servo_angle[3] = 30;
-        //
-        // send_all_servo(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
-        // osDelay(1000U);
+        if (memcmp(aim_pose_array,last_aim_pose_array,sizeof(aim_pose_array))!= 0)
+        {
+            if (Four_degree_of_freedom_calculation(&arm, aim_pose_array, servo_angle))
+            {
+                set_all_target(servo_1, servo_2, servo_3, servo_4,servo_angle, 1000U);
+                LED_GREEN_SET();
+            }
+            else
+            {
+                usb->usb_printf(usb,"1");
+                LED_RED_SET();
+            }
 
-        Four_degree_of_freedom_calculation(&arm, target_pose, servo_angle);
-        // Four_degree_of_freedom_calculation(&arm, board_pose_list[9], servo_angle);
-        // Four_degree_of_freedom_calculation(&arm, board_pose_list[9], servo_angle);
-        //
-        // Four_degree_of_freedom_calculation(&arm , chess_pose_list[9], servo_angle);
-        set_all_target(servo_1, servo_2, servo_3, servo_4, servo_angle, 1000U);
-        osDelay(2000U);
-        //
-        // move_a_to_b(servo_1, servo_2, servo_3, servo_4,board_pose_list[0], chess_pose_list[temp_j]);
-        // pick_chess(pump,valve);
-        // osDelay(2000U);
-        //
-        // move_a_to_b(servo_1,servo_2,servo_3,servo_4,chess_pose_list[temp_j],board_pose_list[temp_i]);
-        // put_chess(pump,valve);
-        // osDelay(2000U);
-        //
-        // move_a_to_b(servo_1,servo_2,servo_3,servo_4,board_pose_list[temp_i],board_pose_list[0]);
-        //
-        // temp_j++;
-        // temp_j = temp_j % 10;
-        //
-        // temp_i ++ ;
-        // temp_i = temp_i % 10;
-        // if (temp_i == 0)
-        // {
-        //     temp_i ++;
-        // }
+        }
 
+        if (aim_pose.action == 1 && last_action != 1)
+        {
+            pick_chess(pump,valve);
+        }
+        else if (aim_pose.action == 2 && last_action != 2)
+        {
+            put_chess(pump,valve);
+        }
+        else if (aim_pose.action == 3)
+        {
+            valve->disable(valve);
+            pump->disable(pump);
+        }
+
+        last_action = aim_pose.action;
+        memcpy(last_aim_pose_array,aim_pose_array,sizeof(aim_pose_array));
+
+        osDelay(1);
     }
 }
