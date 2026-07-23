@@ -1,5 +1,0 @@
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088Middleware.c:5:6:BMI088_GPIO_init	8	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088Middleware.c:16:6:BMI088_com_init	4	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088Middleware.c:31:6:BMI088_delay_ms	16	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088Middleware.c:43:6:BMI088_delay_us	24	static,ignoring_inline_asm
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088Middleware.c:60:9:BMI088_read_write_byte	32	static

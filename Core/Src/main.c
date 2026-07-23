@@ -131,13 +131,10 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-   LED_init();
-   can_init();
-   Motor_System_PowerOn_Init();
-  // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_SET);
-   LED_SKY_SET();
-   // HAL_Delay(2000);
-   // LED_off();
+  LED_init();
+  can_init();
+  Motor_System_PowerOn_Init();
+  LED_SKY_SET();
 
 
   /* USER CODE END 2 */

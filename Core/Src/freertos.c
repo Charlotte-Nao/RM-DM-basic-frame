@@ -91,6 +91,13 @@ const osThreadAttr_t vacuum_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for motor */
+osThreadId_t motorHandle;
+const osThreadAttr_t motor_attributes = {
+  .name = "motor",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityBelowNormal,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -103,6 +110,7 @@ void usb_entry(void *argument);
 void test_task_entry(void *argument);
 void servo_entry(void *argument);
 void vacuum_entry(void *argument);
+void motor_entry(void *argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -180,6 +188,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of vacuum */
   vacuumHandle = osThreadNew(vacuum_entry, NULL, &vacuum_attributes);
+
+  /* creation of motor */
+  motorHandle = osThreadNew(motor_entry, NULL, &motor_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -305,6 +316,25 @@ void vacuum_entry(void *argument)
     osDelay(1);
   }
   /* USER CODE END vacuum_entry */
+}
+
+/* USER CODE BEGIN Header_motor_entry */
+/**
+* @brief Function implementing the motor thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_motor_entry */
+void motor_entry(void *argument)
+{
+  /* USER CODE BEGIN motor_entry */
+  /* Infinite loop */
+  for(;;)
+  {
+    motor_task();
+    osDelay(1);
+  }
+  /* USER CODE END motor_entry */
 }
 
 /* Private application code --------------------------------------------------*/

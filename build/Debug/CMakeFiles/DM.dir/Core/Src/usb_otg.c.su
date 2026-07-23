@@ -1,3 +1,0 @@
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/Core/Src/usb_otg.c:31:6:MX_USB_OTG_HS_PCD_Init	8	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/Core/Src/usb_otg.c:61:6:HAL_PCD_MspInit	24	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/Core/Src/usb_otg.c:86:6:HAL_PCD_MspDeInit	16	static

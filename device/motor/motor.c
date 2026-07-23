@@ -50,6 +50,7 @@ typedef struct {
     pid_t velocity_pid;
     float target_position_rad;
     float target_velocity_rpm;  //速度前馈
+    float auto_ff_velocity_rpm; //自适应速度前馈
     float position_rad;
     float velocity_rpm;
     float torque_current;
@@ -217,6 +218,7 @@ static void gm6020_enable(struct motor_device *motor)
     /* Prevent a stored target from commanding a jump after re-enable. */
     data->target_position_rad = data->position_rad;
     data->target_velocity_rpm = 0.0f;
+    data->auto_ff_velocity_rpm = 0.0f;
     pid_reset(&data->position_pid);
     pid_reset(&data->velocity_pid);
     data->last_update_tick = 0U;
@@ -236,6 +238,7 @@ static void gm6020_disable(struct motor_device *motor)
     data->output_voltage = 0.0f;
     data->target_position_rad = data->position_rad;
     data->target_velocity_rpm = 0.0f;
+    data->auto_ff_velocity_rpm = 0.0f;
     pid_reset(&data->position_pid);
     pid_reset(&data->velocity_pid);
     data->last_update_tick = 0U;
@@ -248,6 +251,12 @@ static void gm6020_update(struct motor_device *motor)
     gm6020_data_t *data;
     float position_error;
     float desired_velocity;
+    float max_omega_rad_s;
+    float ff_gain;
+    float ff_alpha;
+    float max_step;
+    float step;
+    float raw_target_velocity_rpm;
     float dt;
     uint32_t now;
 
@@ -260,6 +269,7 @@ static void gm6020_update(struct motor_device *motor)
         data->output_voltage = 0.0f;
         pid_reset(&data->position_pid);
         pid_reset(&data->velocity_pid);
+        data->auto_ff_velocity_rpm = 0.0f;
         data->last_update_tick = 0U;
         return;
     }
@@ -278,8 +288,30 @@ static void gm6020_update(struct motor_device *motor)
         { position_error -= MOTOR_TWO_PI; }
     while (position_error < -3.14159265358979323846f)
         { position_error += MOTOR_TWO_PI; }
+
+    max_omega_rad_s = 6.0f;
+    ff_gain = 0.6f;
+    ff_alpha = 0.05f;
+    if (motor->motor_id == CAN_GM6020_PITCH_ID) {
+        max_omega_rad_s = 6.5f;
+        ff_gain = 0.7f;
+        ff_alpha = 0.06f;
+    } else if (motor->motor_id == CAN_GM6020_YAW_ID) {
+        max_omega_rad_s = 6.0f;
+        ff_gain = 0.6f;
+        ff_alpha = 0.05f;
+    }
+
+    max_step = max_omega_rad_s * dt;
+    step = clamp_float(position_error, -max_step, max_step);
+    raw_target_velocity_rpm = (step / dt) * 9.549296f;
+    data->auto_ff_velocity_rpm =
+        ff_alpha * raw_target_velocity_rpm +
+        (1.0f - ff_alpha) * data->auto_ff_velocity_rpm;
+
     desired_velocity = pid_update(&data->position_pid, position_error, 0.0f, dt);
-    desired_velocity += data->target_velocity_rpm;
+    desired_velocity += data->target_velocity_rpm +
+                        ff_gain * data->auto_ff_velocity_rpm;
     desired_velocity = clamp_float(desired_velocity,
                                    -GM6020_SPEED_LIMIT_RPM, GM6020_SPEED_LIMIT_RPM);
     data->output_voltage = pid_update(&data->velocity_pid, desired_velocity,
@@ -516,23 +548,24 @@ static void dm4310_set_para(const struct motor_device *motor, const char *which,
 // 6020pitch实例化
 static const gm6020_pid_config_t gm6020_pitch_pid_config = {
     .position_pid = {
-        .kp = 130.0f, .ki = 0.0f,
+        .kp = 400.0f,
+        .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 0.0f,
         .output_limit = GM6020_SPEED_LIMIT_RPM,
         .derivative_filter_alpha = 0.5f,
-        .deadband = 0.002f,
+        .deadband = 0.0f,
         .integral_separation_threshold = 0.0f,
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 110.0f,
-        .ki = 0.0f,
+        .kp = 75.0f,
+        .ki = 6.0f,
         .kd = 0.0f,
         .integral_limit = 3000.0f,
         .output_limit = GM6020_OUTPUT_LIMIT,
         .derivative_filter_alpha = 0.5f,
-        .deadband = 0.2f,
+        .deadband = 0.0f,
         .integral_separation_threshold = 100.0f,
         .variable_integration_threshold = 50.0f,
     },
@@ -560,23 +593,24 @@ static struct motor_device gm6020_pitch = {
 //6020yaw实例化
 static const gm6020_pid_config_t gm6020_yaw_pid_config = {
     .position_pid = {
-        .kp = 130.0f, .ki = 0.0f,
+        .kp = 400.0f,
+        .ki = 0.0f,
         .kd = 0.0f,
-        .integral_limit = 0.0f,
+        .integral_limit = 10.0f,
         .output_limit = GM6020_SPEED_LIMIT_RPM,
-        .derivative_filter_alpha = 0.5f,
-        .deadband = 0.002f,
+        .derivative_filter_alpha = 0.2f,
+        .deadband = 0.0f,
         .integral_separation_threshold = 0.0f,
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 110.0f,
-        .ki = 0.0f,
+        .kp = 90.0f,
+        .ki = 4.0f,
         .kd = 0.0f,
         .integral_limit = 3000.0f,
         .output_limit = GM6020_OUTPUT_LIMIT,
         .derivative_filter_alpha = 0.5f,
-        .deadband = 1.0f,
+        .deadband = 0.0f,
         .integral_separation_threshold = 100.0f,
         .variable_integration_threshold = 50.0f,
     },

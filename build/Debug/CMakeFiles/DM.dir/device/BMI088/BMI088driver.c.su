@@ -1,8 +1,0 @@
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088driver.c:10:13:accel_write_single_reg	16	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088driver.c:27:13:accel_read_muli_reg	16	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088driver.c:55:16:accel_read_single_reg	24	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088driver.c:66:13:gyro_write_single_reg	16	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088driver.c:80:13:gyro_read_muli_reg	16	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088driver.c:106:16:gyro_read_single_reg	24	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088driver.c:116:9:BMI088_init	16	static
-/media/charlotte/E2A28D2BA28D04EF/linux共享分区/电赛/2024_e/DM-MC/device/BMI088/BMI088driver.c:254:6:BMI088_read	40	static
