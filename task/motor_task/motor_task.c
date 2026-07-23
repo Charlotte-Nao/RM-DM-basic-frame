@@ -13,8 +13,8 @@ void motor_task(void)
 {
     uint32_t next_wake_tick = osKernelGetTickCount();
 
-    for (;;)
-    {
+    for (;;) {
+        Motor_All_Trace_Update();
         Motor_All_Update();
 
         next_wake_tick += MOTOR_TASK_PERIOD_MS;

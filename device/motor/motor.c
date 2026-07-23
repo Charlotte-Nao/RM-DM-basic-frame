@@ -14,13 +14,18 @@
 
 #define MOTOR_CONTROL_DT_DEFAULT_S       0.001f
 #define MOTOR_OFFLINE_TIMEOUT_MS         100U
-#define MOTOR_TWO_PI                     6.28318530717958647692f
 
 #define GM6020_CONTROL_GROUP_ID          0x1FFU
-#define GM6020_ENCODER_RESOLUTION         8192.0f
-#define GM6020_OUTPUT_LIMIT               25000.0f
-#define GM6020_SPEED_LIMIT_RPM            320.0f
-#define GM6020_TRACE_POSITION_EPSILON_RAD 1.0e-5f
+#define GM6020_ENCODER_RESOLUTION        8192.0f
+#define GM6020_OUTPUT_LIMIT              25000.0f
+#define GM6020_SPEED_LIMIT_RPM           320.0f
+
+#define GM6020_TRACE_POSITION_EPSILON_RAD \
+    (TWO_PI / GM6020_ENCODER_RESOLUTION)
+
+#define GM6020_TRACE_MAX_ACCELERATION_RAD_S2    300.0f
+#define GM6020_QUINTIC_PEAK_VELOCITY_FACTOR     1.875f
+#define GM6020_QUINTIC_PEAK_ACCELERATION_FACTOR 5.773502691896258f
 
 #define DM4310_COMMAND_ID                 CAN_J4310_PITCH_ID
 #define DM4310_P_MAX                      12.5f
@@ -64,7 +69,6 @@ typedef struct {
     pid_t velocity_pid;
     float target_position_rad;
     float target_velocity_rpm;  //速度前馈
-    float auto_ff_velocity_rpm; //自适应速度前馈
     gm6020_trace_t trace;
     float position_rad;
     float velocity_rpm;
@@ -144,15 +148,34 @@ static float clamp_float(float value, float minimum, float maximum)
     return value;
 }
 
+static float abs_float(float value)
+{
+    return (value >= 0.0f) ? value : -value;
+}
+
+static float motor_sqrt_float(float value)
+{
+    float estimate;
+    uint32_t index;
+
+    if (value <= 0.0f) {
+        return 0.0f;
+    }
+
+    estimate = (value >= 1.0f) ? value : 1.0f;
+    for (index = 0U; index < 8U; ++index) {
+        estimate = 0.5f * (estimate + value / estimate);
+    }
+    return estimate;
+}
+
 static float gm6020_wrap_to_pi(float angle_rad)
 {
-    const float pi = MOTOR_TWO_PI * 0.5f;
-
-    while (angle_rad > pi) {
-        angle_rad -= MOTOR_TWO_PI;
+    while (angle_rad > PI) {
+        angle_rad -= TWO_PI;
     }
-    while (angle_rad < -pi) {
-        angle_rad += MOTOR_TWO_PI;
+    while (angle_rad < -PI) {
+        angle_rad += TWO_PI;
     }
     return angle_rad;
 }
@@ -220,7 +243,8 @@ static void gm6020_feedback_calculate(const struct motor_device *motor,
     data->speed_rpm = (int16_t)(((uint16_t)frame[2] << 8) | frame[3]);
     data->current = (int16_t)(((uint16_t)frame[4] << 8) | frame[5]);
     data->temperature = frame[6];
-    data->position_rad = (float)data->encoder * MOTOR_TWO_PI / GM6020_ENCODER_RESOLUTION;
+    data->position_rad =
+        (float)data->encoder * TWO_PI / GM6020_ENCODER_RESOLUTION;
     data->velocity_rpm = (float)data->speed_rpm;
     data->torque_current = (float)data->current;
 }
@@ -239,17 +263,22 @@ static void gm6020_send_ctrl_cmd(struct motor_device *motor)
 static void gm6020_enable(struct motor_device *motor)
 {
     gm6020_data_t *data;
-    if (motor == NULL || motor->motor_data == NULL) { return; }
-    /* Position is unknown until the first feedback frame: never enable blindly. */
-    if (!motor_is_online(motor)) { return; }
+
+    if (motor == NULL || motor->motor_data == NULL) {
+        return;
+    }
+    if (!motor_is_online(motor)) {
+        return;
+    }
+
     data = motor->motor_data;
-    /* Prevent a stored target from commanding a jump after re-enable. */
     data->target_position_rad = data->position_rad;
     data->target_velocity_rpm = 0.0f;
-    data->auto_ff_velocity_rpm = 0.0f;
     data->trace.active = 0U;
+
     pid_reset(&data->position_pid);
     pid_reset(&data->velocity_pid);
+
     data->last_update_tick = 0U;
     data->enabled = 1U;
 }
@@ -262,16 +291,19 @@ static void gm6020_disable(struct motor_device *motor)
     if (motor == NULL || motor->motor_data == NULL) {
         return;
     }
+
     data = motor->motor_data;
     data->enabled = 0U;
     data->output_voltage = 0.0f;
     data->target_position_rad = data->position_rad;
     data->target_velocity_rpm = 0.0f;
-    data->auto_ff_velocity_rpm = 0.0f;
     data->trace.active = 0U;
+
     pid_reset(&data->position_pid);
     pid_reset(&data->velocity_pid);
+
     data->last_update_tick = 0U;
+
     gm6020_send_ctrl_cmd(motor);
 }
 
@@ -280,72 +312,73 @@ static void gm6020_update(struct motor_device *motor)
 {
     gm6020_data_t *data;
     float position_error;
-    float desired_velocity;
-    float max_omega_rad_s;
-    float ff_gain;
-    float ff_alpha;
-    float max_step;
-    float step;
-    float raw_target_velocity_rpm;
+    float position_velocity_correction_rpm;
+    float desired_velocity_rpm;
     float dt;
     uint32_t now;
 
     if (motor == NULL || motor->motor_data == NULL) {
         return;
     }
+
     data = motor->motor_data;
-    if (data->enabled == 0U || motor->last_rx_tick == 0U ||
+
+    if (data->enabled == 0U ||
+        motor->last_rx_tick == 0U ||
         (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_TIMEOUT_MS) {
         data->output_voltage = 0.0f;
+        data->target_position_rad = data->position_rad;
+        data->target_velocity_rpm = 0.0f;
+        data->trace.active = 0U;
+
         pid_reset(&data->position_pid);
         pid_reset(&data->velocity_pid);
-        data->auto_ff_velocity_rpm = 0.0f;
+
         data->last_update_tick = 0U;
         return;
     }
 
     now = HAL_GetTick();
+
     if (data->last_update_tick == 0U) {
         dt = MOTOR_CONTROL_DT_DEFAULT_S;
     } else {
         dt = (float)(now - data->last_update_tick) * 0.001f;
         dt = clamp_float(dt, 0.0001f, 0.020f);
     }
+
     data->last_update_tick = now;
 
     position_error = gm6020_wrap_to_pi(
         data->target_position_rad - data->position_rad
     );
 
-    max_omega_rad_s = 6.0f;
-    ff_gain = 0.6f;
-    ff_alpha = 0.05f;
-    if (motor->motor_id == CAN_GM6020_PITCH_ID) {
-        max_omega_rad_s = 6.5f;
-        ff_gain = 0.7f;
-        ff_alpha = 0.06f;
-    } else if (motor->motor_id == CAN_GM6020_YAW_ID) {
-        max_omega_rad_s = 6.0f;
-        ff_gain = 0.6f;
-        ff_alpha = 0.05f;
-    }
+    position_velocity_correction_rpm = pid_update(
+        &data->position_pid,
+        position_error,
+        0.0f,
+        dt
+    );
 
-    max_step = max_omega_rad_s * dt;
-    step = clamp_float(position_error, -max_step, max_step);
-    raw_target_velocity_rpm = (step / dt) * 9.549296f;
-    data->auto_ff_velocity_rpm =
-        ff_alpha * raw_target_velocity_rpm +
-        (1.0f - ff_alpha) * data->auto_ff_velocity_rpm;
+    desired_velocity_rpm =
+        data->target_velocity_rpm +
+        position_velocity_correction_rpm;
 
-    desired_velocity = pid_update(&data->position_pid, position_error, 0.0f, dt);
-    desired_velocity += data->target_velocity_rpm +
-                        ff_gain * data->auto_ff_velocity_rpm;
-    desired_velocity = clamp_float(desired_velocity,
-                                   -GM6020_SPEED_LIMIT_RPM, GM6020_SPEED_LIMIT_RPM);
-    data->output_voltage = pid_update(&data->velocity_pid, desired_velocity,
-                                      data->velocity_rpm, dt);
+    desired_velocity_rpm = clamp_float(
+        desired_velocity_rpm,
+        -GM6020_SPEED_LIMIT_RPM,
+        GM6020_SPEED_LIMIT_RPM
+    );
+
+    data->output_voltage = pid_update(
+        &data->velocity_pid,
+        desired_velocity_rpm,
+        data->velocity_rpm,
+        dt
+    );
 }
 
+// 设定轨迹
 static void gm6020_trace_set_target(const struct motor_device *motor,
                                     float target_position_rad,
                                     float target_velocity_rpm)
@@ -360,6 +393,43 @@ static void gm6020_trace_set_target(const struct motor_device *motor,
     data->target_velocity_rpm = target_velocity_rpm;
 }
 
+static float gm6020_trace_resolve_duration(float delta_position_rad,
+                                           float requested_duration_s)
+{
+    float distance_rad;
+    float maximum_velocity_rad_s;
+    float minimum_velocity_duration_s;
+    float minimum_acceleration_duration_s;
+    float actual_duration_s;
+
+    distance_rad = abs_float(delta_position_rad);
+    maximum_velocity_rad_s =
+        GM6020_SPEED_LIMIT_RPM * RPM_TO_RAD_S;
+    minimum_velocity_duration_s =
+        GM6020_QUINTIC_PEAK_VELOCITY_FACTOR *
+        distance_rad /
+        maximum_velocity_rad_s;
+    minimum_acceleration_duration_s = motor_sqrt_float(
+        GM6020_QUINTIC_PEAK_ACCELERATION_FACTOR *
+        distance_rad /
+        GM6020_TRACE_MAX_ACCELERATION_RAD_S2
+    );
+
+    actual_duration_s = requested_duration_s;
+    if (actual_duration_s < minimum_velocity_duration_s) {
+        actual_duration_s = minimum_velocity_duration_s;
+    }
+    if (actual_duration_s < minimum_acceleration_duration_s) {
+        actual_duration_s = minimum_acceleration_duration_s;
+    }
+    if (actual_duration_s < MOTOR_CONTROL_DT_DEFAULT_S) {
+        actual_duration_s = MOTOR_CONTROL_DT_DEFAULT_S;
+    }
+
+    return actual_duration_s;
+}
+
+// 生成曲线
 static void gm6020_set_trace(const struct motor_device *motor,
                              float target_position_rad,
                              float duration_s)
@@ -370,19 +440,27 @@ static void gm6020_set_trace(const struct motor_device *motor,
     if (motor == NULL || motor->motor_data == NULL) {
         return;
     }
+
     data = motor->motor_data;
-    if (!motor_is_online(motor) || data->enabled == 0U || duration_s <= 0.0f) {
+    if (!motor_is_online(motor) ||
+        data->enabled == 0U ||
+        duration_s <= 0.0f) {
         return;
     }
 
     data->trace.start_position_rad = data->position_rad;
     delta_position_rad = gm6020_wrap_to_pi(
-        target_position_rad - data->trace.start_position_rad
+        target_position_rad -
+        data->trace.start_position_rad
     );
     data->trace.delta_position_rad = delta_position_rad;
     data->trace.end_position_rad =
-        data->trace.start_position_rad + delta_position_rad;
-    data->trace.duration_s = duration_s;
+        data->trace.start_position_rad +
+        delta_position_rad;
+    data->trace.duration_s = gm6020_trace_resolve_duration(
+        delta_position_rad,
+        duration_s
+    );
     data->trace.position_ref_rad = data->trace.start_position_rad;
     data->trace.velocity_ref_rad_s = 0.0f;
     data->trace.acceleration_ref_rad_s2 = 0.0f;
@@ -397,6 +475,87 @@ static void gm6020_set_trace(const struct motor_device *motor,
 
     data->trace.active = 1U;
     gm6020_trace_set_target(motor, data->trace.start_position_rad, 0.0f);
+}
+
+static void gm6020_trace_update(struct motor_device *motor)
+{
+    gm6020_data_t *data;
+    gm6020_trace_t *trace;
+    float elapsed_s;
+    float normalized_time;
+    float normalized_time_2;
+    float normalized_time_3;
+    float normalized_time_4;
+    float normalized_time_5;
+    float position_scale;
+    float velocity_scale;
+    float acceleration_scale;
+
+    if (motor == NULL || motor->motor_data == NULL) {
+        return;
+    }
+
+    data = motor->motor_data;
+    trace = &data->trace;
+    if (trace->active == 0U) {
+        return;
+    }
+
+    if (data->enabled == 0U || !motor_is_online(motor)) {
+        trace->active = 0U;
+        data->target_position_rad = data->position_rad;
+        data->target_velocity_rpm = 0.0f;
+        return;
+    }
+
+    elapsed_s =
+        (float)(HAL_GetTick() - trace->start_tick) * 0.001f;
+    if (elapsed_s >= trace->duration_s) {
+        trace->position_ref_rad = trace->end_position_rad;
+        trace->velocity_ref_rad_s = 0.0f;
+        trace->acceleration_ref_rad_s2 = 0.0f;
+        trace->active = 0U;
+        gm6020_trace_set_target(motor, trace->end_position_rad, 0.0f);
+        return;
+    }
+
+    normalized_time = elapsed_s / trace->duration_s;
+    normalized_time = clamp_float(normalized_time, 0.0f, 1.0f);
+    normalized_time_2 = normalized_time * normalized_time;
+    normalized_time_3 = normalized_time_2 * normalized_time;
+    normalized_time_4 = normalized_time_3 * normalized_time;
+    normalized_time_5 = normalized_time_4 * normalized_time;
+
+    position_scale =
+        10.0f * normalized_time_3 -
+        15.0f * normalized_time_4 +
+        6.0f * normalized_time_5;
+    velocity_scale =
+        30.0f * normalized_time_2 -
+        60.0f * normalized_time_3 +
+        30.0f * normalized_time_4;
+    acceleration_scale =
+        60.0f * normalized_time -
+        180.0f * normalized_time_2 +
+        120.0f * normalized_time_3;
+
+    trace->position_ref_rad =
+        trace->start_position_rad +
+        trace->delta_position_rad * position_scale;
+    trace->velocity_ref_rad_s =
+        trace->delta_position_rad /
+        trace->duration_s *
+        velocity_scale;
+    trace->acceleration_ref_rad_s2 =
+        trace->delta_position_rad /
+        (trace->duration_s * trace->duration_s) *
+        acceleration_scale;
+
+    gm6020_trace_set_target(
+        motor,
+        trace->position_ref_rad,
+        trace->velocity_ref_rad_s * RAD_S_TO_RPM
+    );
 }
 
 // 设置目标位置，参数顺序为目标位置，速度前馈
@@ -674,7 +833,7 @@ static struct motor_device gm6020_pitch = {
     .update = gm6020_update,
     .set_target = gm6020_set_target,
     .set_trace = gm6020_set_trace,
-    .trace_update = NULL,
+    .trace_update = gm6020_trace_update,
     .get_status = gm6020_get_status,
     .set_para = gm6020_set_para,
 };
@@ -721,7 +880,7 @@ static struct motor_device gm6020_yaw = {
     .update = gm6020_update,
     .set_target = gm6020_set_target,
     .set_trace = gm6020_set_trace,
-    .trace_update = NULL,
+    .trace_update = gm6020_trace_update,
     .get_status = gm6020_get_status,
     .set_para = gm6020_set_para,
 };
@@ -814,6 +973,17 @@ void Motor_System_PowerOn_Init(void)
     gm6020_yaw.init(&gm6020_yaw, CAN_GM6020_YAW_ID, &hfdcan1, 0);
     gm6020_pitch.send_disable_cmd(&gm6020_pitch);
     gm6020_yaw.send_disable_cmd(&gm6020_yaw);
+}
+
+void Motor_All_Trace_Update(void)
+{
+    uint32_t index;
+
+    for (index = 0U; index < Motor_Get_Count(); ++index) {
+        if (motor_list[index]->trace_update != NULL) {
+            motor_list[index]->trace_update(motor_list[index]);
+        }
+    }
 }
 
 void Motor_All_Update(void)

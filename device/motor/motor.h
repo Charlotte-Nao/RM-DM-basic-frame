@@ -59,6 +59,9 @@ bool motor_is_online(const struct motor_device *motor);
 /** Initialise the two registered devices in a disabled, zero-output state. */
 void Motor_System_PowerOn_Init(void);
 
+/** Update active trajectory references before running the motor controllers. */
+void Motor_All_Trace_Update(void);
+
 /** Call periodically from one control task (nominally 1 kHz). */
 void Motor_All_Update(void);
 
