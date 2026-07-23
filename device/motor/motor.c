@@ -373,6 +373,7 @@ static void gm6020_trace_set_target(const struct motor_device *motor,
     data->target_velocity_rpm = target_velocity_rpm;
 }
 
+// 得到轨迹需要的时间
 static float gm6020_trace_resolve_duration(float delta_position_rad, float requested_duration_s)
 {
     float distance_rad;
@@ -400,7 +401,7 @@ static float gm6020_trace_resolve_duration(float delta_position_rad, float reque
     return actual_duration_s;
 }
 
-// 生成曲线
+// 初始化生成轨迹参数
 static void gm6020_set_trace(const struct motor_device *motor,
                              float target_position_rad,
                              float duration_s)
