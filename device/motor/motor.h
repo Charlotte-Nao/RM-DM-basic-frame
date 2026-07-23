@@ -30,6 +30,12 @@ struct motor_device {
     void (*send_ctrl_cmd)(struct motor_device *motor);
     void (*update)(struct motor_device *motor);
     void (*set_target)(const struct motor_device *motor, int para_num, ...);
+
+    void (*set_trace)(const struct motor_device *motor,
+                      float target_position_rad,
+                      float duration_s);
+    void (*trace_update)(struct motor_device *motor);
+
     void (*get_status)(const struct motor_device *motor, const char *which_status,
                        void *status_data);
     void (*set_para)(const struct motor_device *motor, const char *which_para,

@@ -41,24 +41,27 @@ float pid_update(pid_t *pid, float target, float feedback, float dt)
     }
 
     error = target - feedback;
+
+    // 死区限制
     if (pid->deadband > 0.0f && error < pid->deadband && error > -pid->deadband) {
         error = 0.0f;
     }
+
+    // 初次进行pid
     if (pid->initialized != 0U) {
         raw_derivative = (error - pid->previous_error) / dt;
-    } else {
+    }
+    else {
         pid->initialized = 1U;
     }
-    pid->filtered_derivative = pid->derivative_filter_alpha * raw_derivative
-                             + (1.0f - pid->derivative_filter_alpha)
-                             * pid->filtered_derivative;
 
-    /* Integral separation plus variable integration reduce large-error windup. */
-    if (pid->integral_separation_threshold > 0.0f &&
-        (error > pid->integral_separation_threshold ||
-         error < -pid->integral_separation_threshold)) {
+    // 积分分离
+    if (pid->integral_separation_threshold > 0.0f && (error > pid->integral_separation_threshold || error < -pid->integral_separation_threshold))
+    {
         integral_scale = 0.0f;
-    } else if (pid->variable_integration_threshold > 0.0f) {
+    }
+    // 变积分
+    else if (pid->variable_integration_threshold > 0.0f) {
         float abs_error = (error >= 0.0f) ? error : -error;
         float threshold = pid->variable_integration_threshold;
         if (abs_error >= 2.0f * threshold) {
@@ -67,19 +70,22 @@ float pid_update(pid_t *pid, float target, float feedback, float dt)
             integral_scale = 2.0f - abs_error / threshold;
         }
     }
+    candidate_integral = pid_limit(pid->integral + error * dt * integral_scale, pid->integral_limit);
 
-    candidate_integral = pid_limit(pid->integral + error * dt * integral_scale,
-                                   pid->integral_limit);
-    candidate_output = pid->kp * error + pid->ki * candidate_integral
-                     + pid->kd * pid->filtered_derivative;
-    /* Conditional integration: retain the old integral if it would deepen saturation. */
+    //微分滤波
+    pid->filtered_derivative = pid->derivative_filter_alpha * raw_derivative + (1.0f - pid->derivative_filter_alpha) * pid->filtered_derivative;
+
+    candidate_output = pid->kp * error + pid->ki * candidate_integral + pid->kd * pid->filtered_derivative;
+
     if (!((pid->output_limit > 0.0f && candidate_output > pid->output_limit && error * pid->ki > 0.0f) ||
-          (pid->output_limit > 0.0f && candidate_output < -pid->output_limit && error * pid->ki < 0.0f))) {
+        (pid->output_limit > 0.0f && candidate_output < -pid->output_limit && error * pid->ki < 0.0f)))
+    {
         pid->integral = candidate_integral;
     }
+
     pid->previous_error = error;
 
-    output = pid->kp * error + pid->ki * pid->integral
-           + pid->kd * pid->filtered_derivative;
+    output = pid->kp * error + pid->ki * pid->integral + pid->kd * pid->filtered_derivative;
+
     return pid_limit(output, pid->output_limit);
 }

@@ -6,6 +6,7 @@
 #define DM_MATH_H
 
 #define PI                  3.14159265358979323846f
+#define TWO_PI               PI * 2
 #define DEG_TO_RAD          (PI / 180.0f)
 #define RAD_TO_DEG          (180.0f / PI)
 
