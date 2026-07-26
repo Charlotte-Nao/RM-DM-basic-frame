@@ -325,7 +325,7 @@ static void gm6020_update(struct motor_device *motor)
     float position_error;
     float position_pid_out_rpm;
     float velocity_pid_out_rpm;
-    float output_current;
+    float output_current_code;
     float all_torque;
     float acc_torque;
     float grativity_torque;
@@ -373,7 +373,7 @@ static void gm6020_update(struct motor_device *motor)
 
     velocity_pid_out_rpm = clamp_float(velocity_pid_out_rpm, -GM6020_SPEED_LIMIT_RPM, GM6020_SPEED_LIMIT_RPM);
 
-    output_current = pid_update(&data->velocity_pid, velocity_pid_out_rpm, data->velocity_rpm, dt);
+    output_current_code = pid_update(&data->velocity_pid, velocity_pid_out_rpm, data->velocity_rpm, dt);
 
     acc_torque =  data->target_acceleration_rad_s2 * data->rotational_inertia_kg_m2;
 
@@ -385,9 +385,9 @@ static void gm6020_update(struct motor_device *motor)
 
     ff_current = all_torque / data->K_t_Nm_A;
 
-    output_current = output_current + ff_current;
+    output_current_code = output_current_code + ff_current * 16384 / 3;;
 
-    data->output_current_code = output_current * 16384 / 3;
+    data->output_current_code = output_current_code;
 
     if (data->output_current_code > 16384)
     {data->output_current_code = 16384;}
@@ -583,7 +583,9 @@ static void gm6020_get_status(const struct motor_device *motor, const char *whic
     if (strcmp(which, "POS") == 0) { *(float *)value = data->position_rad; }
     else if (strcmp(which, "VEL") == 0) { *(float *)value = data->velocity_rpm; }
     else if (strcmp(which, "TEMP") == 0) { *(uint8_t *)value = data->temperature; }
-    else if (strcmp(which, "TARGET") == 0) { *(float *)value = data->target_position_rad; }
+    else if (strcmp(which, "TARGET_POS") == 0) {*(float *)value = data->target_position_rad;}
+    else if (strcmp(which, "TARGET_VEL") == 0) {*(float *)value = data->velocity_rpm;}
+    else if (strcmp(which, "TARGET_ACC") == 0) {*(float *)value = data->target_acceleration_rad_s2;}
     else if (strcmp(which, "ENC") == 0) { *(uint16_t *)value = data->encoder; }
 }
 
