@@ -78,12 +78,15 @@ typedef struct {
     float torque_current;
     float output_current_code;
     uint16_t encoder;
+    uint16_t last_encoder;
     int16_t speed_rpm;
     int16_t current;
     uint8_t temperature;
+    uint8_t encoder_initialized;
     uint8_t enabled;
     uint32_t last_update_tick;
     uint8_t control_slot;               /* GM6020 ID: 1..4 in group 0x1FF. */
+    float position_continuous_rad;
 } gm6020_data_t;
 
 typedef struct {
@@ -244,18 +247,46 @@ static void gm6020_feedback_calculate(const struct motor_device *motor,
                                       const uint8_t frame[8])
 {
     gm6020_data_t *data;
+    uint16_t encoder;
+    int32_t delta_encoder;
 
     if (motor == NULL || motor->motor_data == NULL || frame == NULL) {
         return;
     }
+
     data = motor->motor_data;
-    data->encoder = (uint16_t)(((uint16_t)frame[0] << 8) | frame[1]);
-    data->speed_rpm = (int16_t)(((uint16_t)frame[2] << 8) | frame[3]);
-    data->current = (int16_t)(((uint16_t)frame[4] << 8) | frame[5]);
+
+    encoder = (uint16_t)(((uint16_t)frame[0] << 8) | frame[1]);
+
+    if (data->encoder_initialized == 0U) {
+        data->last_encoder = encoder;
+        data->position_continuous_rad =
+            (float)encoder * TWO_PI / GM6020_ENCODER_RESOLUTION;
+        data->encoder_initialized = 1U;
+    } else {
+        delta_encoder = (int32_t)encoder - (int32_t)data->last_encoder;
+
+        if (delta_encoder > 4096) {
+            delta_encoder -= 8192;
+        } else if (delta_encoder < -4096) {
+            delta_encoder += 8192;
+        }
+
+        data->position_continuous_rad +=
+            (float)delta_encoder * TWO_PI / GM6020_ENCODER_RESOLUTION;
+
+        data->last_encoder = encoder;
+    }
+
+    data->encoder = encoder;
+    data->speed_rpm =
+        (int16_t)(((uint16_t)frame[2] << 8) | frame[3]);
+    data->current =
+        (int16_t)(((uint16_t)frame[4] << 8) | frame[5]);
     data->temperature = frame[6];
-    data->position_rad = (float)data->encoder * TWO_PI / GM6020_ENCODER_RESOLUTION;
+
+    data->position_rad = data->position_continuous_rad;
     data->velocity_rpm = (float)data->speed_rpm;
-    data->torque_current = (float)data->current;
 }
 
 // 打包6020电机数据组帧发送
@@ -584,7 +615,7 @@ static void gm6020_get_status(const struct motor_device *motor, const char *whic
     else if (strcmp(which, "VEL") == 0) { *(float *)value = data->velocity_rpm; }
     else if (strcmp(which, "TEMP") == 0) { *(uint8_t *)value = data->temperature; }
     else if (strcmp(which, "TARGET_POS") == 0) {*(float *)value = data->target_position_rad;}
-    else if (strcmp(which, "TARGET_VEL") == 0) {*(float *)value = data->velocity_rpm;}
+    else if (strcmp(which, "TARGET_VEL") == 0) {*(float *)value = data->target_velocity_rpm;}
     else if (strcmp(which, "TARGET_ACC") == 0) {*(float *)value = data->target_acceleration_rad_s2;}
     else if (strcmp(which, "ENC") == 0) { *(uint16_t *)value = data->encoder; }
 }
@@ -945,7 +976,7 @@ static const gm6020_pid_config_t gm6020_pitch_pid_config = {
 
 static gm6020_data_t gm6020_pitch_data = {
     .pid_config = &gm6020_pitch_pid_config,
-    .rotational_inertia_kg_m2 = 0.005,
+    .rotational_inertia_kg_m2 = 0.0005,
     .K_t_Nm_A = 0.741,
 
 };
@@ -970,7 +1001,7 @@ static struct motor_device gm6020_pitch = {
 //6020yaw实例化
 static const gm6020_pid_config_t gm6020_yaw_pid_config = {
     .position_pid = {
-        .kp = 50.0f,
+        .kp = 0.0f,
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 10.0f,
@@ -981,7 +1012,7 @@ static const gm6020_pid_config_t gm6020_yaw_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 20.0f,
+        .kp = 0.0f,
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 3000.0f,
