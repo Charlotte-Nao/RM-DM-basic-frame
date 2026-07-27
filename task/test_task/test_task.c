@@ -10,6 +10,7 @@
 #include "cmsis_os2.h"
 #include "../../device/YB_SD15M/YB_SD15M.h"
 #include "../../device/motor/motor.h"
+#include "../../dsp/math.h"
 #include "../../device/vacuum/vacuum.h"
 #include "../../dsp/calculation/calculation.h"
 #include "../../application/global_data.h"
@@ -36,11 +37,69 @@ void test_task(void)
     /* 先选择一个固定的0.5 rad位移。 */
     end_pos_rad = start_pos_rad + 3.0f;
 
+
     for (;;) {
+        // set_trace函数
         gm6020_yaw->set_trace(gm6020_yaw, end_pos_rad, 0.02f);
         osDelay(2000U);
 
         gm6020_yaw->set_trace(gm6020_yaw, start_pos_rad, 0.02f);
         osDelay(2000U);
+
+        // 位置阶跃响应：target_pos直接跳变，速度/加速度前馈为0。
+        // gm6020_yaw->set_target(gm6020_yaw, 3, end_pos_rad, 0.0f, 0.0f);
+        // osDelay(2000U);
+        //
+        // gm6020_yaw->set_target(gm6020_yaw, 3, start_pos_rad, 0.0f, 0.0f);
+        // osDelay(2000U);
+
+        // const uint32_t period_ms = 10U;
+        // const uint32_t duration_ms = 2000U;
+        // const float target_velocity_rad_s = 1.0f;
+        // const float target_velocity_rpm = target_velocity_rad_s * RAD_S_TO_RPM;
+        //
+        // for (uint32_t elapsed_ms = 0U;
+        //      elapsed_ms <= duration_ms;
+        //      elapsed_ms += period_ms) {
+        //     float elapsed_s = (float)elapsed_ms * 0.001f;
+        //     float target_pos_rad =
+        //         start_pos_rad + target_velocity_rad_s * elapsed_s;
+        //
+        //     gm6020_yaw->set_target(gm6020_yaw,3,target_pos_rad,target_velocity_rpm,.0f);
+        //     osDelay(period_ms);
+        // }
+        //
+        // gm6020_yaw->set_target(gm6020_yaw, 3, start_pos_rad, 0.0f, 0.0f);
+        // osDelay(1000U);
+
+        // 恒定加速度响应：target_pos按0.5*a*t^2推进，target_vel按a*t增加。
+        // const uint32_t period_ms = 10U;
+        // const uint32_t duration_ms = 2000U;
+        // const float target_acceleration_rad_s2 = 1.0f;
+        //
+        // for (uint32_t elapsed_ms = 0U;
+        //      elapsed_ms <= duration_ms;
+        //      elapsed_ms += period_ms) {
+        //     float elapsed_s = (float)elapsed_ms * 0.001f;
+        //     float target_velocity_rad_s =
+        //         target_acceleration_rad_s2 * elapsed_s;
+        //     float target_pos_rad =
+        //         start_pos_rad +
+        //         0.5f * target_acceleration_rad_s2 * elapsed_s * elapsed_s;
+        //
+        //     gm6020_yaw->set_target(
+        //         gm6020_yaw,
+        //         3,
+        //         target_pos_rad,
+        //         target_velocity_rad_s * RAD_S_TO_RPM,
+        //         target_acceleration_rad_s2);
+        //     osDelay(period_ms);
+        // }
+        //
+        // gm6020_yaw->set_target(gm6020_yaw, 3, start_pos_rad, 0.0f, 0.0f);
+        // osDelay(1000U);
+
+
+
     }
 }
