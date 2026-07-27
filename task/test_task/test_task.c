@@ -34,13 +34,13 @@ void test_task(void)
     gm6020_yaw->get_status(gm6020_yaw, "POS", &start_pos_rad);
 
     /* 先选择一个固定的0.5 rad位移。 */
-    end_pos_rad = start_pos_rad + 2.0f;
+    end_pos_rad = start_pos_rad + 3.0f;
 
     for (;;) {
-        gm6020_yaw->set_trace(gm6020_yaw, end_pos_rad, 0.2f);
+        gm6020_yaw->set_trace(gm6020_yaw, end_pos_rad, 0.02f);
         osDelay(2000U);
 
-        gm6020_yaw->set_trace(gm6020_yaw, start_pos_rad, 0.2f);
+        gm6020_yaw->set_trace(gm6020_yaw, start_pos_rad, 0.02f);
         osDelay(2000U);
     }
 }

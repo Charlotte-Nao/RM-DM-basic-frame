@@ -71,6 +71,7 @@ typedef struct {
     float target_velocity_rpm;  // 速度前馈
     float target_acceleration_rad_s2; // 加速度前馈
     float rotational_inertia_kg_m2;
+    float friction_torque;
     float K_t_Nm_A;
     motor_trace_t trace;
     float position_rad;
@@ -210,6 +211,7 @@ static void gm6020_init(struct motor_device *motor, uint32_t motor_id,
     const gm6020_pid_config_t *pid_config;
     float rotational_inertia_kg_m2;
     float K_t_Nm_A;
+    float friction_torque;
 
     if (motor == NULL || motor->motor_data == NULL || can_handle == NULL) {
         return;
@@ -217,6 +219,7 @@ static void gm6020_init(struct motor_device *motor, uint32_t motor_id,
     data = motor->motor_data;
     pid_config = data->pid_config;
     rotational_inertia_kg_m2 = data->rotational_inertia_kg_m2;
+    friction_torque = data->friction_torque;
     K_t_Nm_A = data->K_t_Nm_A;
     if (pid_config == NULL) {
         return;
@@ -224,6 +227,7 @@ static void gm6020_init(struct motor_device *motor, uint32_t motor_id,
     memset(data, 0, sizeof(*data));
     data->pid_config = pid_config;
     data->rotational_inertia_kg_m2 = rotational_inertia_kg_m2;
+    data->friction_torque = friction_torque;
     data->K_t_Nm_A = K_t_Nm_A;
     motor->motor_id = motor_id;
     motor->motor_can_handle = can_handle;
@@ -410,7 +414,7 @@ static void gm6020_update(struct motor_device *motor)
 
     grativity_torque = 0;
 
-    friction_torque = 0;
+    friction_torque = data->friction_torque;
 
     all_torque = acc_torque + grativity_torque + friction_torque;
 
@@ -977,6 +981,7 @@ static const gm6020_pid_config_t gm6020_pitch_pid_config = {
 static gm6020_data_t gm6020_pitch_data = {
     .pid_config = &gm6020_pitch_pid_config,
     .rotational_inertia_kg_m2 = 0.0005,
+    .friction_torque = 0.0f,
     .K_t_Nm_A = 0.741,
 
 };
@@ -1001,7 +1006,7 @@ static struct motor_device gm6020_pitch = {
 //6020yaw实例化
 static const gm6020_pid_config_t gm6020_yaw_pid_config = {
     .position_pid = {
-        .kp = 0.0f,
+        .kp = 200.0f,
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 10.0f,
@@ -1012,10 +1017,10 @@ static const gm6020_pid_config_t gm6020_yaw_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 0.0f,
-        .ki = 0.0f,
+        .kp = 30.0f,
+        .ki = 200.0f,
         .kd = 0.0f,
-        .integral_limit = 3000.0f,
+        .integral_limit = 40.0f,
         .output_limit = GM6020_OUTPUT_LIMIT,
         .derivative_filter_alpha = 0.5f,
         .deadband = 0.0f,
@@ -1026,7 +1031,8 @@ static const gm6020_pid_config_t gm6020_yaw_pid_config = {
 
 static gm6020_data_t gm6020_yaw_data = {
     .pid_config = &gm6020_yaw_pid_config,
-    .rotational_inertia_kg_m2 = 0.005,
+    .rotational_inertia_kg_m2 = 0.000f,
+    .friction_torque = 0.0f,
     .K_t_Nm_A = 0.741,
 };
 
