@@ -1445,7 +1445,7 @@ static const m3508_pid_config_t m3508_2_pid_config = {
     },
     .velocity_pid = {
         .kp = 21.0f,
-        .ki = 50.0f,
+        .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 500.0f,
         .output_limit = M3508_OUTPUT_LIMIT,

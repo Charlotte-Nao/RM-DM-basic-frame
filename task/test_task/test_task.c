@@ -54,10 +54,10 @@ void test_task(void)
         // gm6020_yaw->set_trace(gm6020_yaw, start_pos_rad, 0.02f);
         // osDelay(2000U);
 
-        m3508_2->set_trace(m3508_2,end_pos_rad, 0.2f);
+        m3508_2->set_trace(m3508_2,end_pos_rad, 0.02f);
         osDelay(2000U);
 
-        m3508_2->set_trace(m3508_2, start_pos_rad, 0.2f);
+        m3508_2->set_trace(m3508_2, start_pos_rad, 0.02f);
         osDelay(2000U);
 
         // 位置阶跃响应：target_pos直接跳变，速度/加速度前馈为0。
