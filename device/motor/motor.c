@@ -1433,7 +1433,7 @@ static struct motor_device gm6020_yaw = {
 // 3508_1实例化
 static const m3508_pid_config_t m3508_2_pid_config = {
     .position_pid = {
-        .kp = 0.0f,
+        .kp = 40.0f,
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 0.0f,
@@ -1444,8 +1444,8 @@ static const m3508_pid_config_t m3508_2_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 30.0f,
-        .ki = 0.0f,
+        .kp = 21.0f,
+        .ki = 50.0f,
         .kd = 0.0f,
         .integral_limit = 500.0f,
         .output_limit = M3508_OUTPUT_LIMIT,
@@ -1458,7 +1458,7 @@ static const m3508_pid_config_t m3508_2_pid_config = {
 
 static m3508_data_t m3508_2_data = {
     .pid_config = &m3508_2_pid_config,
-    .rotational_inertia_kg_m2 = 0.0f,
+    .rotational_inertia_kg_m2 = 0.000f,
     .friction_torque = 0.0f,
     .K_t_Nm_A = 0.02f,
 };
