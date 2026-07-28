@@ -12,6 +12,7 @@
 
 #define CAN_GM6020_PITCH_ID          0x205U
 #define CAN_GM6020_YAW_ID          0x206U
+#define CAN_M3508_2_ID              0x202U
 
 
 
