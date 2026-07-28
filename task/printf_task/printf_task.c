@@ -23,25 +23,25 @@ void printf_task(void)
     }
 
     for (;;) {
-        // if (gm6020_yaw != NULL) {
-        //     gm6020_yaw->get_status(gm6020_yaw, "POS", &position_rad);
-        //     gm6020_yaw->get_status(gm6020_yaw, "TARGET_POS", &target_pos_rad);
-        //
-        //     (void)uart1->uart_printf(uart1,
-        //                              "%.4f,%.4f\r\n",
-        //                              position_rad,
-        //                              target_pos_rad);
-        // }
-
-        if (m3508_2 != NULL) {
-            m3508_2->get_status(m3508_2, "POS", &position_rad);
-            m3508_2->get_status(m3508_2, "TARGET_POS", &target_pos_rad);
+        if (gm6020_yaw != NULL) {
+            gm6020_yaw->get_status(gm6020_yaw, "POS", &position_rad);
+            gm6020_yaw->get_status(gm6020_yaw, "TARGET_POS", &target_pos_rad);
 
             (void)uart1->uart_printf(uart1,
                                      "%.4f,%.4f\r\n",
                                      position_rad,
                                      target_pos_rad);
         }
+
+        // if (m3508_2 != NULL) {
+        //     m3508_2->get_status(m3508_2, "POS", &position_rad);
+        //     m3508_2->get_status(m3508_2, "TARGET_POS", &target_pos_rad);
+        //
+        //     (void)uart1->uart_printf(uart1,
+        //                              "%.4f,%.4f\r\n",
+        //                              position_rad,
+        //                              target_pos_rad);
+        // }
 
         osDelay(20U);
     }
