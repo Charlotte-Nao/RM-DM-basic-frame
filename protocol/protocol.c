@@ -29,7 +29,7 @@ int protocol_pack(const struct protocol_data *data, uint8_t frame[20])
     memcpy(&frame[2], &data->x, sizeof(data->x));
     memcpy(&frame[6], &data->y, sizeof(data->y));
     memcpy(&frame[10], &data->z, sizeof(data->z));
-    memcpy(&frame[14], &data->phi, sizeof(data->phi));
+    memcpy(&frame[14], &data->roll, sizeof(data->roll));
 
     frame[16] = data->action;
     frame[17] = protocol_checksum(&frame[2], 15U);
@@ -64,7 +64,7 @@ int protocol_unpack(const uint8_t frame[20],
     memcpy(&unpacked_data.x, &frame[2], sizeof(unpacked_data.x));
     memcpy(&unpacked_data.y, &frame[6], sizeof(unpacked_data.y));
     memcpy(&unpacked_data.z, &frame[10], sizeof(unpacked_data.z));
-    memcpy(&unpacked_data.phi, &frame[14], sizeof(unpacked_data.phi));
+    memcpy(&unpacked_data.roll, &frame[14], sizeof(unpacked_data.roll));
 
     unpacked_data.action = frame[16];
 

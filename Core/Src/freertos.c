@@ -98,6 +98,13 @@ const osThreadAttr_t motor_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityBelowNormal,
 };
+/* Definitions for uart_task */
+osThreadId_t uart_taskHandle;
+const osThreadAttr_t uart_task_attributes = {
+  .name = "uart_task",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -111,6 +118,7 @@ void test_task_entry(void *argument);
 void servo_entry(void *argument);
 void vacuum_entry(void *argument);
 void motor_entry(void *argument);
+void uart_entry(void *argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -191,6 +199,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of motor */
   motorHandle = osThreadNew(motor_entry, NULL, &motor_attributes);
+
+  /* creation of uart_task */
+  uart_taskHandle = osThreadNew(uart_entry, NULL, &uart_task_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -335,6 +346,25 @@ void motor_entry(void *argument)
     osDelay(1);
   }
   /* USER CODE END motor_entry */
+}
+
+/* USER CODE BEGIN Header_uart_entry */
+/**
+* @brief Function implementing the uart_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_uart_entry */
+void uart_entry(void *argument)
+{
+  /* USER CODE BEGIN uart_entry */
+  uart_task();
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END uart_entry */
 }
 
 /* Private application code --------------------------------------------------*/

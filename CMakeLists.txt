@@ -94,6 +94,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         protocol/protocol.h
         task/motor_task/motor_task.c
         task/motor_task/motor_task.h
+        task/uart_task/uart_task.c
+        task/uart_task/uart_task.h
 )
 
 # Add STM32CubeMX generated sources

@@ -33,7 +33,7 @@ void usb_task(void)
                 aim_pose.x = received_data.x;
                 aim_pose.y = received_data.y;
                 aim_pose.z = received_data.z;
-                aim_pose.phi = (float)received_data.phi / 10.0f;
+                aim_pose.roll = (float)received_data.roll / 10.0f;
                 aim_pose.action= received_data.action;
             }
         }

@@ -22,7 +22,7 @@ typedef struct host_data {
     float x;
     float y;
     float z;
-    float phi;
+    float roll;
     uint8_t action;
 } aim_pose_t;
 
@@ -30,5 +30,6 @@ typedef struct host_data {
 extern volatile global_data_t global_data;
 extern struct four_axis_robotic_arm arm;
 extern  volatile aim_pose_t aim_pose;
+extern volatile aim_pose_t host_data;
 
 #endif //DM_GLOBAL_DATA_H

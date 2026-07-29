@@ -15,7 +15,7 @@ struct protocol_data {
     float x;
     float y;
     float z;
-    int16_t phi;
+    int16_t roll;
     uint8_t action;
 };
 

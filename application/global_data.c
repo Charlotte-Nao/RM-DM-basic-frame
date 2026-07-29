@@ -4,6 +4,7 @@
 
 volatile global_data_t global_data = {0};
 volatile aim_pose_t aim_pose = {0};
+volatile aim_pose_t host_data = {0};
 
 struct four_axis_robotic_arm arm = {
     .l_1 = 114.5f,
@@ -12,4 +13,3 @@ struct four_axis_robotic_arm arm = {
     .l_4_p = 50.0f,
     .l_4_z = 89.0f,
 };
-

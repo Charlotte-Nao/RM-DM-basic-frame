@@ -12,5 +12,6 @@
 #include "vacuum_task/vacuum_task.h"
 #include "usb_task/usb_task.h"
 #include "motor_task/motor_task.h"
+#include "uart_task/uart_task.h"
 
 #endif //DM_ALL_TASK_H
