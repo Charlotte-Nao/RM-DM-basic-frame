@@ -1876,7 +1876,7 @@ static struct motor_device m3508_2 = {
 // DM3507示例实例化：MIT模式，CAN ID为0x001，反馈Master ID为0x000
 static const dm3507_pid_config_t dm3507_1_pid_config = {
     .position_pid = {
-        .kp = 200.0f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
         .integral_limit = 0.0f,
         .output_limit = DM3507_V_MAX,
         .derivative_filter_alpha = 0.5f,
@@ -1885,7 +1885,7 @@ static const dm3507_pid_config_t dm3507_1_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 150.0f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 0.10f, .ki = 0.0f, .kd = 0.0f,
         .integral_limit = 1.0f,
         .output_limit = DM3507_TORQUE_LIMIT_NM,
         .derivative_filter_alpha = 0.5f,

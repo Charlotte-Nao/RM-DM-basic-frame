@@ -96,7 +96,7 @@ osThreadId_t motorHandle;
 const osThreadAttr_t motor_attributes = {
   .name = "motor",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityBelowNormal,
+  .priority = (osPriority_t) osPriorityRealtime,
 };
 /* Definitions for uart_task */
 osThreadId_t uart_taskHandle;

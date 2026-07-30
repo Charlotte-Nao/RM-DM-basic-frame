@@ -40,19 +40,24 @@ void test_task(void)
 
 
     for (;;) {
-        // end_pos_rad = start_pos_rad + host_data.roll * DEG_TO_RAD;
+        end_pos_rad = start_pos_rad + host_data.roll * DEG_TO_RAD;
 
-        end_pos_rad = start_pos_rad + 3.0f;
+        // end_pos_rad = start_pos_rad + 3.0f;
 
         dm_3507_1->set_target(dm_3507_1, 1, end_pos_rad);
 
-        // if (host_data.action == 1U) {
-        //     pwm_set_pulse_us(PWM_CHANNEL_1, 20000);
-        // } else if (host_data.action == 0U) {
-        //     pwm_set_pulse_us(PWM_CHANNEL_1, 0U);
-        // }
 
-        osDelay(2000U);
+        if (host_data.action == 1U) {
+        pwm_set_pulse_us(PWM_CHANNEL_1, 20000);
+        } else if (host_data.action == 0U) {
+        pwm_set_pulse_us(PWM_CHANNEL_1, 0U);
+        }
+
+
+        osDelay(1U);
+        // end_pos_rad = start_pos_rad;
+        // dm_3507_1->set_target(dm_3507_1, 1, end_pos_rad);
+        // osDelay(2000U);
 
     }
 }
