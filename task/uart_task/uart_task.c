@@ -31,8 +31,9 @@ static void uart1_recv_callback(struct uart_device *device,
         host_data.z = received_data.z;
         host_data.roll = (float)received_data.roll / 10.0f;
         host_data.action = received_data.action;
+        // LED_PURPLE_SET();
     }
-    LED_PURPLE_SET();
+     // LED_PURPLE_SET();
 }
 
 void uart_task(void)

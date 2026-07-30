@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "../../bsp/can/can.h"
+#include "../../bsp/LED/LED.h"
 #include "../../dsp/pid/pid.h"
 #include "../../dsp/math.h"
 
@@ -1376,6 +1377,7 @@ static void dm3507_set_target(const struct motor_device *motor, int para_num, ..
     va_end(arguments);
     data->trace.active = 0U;
     dm3507_trace_set_target(motor, target_position_rad, target_velocity_rad_s, target_acceleration_rad_s2);
+    // LED_PURPLE_SET();
 }
 
 static void dm3507_get_status(const struct motor_device *motor, const char *which, void *value)
@@ -1874,7 +1876,7 @@ static struct motor_device m3508_2 = {
 // DM3507示例实例化：MIT模式，CAN ID为0x001，反馈Master ID为0x000
 static const dm3507_pid_config_t dm3507_1_pid_config = {
     .position_pid = {
-        .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 200.0f, .ki = 0.0f, .kd = 0.0f,
         .integral_limit = 0.0f,
         .output_limit = DM3507_V_MAX,
         .derivative_filter_alpha = 0.5f,
@@ -1883,7 +1885,7 @@ static const dm3507_pid_config_t dm3507_1_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 0.15f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 150.0f, .ki = 0.0f, .kd = 0.0f,
         .integral_limit = 1.0f,
         .output_limit = DM3507_TORQUE_LIMIT_NM,
         .derivative_filter_alpha = 0.5f,

@@ -136,7 +136,7 @@ int main(void)
   can_init();
   Motor_System_PowerOn_Init();
   // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_SET);
-  LED_PURPLE_SET();
+  LED_GREEN_SET();
   // HAL_Delay(2000);
   // LED_off();
 
