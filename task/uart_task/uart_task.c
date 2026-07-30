@@ -11,6 +11,7 @@
 #include "../../bsp/uart/uart.h"
 #include "../../protocol/protocol.h"
 #include"../../application/global_data.h"
+#include "../../bsp/LED/LED.h"
 
 static void uart1_recv_callback(struct uart_device *device,
                                 const uint8_t *data,
@@ -31,6 +32,7 @@ static void uart1_recv_callback(struct uart_device *device,
         host_data.roll = (float)received_data.roll / 10.0f;
         host_data.action = received_data.action;
     }
+    LED_PURPLE_SET();
 }
 
 void uart_task(void)

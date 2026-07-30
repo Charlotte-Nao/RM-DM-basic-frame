@@ -275,6 +275,21 @@ void LED_SKY_RESET_TOGGLE(void)
         LED_SKY_SET();
 }
 
+void LED_YELLOW_SET(void)
+{
+    LED_SET_RGB(0xFFU, 0xFFU, 0x00U);
+}
+
+void LED_PURPLE_SET(void)
+{
+    LED_SET_RGB(0x99U, 0x33U, 0xFFU);
+}
+
+void LED_PINK_SET(void)
+{
+    LED_SET_RGB(0xFFU, 0x99U, 0xFFU);
+}
+
 void LED_off(void)
 {
     LED_SET_RGB(0U, 0U, 0U);
