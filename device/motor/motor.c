@@ -34,8 +34,8 @@
 #define M3508_TRACE_POSITION_EPSILON_RAD (TWO_PI / M3508_ENCODER_RESOLUTION)
 #define M3508_TRACE_MAX_ACCELERATION_RAD_S2 300.0f
 
-#define DM3507_MASTER_ID                  0x002U
-#define DM3507_COMMAND_ID                 0x002U
+#define DM3507_MASTER_ID                  0x00U
+#define DM3507_COMMAND_ID                 0x01U
 #define DM3507_P_MAX                      12.566f
 #define DM3507_V_MAX                      100.0f
 #define DM3507_T_MAX                      5.0f
@@ -58,6 +58,13 @@
 #define DM4310_CLEAR_RETRY_MS              50U
 #define DM4310_ENABLE_RETRY_MS             20U
 #define DM4310_TRACE_MAX_ACCELERATION_RAD_S2 30.0f
+
+#if (DM3507_MASTER_ID == DM_4310_MASTER_ID) || \
+    (DM3507_MASTER_ID == DM4310_COMMAND_ID) || \
+    (DM3507_COMMAND_ID == DM_4310_MASTER_ID) || \
+    (DM3507_COMMAND_ID == DM4310_COMMAND_ID)
+#error "DM3507 and DM4310 CAN identifiers must be unique on FDCAN1"
+#endif
 
 volatile uint32_t g_can1_irq_count = 0U;
 volatile uint32_t g_can1_frame_count = 0U;
@@ -1864,7 +1871,7 @@ static struct motor_device m3508_2 = {
     .set_para = m3508_set_para,
 };
 
-// DM3507示例实例化，电机需设为MIT模式，CAN ID和反馈Master ID均为0x002
+// DM3507示例实例化：MIT模式，CAN ID为0x001，反馈Master ID为0x000
 static const dm3507_pid_config_t dm3507_1_pid_config = {
     .position_pid = {
         .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,

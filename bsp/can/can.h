@@ -7,8 +7,8 @@
 #define DM_CAN_H
 
 /* Motor standard identifiers. */
-#define DM_4310_MASTER_ID          0x000U
-#define CAN_J4310_PITCH_ID         0x001U
+#define DM_4310_MASTER_ID            0x003U
+#define CAN_J4310_PITCH_ID           0x002U
 
 #define CAN_GM6020_PITCH_ID          0x205U
 #define CAN_GM6020_YAW_ID          0x206U

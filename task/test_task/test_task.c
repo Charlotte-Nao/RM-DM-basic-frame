@@ -25,7 +25,6 @@ void test_task(void)
     float start_pos_rad;
     float end_pos_rad;
 
-    // gm6020_yaw = motor_get_device("GM6020_YAW");
     dm_3507_1 = motor_get_device("DM3507_1");
 
     while (dm_3507_1 == NULL || !motor_is_online(dm_3507_1)) {
