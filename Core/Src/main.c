@@ -35,6 +35,7 @@
 
 # include "../../bsp/LED/LED.h"
 # include "../../bsp/can/can.h"
+#include "../../bsp/pwm/pwm.h"
 # include "../../device/motor/motor.h"
 
 /* USER CODE END Includes */
@@ -139,6 +140,7 @@ int main(void)
   LED_GREEN_SET();
   // HAL_Delay(2000);
   // LED_off();
+  pwm_power_enable();
 
 
   /* USER CODE END 2 */

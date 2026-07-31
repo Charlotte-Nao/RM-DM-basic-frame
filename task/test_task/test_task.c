@@ -46,12 +46,21 @@ void test_task(void)
 
         dm_3507_1->set_target(dm_3507_1, 1, end_pos_rad);
 
-
+        // HAL_GPIO_WritePin(POWER_5V_EN_GPIO_Port,POWER_5V_EN_Pin,GPIO_PIN_RESET);
+        // pwm_set_pulse_us(PWM_CHANNEL_1, 20000);
         if (host_data.action == 1U) {
-        pwm_set_pulse_us(PWM_CHANNEL_1, 20000);
+        // pwm_set_pulse_us(PWM_CHANNEL_1, 20000);
+            pwm_power_enable();
         } else if (host_data.action == 0U) {
-        pwm_set_pulse_us(PWM_CHANNEL_1, 0U);
+            pwm_power_disable();
+        // pwm_set_pulse_us(PWM_CHANNEL_1, 0U);
+            // pwm_set_pulse_us(PWM_CHANNEL_1, 20000);
+
+
+            osDelay(1U);
+
         }
+
 
 
         osDelay(1U);
