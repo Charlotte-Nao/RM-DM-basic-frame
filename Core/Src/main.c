@@ -79,7 +79,6 @@ void MX_FREERTOS_Init(void);
   * @brief  The application entry point.
   * @retval int
   */
-
 int main(void)
 {
 
@@ -136,10 +135,7 @@ int main(void)
   LED_init();
   can_init();
   Motor_System_PowerOn_Init();
-  // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_SET);
-  LED_GREEN_SET();
-  // HAL_Delay(2000);
-  // LED_off();
+  LED_SKY_SET();
   pwm_power_enable();
 
 
@@ -164,7 +160,6 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
-
 
 /**
   * @brief System Clock Configuration

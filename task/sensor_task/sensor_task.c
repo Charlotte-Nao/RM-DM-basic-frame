@@ -102,11 +102,11 @@ void sensor_task(void)
 
         /* Publish the newest attitude every sample for motor-control users. */
         quaternion_to_euler(quaternion, &roll, &pitch, &yaw);
-        global_data.imu_roll_rad = pitch;
-        global_data.imu_pitch_rad = roll;
-        global_data.imu_yaw_rad = yaw;
-        global_data.imu_update_tick = osKernelGetTickCount();
-        global_data.imu_ready = 1U;
+        imu_data.imu_roll_rad = pitch;
+        imu_data.imu_pitch_rad = roll;
+        imu_data.imu_yaw_rad = yaw;
+        imu_data.imu_update_tick = osKernelGetTickCount();
+        imu_data.imu_ready = 1U;
 
         osDelay(SENSOR_SAMPLE_PERIOD_MS);
     }

@@ -194,11 +194,6 @@ void LED_RED_SET(void)
     LED_SET_RGB(WS2812_DEFAULT_ON, 0U, 0U);
 }
 
-void LED_RED_RESET(void)
-{
-    LED_SET_RGB(0U, 0U, 0U);
-}
-
 void LED_RED_TOGGLE(void)
 {
     if ((led_red != 0U) && (led_green == 0U) && (led_blue == 0U))
@@ -221,11 +216,6 @@ void LED_GREEN_SET(void)
     LED_SET_RGB(0U, WS2812_DEFAULT_ON, 0U);
 }
 
-void LED_GREEN_RESET(void)
-{
-    LED_SET_RGB(0U, 0U, 0U);
-}
-
 void LED_GREEN_TOGGLE(void)
 {
     if ((led_red == 0U) && (led_green != 0U) && (led_blue == 0U))
@@ -243,11 +233,6 @@ void LED_BLUE_SET(void)
     LED_SET_RGB(0U, 0U, WS2812_DEFAULT_ON);
 }
 
-void LED_BLUE_RESET(void)
-{
-    LED_SET_RGB(0U, 0U, 0U);
-}
-
 void LED_BLUE_TOGGLE(void)
 {
     if ((led_red == 0U) && (led_green == 0U) && (led_blue != 0U))
@@ -260,19 +245,10 @@ void LED_BLUE_TOGGLE(void)
     }
 }
 
+
 void LED_SKY_SET(void)
 {
-    LED_SET_RGB(0U, WS2812_DEFAULT_ON / 2, WS2812_DEFAULT_ON);
-}
-
-void LED_SKY_RESET_TOGGLE(void)
-{
-    if ((led_red == 0U) && (led_green == WS2812_DEFAULT_ON / 2) && (led_blue == WS2812_DEFAULT_ON))
-    {
-        LED_off();
-    }
-    else
-        LED_SKY_SET();
+    LED_SET_RGB(0x66U, 0xCCU, 0xFFU);
 }
 
 void LED_YELLOW_SET(void)
@@ -282,12 +258,17 @@ void LED_YELLOW_SET(void)
 
 void LED_PURPLE_SET(void)
 {
-    LED_SET_RGB(0x99U, 0x33U, 0xFFU);
+    LED_SET_RGB(0x99U, 0x99U, 0xFFU);
 }
 
 void LED_PINK_SET(void)
 {
     LED_SET_RGB(0xFFU, 0x99U, 0xFFU);
+}
+
+void LED_CYAN_SET(void)
+{
+    LED_SET_RGB(0xEEU, 0xFFU, 0xFFU);
 }
 
 void LED_off(void)

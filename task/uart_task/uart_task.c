@@ -13,39 +13,27 @@
 #include"../../application/global_data.h"
 #include "../../bsp/LED/LED.h"
 
-static void uart1_recv_callback(struct uart_device *device,
-                                const uint8_t *data,
-                                uint16_t length)
+static void uart1_recv_callback(struct uart_device *device,const uint8_t *data,uint16_t length)
 {
-    struct protocol_data received_data;
-
-    (void)device;
-
-    if (data == NULL) {
-        return;
-    }
-
-    if (protocol_parse(data, length, &received_data) > 0) {
-        host_data.x = received_data.x;
-        host_data.y = received_data.y;
-        host_data.z = received_data.z;
-        host_data.roll = (float)received_data.roll / 10.0f;
-        host_data.action = received_data.action;
-        // LED_PURPLE_SET();
-    }
-     // LED_PURPLE_SET();
+}
+static void uart7_recv_callback(struct uart_device *device,const uint8_t *data,uint16_t length)
+{
+}
+static void uart10_recv_callback(struct uart_device *device,const uint8_t *data,uint16_t length)
+{
 }
 
 void uart_task(void)
 {
     struct uart_device *uart1;
+    struct uart_device *uart7;
+    struct uart_device *uart10;
     uart1 = uart_get_device("uart1_dma");
-    while (uart1 == NULL) {
-        osDelay(1000U);
-        uart1 = uart_get_device("uart1_dma");
-    }
-
+    uart7 = uart_get_device("uart7_dma");
+    uart10 = uart_get_device("uart10_dma");
     uart1->uart_recv_callback = uart1_recv_callback;
+    uart7->uart_recv_callback = uart7_recv_callback;
+    uart10->uart_recv_callback = uart10_recv_callback;
 
     for (;;)
     {

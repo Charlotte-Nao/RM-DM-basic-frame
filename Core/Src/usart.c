@@ -50,7 +50,7 @@ void MX_UART5_Init(void)
   huart5.Instance = UART5;
   huart5.Init.BaudRate = 100000;
   huart5.Init.WordLength = UART_WORDLENGTH_9B;
-  huart5.Init.StopBits = UART_STOPBITS_2;
+  huart5.Init.StopBits = UART_STOPBITS_1;
   huart5.Init.Parity = UART_PARITY_EVEN;
   huart5.Init.Mode = UART_MODE_RX;
   huart5.Init.HwFlowCtl = UART_HWCONTROL_NONE;
@@ -101,7 +101,7 @@ void MX_UART7_Init(void)
   huart7.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
   huart7.Init.ClockPrescaler = UART_PRESCALER_DIV1;
   huart7.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_HalfDuplex_Init(&huart7) != HAL_OK)
+  if (HAL_UART_Init(&huart7) != HAL_OK)
   {
     Error_Handler();
   }
@@ -300,10 +300,11 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 
     __HAL_RCC_GPIOE_CLK_ENABLE();
     /**UART7 GPIO Configuration
+    PE7     ------> UART7_RX
     PE8     ------> UART7_TX
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_8;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_8;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF7_UART7;
@@ -547,9 +548,10 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
     __HAL_RCC_UART7_CLK_DISABLE();
 
     /**UART7 GPIO Configuration
+    PE7     ------> UART7_RX
     PE8     ------> UART7_TX
     */
-    HAL_GPIO_DeInit(GPIOE, GPIO_PIN_8);
+    HAL_GPIO_DeInit(GPIOE, GPIO_PIN_7|GPIO_PIN_8);
 
     /* UART7 DMA DeInit */
     HAL_DMA_DeInit(uartHandle->hdmarx);

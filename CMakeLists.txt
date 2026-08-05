@@ -69,22 +69,9 @@ add_executable(${CMAKE_PROJECT_NAME}
         application/global_data.h
         task/printf_task/printf_task.c
         task/printf_task/printf_task.h
-        device/YB_SD15M/YB_SD15M.c
-        device/YB_SD15M/YB_SD15M.h
-        task/servo_task/servo_task.c
-        task/servo_task/servo_task.h
-        dsp/calculation/revrse_calculation.c
-        dsp/calculation/revrse_calculation.h
-        dsp/calculation/positive_calculation.c
-        dsp/calculation/positive_calculation.h
-        dsp/calculation/calculation.h
         dsp/math.h
         bsp/pwm/pwm.c
         bsp/pwm/pwm.h
-        device/vacuum/vacuum.c
-        device/vacuum/vacuum.h
-        task/vacuum_task/vacuum_task.c
-        task/vacuum_task/vacuum_task.h
         task/usb_task/usb_task.c
         task/usb_task/usb_task.h
         task/usb_task/usb_task.h

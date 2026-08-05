@@ -73,7 +73,6 @@ static struct uart_port_data uart5_port = {
 static struct uart_port_data uart7_port = {
     .handle = &huart7, .dma_rx_buffer = uart7_dma_rx_buffer,
     .tx_buffer = uart7_dma_tx_buffer,
-    .half_duplex = true,
 };
 static struct uart_port_data uart10_port = {
     .handle = &huart10, .dma_rx_buffer = uart10_dma_rx_buffer,
@@ -414,9 +413,6 @@ static void uart_dma_deliver(struct uart_port_data *port, uint16_t position)
 
 /**
  * Called only after the UART has completely shifted out the last stop bit.
- *
- * For UART7, this is the correct moment to release the single-wire bus and
- * return to receiver mode.
  */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *handle)
 {

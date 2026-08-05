@@ -77,20 +77,6 @@ const osThreadAttr_t test_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
-/* Definitions for servo */
-osThreadId_t servoHandle;
-const osThreadAttr_t servo_attributes = {
-  .name = "servo",
-  .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityHigh,
-};
-/* Definitions for vacuum */
-osThreadId_t vacuumHandle;
-const osThreadAttr_t vacuum_attributes = {
-  .name = "vacuum",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
-};
 /* Definitions for motor */
 osThreadId_t motorHandle;
 const osThreadAttr_t motor_attributes = {
@@ -115,8 +101,6 @@ void seneor_task_entry(void *argument);
 void printf_entry(void *argument);
 void usb_entry(void *argument);
 void test_task_entry(void *argument);
-void servo_entry(void *argument);
-void vacuum_entry(void *argument);
 void motor_entry(void *argument);
 void uart_entry(void *argument);
 
@@ -190,12 +174,6 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of test */
   testHandle = osThreadNew(test_task_entry, NULL, &test_attributes);
-
-  /* creation of servo */
-  servoHandle = osThreadNew(servo_entry, NULL, &servo_attributes);
-
-  /* creation of vacuum */
-  vacuumHandle = osThreadNew(vacuum_entry, NULL, &vacuum_attributes);
 
   /* creation of motor */
   motorHandle = osThreadNew(motor_entry, NULL, &motor_attributes);
@@ -289,44 +267,6 @@ void test_task_entry(void *argument)
     osDelay(1);
   }
   /* USER CODE END test_task_entry */
-}
-
-/* USER CODE BEGIN Header_servo_entry */
-/**
-* @brief Function implementing the servo thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_servo_entry */
-void servo_entry(void *argument)
-{
-  /* USER CODE BEGIN servo_entry */
-  servo_task();
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END servo_entry */
-}
-
-/* USER CODE BEGIN Header_vacuum_entry */
-/**
-* @brief Function implementing the vacuum thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_vacuum_entry */
-void vacuum_entry(void *argument)
-{
-  /* USER CODE BEGIN vacuum_entry */
-  vacuum_task();
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END vacuum_entry */
 }
 
 /* USER CODE BEGIN Header_motor_entry */
