@@ -35,16 +35,9 @@
 #define DM3507_TORQUE_LIMIT_NM            3.0f
 #define DM3507_TRACE_MAX_ACCELERATION_RAD_S2 100.0f
 
-#define DM4310_COMMAND_ID                 CAN_J4310_PITCH_ID
 #define DM4310_P_MAX                      12.5f
-#define DM4310_V_MAX                      3.0f
+#define DM4310_V_MAX                      30.0f
 #define DM4310_T_MAX                      10.0f
-#define DM4310_ERR_DISABLED                0x0U
-#define DM4310_ERR_ENABLED                 0x1U
-#define DM4310_ERR_FAULT_MIN               0x8U
-#define DM4310_ERR_FAULT_MAX               0xEU
-#define DM4310_CLEAR_RETRY_MS              50U
-#define DM4310_ENABLE_RETRY_MS             20U
 #define DM4310_TRACE_MAX_ACCELERATION_RAD_S2 30.0f
 
 typedef struct {
@@ -61,6 +54,11 @@ typedef struct {
     pid_t position_pid;
     pid_t velocity_pid;
 } dm3507_pid_config_t;
+
+typedef struct {
+    pid_t position_pid;
+    pid_t velocity_pid;
+} dm4310_pid_config_t;
 
 typedef struct {
     float start_position_rad;
@@ -162,23 +160,32 @@ typedef struct {
 } dm3507_data_t;
 
 typedef struct {
+    const dm4310_pid_config_t *pid_config;
+    uint32_t master_id;
+    uint32_t command_id;
+    pid_t position_pid;
+    pid_t velocity_pid;
     float target_position_rad;
     float target_velocity_rad_s;
-    float target_torque_nm;
+    float target_acceleration_rad_s2;
+    float rotational_inertia_kg_m2;
+    float friction_torque;
     motor_trace_t trace;
-    float kp;
-    float kd;
     float position_rad;
     float velocity_rad_s;
     float torque_nm;
+    float output_torque_nm;
     float p_max;
     float v_max;
     float t_max;
+    uint8_t can_id;
     uint8_t error;
     uint8_t mos_temperature;
     uint8_t rotor_temperature;
-    uint8_t enable_requested; /* Software request, latched until explicit disable. */
-    uint8_t enabled;          /* Confirmed only by a feedback frame reporting enabled. */
+    uint8_t enable_requested;
+    uint8_t enabled;
+    uint8_t hold_position_pending;
+    uint32_t last_update_tick;
     uint32_t last_clear_cmd_tick;
     uint32_t last_enable_cmd_tick;
 } dm4310_data_t;

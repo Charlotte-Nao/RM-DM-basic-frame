@@ -112,6 +112,13 @@ static float dm3507_wrap_to_pi(float angle_rad)
     return angle_rad;
 }
 
+static float dm4310_wrap_to_pi(float angle_rad)
+{
+    while (angle_rad > PI) { angle_rad -= TWO_PI; }
+    while (angle_rad < -PI) { angle_rad += TWO_PI; }
+    return angle_rad;
+}
+
 // dm4310协议要求浮点数转化为uint16
 static uint16_t float_to_uint(float value, float minimum, float maximum, uint16_t bits)
 {
@@ -1239,57 +1246,63 @@ static void dm4310_send_special(struct motor_device *motor, uint8_t command)
 {
     uint8_t frame[8] = {0xFFU, 0xFFU, 0xFFU, 0xFFU, 0xFFU, 0xFFU, 0xFFU, command};
     dm4310_data_t *data;
-
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
-    motor_send_standard(motor->motor_can_handle, DM4310_COMMAND_ID, frame);
-    (void)data;
+    motor_send_standard(motor->motor_can_handle, data->command_id, frame);
 }
 
-void dm4310_init(struct motor_device *motor, uint32_t motor_id,
-                        FDCAN_HandleTypeDef *can_handle, int para_num, ...)
+void dm4310_init(struct motor_device *motor, uint32_t motor_id, FDCAN_HandleTypeDef *can_handle, int para_num, ...)
 {
     dm4310_data_t *data;
-    va_list arguments;
-
+    const dm4310_pid_config_t *pid_config;
+    float rotational_inertia_kg_m2;
+    float friction_torque;
+    uint32_t master_id;
+    uint32_t command_id;
     if (motor == NULL || motor->motor_data == NULL || can_handle == NULL) { return; }
     data = motor->motor_data;
+    pid_config = data->pid_config;
+    rotational_inertia_kg_m2 = data->rotational_inertia_kg_m2;
+    friction_torque = data->friction_torque;
+    master_id = data->master_id;
+    command_id = data->command_id;
+    if (pid_config == NULL || master_id > 0x7FFU || command_id > 0x7FFU) { return; }
     memset(data, 0, sizeof(*data));
-    motor->motor_id = motor_id;
-    motor->motor_can_handle = can_handle;
+    data->pid_config = pid_config;
+    data->master_id = master_id;
+    data->command_id = command_id;
+    data->rotational_inertia_kg_m2 = rotational_inertia_kg_m2;
+    data->friction_torque = friction_torque;
     data->p_max = DM4310_P_MAX;
     data->v_max = DM4310_V_MAX;
     data->t_max = DM4310_T_MAX;
-    data->kp = 20.0f;
-    data->kd = 1.0f;
-
-    va_start(arguments, para_num);
-    if (para_num >= 1) { data->kp = (float)va_arg(arguments, double); }
-    if (para_num >= 2) { data->kd = (float)va_arg(arguments, double); }
-    if (para_num >= 3) { data->p_max = (float)va_arg(arguments, double); }
-    if (para_num >= 4) { data->v_max = (float)va_arg(arguments, double); }
-    if (para_num >= 5) { data->t_max = (float)va_arg(arguments, double); }
-    va_end(arguments);
+    data->position_pid = pid_config->position_pid;
+    data->velocity_pid = pid_config->velocity_pid;
+    motor->motor_id = data->master_id;
+    motor->motor_can_handle = can_handle;
+    pid_reset(&data->position_pid);
+    pid_reset(&data->velocity_pid);
+    (void)motor_id;
+    (void)para_num;
 }
 
-void dm4310_feedback_calculate(const struct motor_device *motor,
-                                      const uint8_t frame[8])
+void dm4310_feedback_calculate(const struct motor_device *motor, const uint8_t frame[8])
 {
     dm4310_data_t *data;
     uint16_t position;
     uint16_t velocity;
     uint16_t torque;
-
     if (motor == NULL || motor->motor_data == NULL || frame == NULL) { return; }
     data = motor->motor_data;
+    data->can_id = frame[0] & 0x0FU;
     data->error = frame[0] >> 4;
-    data->enabled = (data->error == DM4310_ERR_ENABLED) ? 1U : 0U;
+    data->enabled = (data->error == 0x1U) ? 1U : 0U;
     position = (uint16_t)(((uint16_t)frame[1] << 8) | frame[2]);
     velocity = (uint16_t)(((uint16_t)frame[3] << 4) | (frame[4] >> 4));
     torque = (uint16_t)(((uint16_t)(frame[4] & 0x0FU) << 8) | frame[5]);
-    data->position_rad = ((float)position * 2.0f * data->p_max / 65535.0f) - data->p_max;
-    data->velocity_rad_s = ((float)velocity * 2.0f * data->v_max / 4095.0f) - data->v_max;
-    data->torque_nm = ((float)torque * 2.0f * data->t_max / 4095.0f) - data->t_max;
+    data->position_rad = uint_to_float(position, -data->p_max, data->p_max, 16U);
+    data->velocity_rad_s = uint_to_float(velocity, -data->v_max, data->v_max, 12U);
+    data->torque_nm = uint_to_float(torque, -data->t_max, data->t_max, 12U);
     data->mos_temperature = frame[6];
     data->rotor_temperature = frame[7];
 }
@@ -1299,30 +1312,23 @@ void dm4310_send_ctrl_cmd(struct motor_device *motor)
     dm4310_data_t *data;
     uint16_t position;
     uint16_t velocity;
-    uint16_t kp;
-    uint16_t kd;
     uint16_t torque;
     uint8_t frame[8];
-
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
     if (data->enable_requested == 0U || data->enabled == 0U) { return; }
-
-    position = float_to_uint(data->target_position_rad, -data->p_max, data->p_max, 16U);
-    velocity = float_to_uint(data->target_velocity_rad_s, -data->v_max, data->v_max, 12U);
-    kp = float_to_uint(data->kp, 0.0f, 500.0f, 12U);
-    kd = float_to_uint(data->kd, 0.0f, 5.0f, 12U);
-    torque = float_to_uint(data->target_torque_nm, -data->t_max, data->t_max, 12U);
-
+    position = float_to_uint(0.0f, -data->p_max, data->p_max, 16U);
+    velocity = float_to_uint(0.0f, -data->v_max, data->v_max, 12U);
+    torque = float_to_uint(clamp_float(data->output_torque_nm, -10.0f, 10.0f), -data->t_max, data->t_max, 12U);
     frame[0] = (uint8_t)(position >> 8);
     frame[1] = (uint8_t)position;
     frame[2] = (uint8_t)(velocity >> 4);
-    frame[3] = (uint8_t)((velocity << 4) | (kp >> 8));
-    frame[4] = (uint8_t)kp;
-    frame[5] = (uint8_t)(kd >> 4);
-    frame[6] = (uint8_t)((kd << 4) | (torque >> 8));
+    frame[3] = (uint8_t)(velocity << 4);
+    frame[4] = 0U;
+    frame[5] = 0U;
+    frame[6] = (uint8_t)(torque >> 8);
     frame[7] = (uint8_t)torque;
-    motor_send_standard(motor->motor_can_handle, DM4310_COMMAND_ID, frame);
+    motor_send_standard(motor->motor_can_handle, data->command_id, frame);
 }
 
 void dm4310_enable(struct motor_device *motor)
@@ -1332,10 +1338,15 @@ void dm4310_enable(struct motor_device *motor)
     data = motor->motor_data;
     data->enable_requested = 1U;
     data->enabled = 0U;
-    data->target_position_rad = data->position_rad;
+    data->hold_position_pending = motor_is_online(motor) ? 0U : 1U;
+    if (data->hold_position_pending == 0U) { data->target_position_rad = data->position_rad; }
     data->target_velocity_rad_s = 0.0f;
-    data->target_torque_nm = 0.0f;
+    data->target_acceleration_rad_s2 = 0.0f;
+    data->output_torque_nm = 0.0f;
     data->trace.active = 0U;
+    pid_reset(&data->position_pid);
+    pid_reset(&data->velocity_pid);
+    data->last_update_tick = 0U;
     dm4310_send_special(motor, 0xFBU);
     dm4310_send_special(motor, 0xFCU);
     data->last_clear_cmd_tick = HAL_GetTick();
@@ -1349,97 +1360,110 @@ void dm4310_disable(struct motor_device *motor)
     data = motor->motor_data;
     data->enable_requested = 0U;
     data->enabled = 0U;
+    data->hold_position_pending = 0U;
     data->target_position_rad = data->position_rad;
     data->target_velocity_rad_s = 0.0f;
-    data->target_torque_nm = 0.0f;
+    data->target_acceleration_rad_s2 = 0.0f;
+    data->output_torque_nm = 0.0f;
     data->trace.active = 0U;
+    pid_reset(&data->position_pid);
+    pid_reset(&data->velocity_pid);
+    data->last_update_tick = 0U;
     dm4310_send_special(motor, 0xFDU);
 }
 
 void dm4310_update(struct motor_device *motor)
 {
     dm4310_data_t *data;
+    float position_error;
+    float desired_velocity_rad_s;
+    float feedforward_torque_nm;
+    float dt;
     uint32_t now;
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
+    if (data->enable_requested == 0U) { return; }
     if (motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_TIMEOUT_MS) {
+        data->enabled = 0U;
+        data->output_torque_nm = 0.0f;
+        data->trace.active = 0U;
+        pid_reset(&data->position_pid);
+        pid_reset(&data->velocity_pid);
+        data->last_update_tick = 0U;
+        return;
+    }
+    now = HAL_GetTick();
+    if (data->hold_position_pending != 0U) {
+        // 防跳变
         data->target_position_rad = data->position_rad;
         data->target_velocity_rad_s = 0.0f;
-        data->target_torque_nm = 0.0f;
-        data->trace.active = 0U;
+        data->target_acceleration_rad_s2 = 0.0f;
+        data->output_torque_nm = 0.0f;
+        pid_reset(&data->position_pid);
+        pid_reset(&data->velocity_pid);
+        data->last_update_tick = 0U;
+        data->hold_position_pending = 0U;
         return;
     }
-    if (data->enable_requested == 0U) {
+    if (data->error >= 0x8U && data->error <= 0xEU) {
+        data->output_torque_nm = 0.0f;
         data->trace.active = 0U;
+        if ((uint32_t)(now - data->last_clear_cmd_tick) >= 50U) { dm4310_send_special(motor, 0xFBU); data->last_clear_cmd_tick = now; }
         return;
     }
-
-    now = HAL_GetTick();
-    if (data->error >= DM4310_ERR_FAULT_MIN && data->error <= DM4310_ERR_FAULT_MAX) {
+    if (data->error != 0x1U) {
+        data->output_torque_nm = 0.0f;
         data->trace.active = 0U;
-        if ((uint32_t)(now - data->last_clear_cmd_tick) >= DM4310_CLEAR_RETRY_MS) {
-            dm4310_send_special(motor, 0xFBU);
-            data->last_clear_cmd_tick = now;
-        }
+        if ((uint32_t)(now - data->last_enable_cmd_tick) >= 20U) { dm4310_send_special(motor, 0xFCU); data->last_enable_cmd_tick = now; }
         return;
     }
-    if (data->error != DM4310_ERR_ENABLED) {
-        data->trace.active = 0U;
-        if ((uint32_t)(now - data->last_enable_cmd_tick) >= DM4310_ENABLE_RETRY_MS) {
-            dm4310_send_special(motor, 0xFCU);
-            data->last_enable_cmd_tick = now;
-        }
-        return;
-    }
+    if (data->last_update_tick == 0U) { dt = MOTOR_CONTROL_DT_DEFAULT_S; }
+    else { dt = clamp_float((float)(now - data->last_update_tick) * 0.001f, 0.0001f, 0.020f); }
+    data->last_update_tick = now;
+    position_error = dm4310_wrap_to_pi(data->target_position_rad - data->position_rad);
+    desired_velocity_rad_s = data->target_velocity_rad_s + pid_update(&data->position_pid, position_error, 0.0f, dt);
+    desired_velocity_rad_s = clamp_float(desired_velocity_rad_s, -20.94f, 20.94f);
+    feedforward_torque_nm = data->target_acceleration_rad_s2 * data->rotational_inertia_kg_m2 + data->friction_torque;
+    data->output_torque_nm = pid_update(&data->velocity_pid, desired_velocity_rad_s, data->velocity_rad_s, dt) + feedforward_torque_nm;
+    data->output_torque_nm = clamp_float(data->output_torque_nm, -10.0f, 10.0f);
     dm4310_send_ctrl_cmd(motor);
 }
 
-static void dm4310_trace_set_target(const struct motor_device *motor,
-                                    float target_position_rad,
-                                    float target_velocity_rad_s)
+static void dm4310_trace_set_target(const struct motor_device *motor, float target_position_rad, float target_velocity_rad_s, float target_acceleration_rad_s2)
 {
     dm4310_data_t *data;
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
     data->target_position_rad = target_position_rad;
-    data->target_velocity_rad_s = clamp_float(target_velocity_rad_s, -data->v_max, data->v_max);
-    data->target_torque_nm = 0.0f;
+    data->target_velocity_rad_s = clamp_float(target_velocity_rad_s, -20.94f, 20.94f);
+    data->target_acceleration_rad_s2 = target_acceleration_rad_s2;
 }
 
-static float dm4310_trace_resolve_duration(const dm4310_data_t *data, float delta_position_rad, float requested_duration_s)
+static float dm4310_trace_resolve_duration(float delta_position_rad, float requested_duration_s)
 {
-    float distance_rad;
-    float minimum_velocity_duration_s;
-    float minimum_acceleration_duration_s;
-    float actual_duration_s;
-    if (data == NULL || data->v_max <= 0.0f) { return requested_duration_s; }
-    distance_rad = abs_float(delta_position_rad);
-    minimum_velocity_duration_s = MOTOR_QUINTIC_PEAK_VELOCITY_FACTOR * distance_rad / data->v_max;
-    minimum_acceleration_duration_s = motor_sqrt_float(MOTOR_QUINTIC_PEAK_ACCELERATION_FACTOR * distance_rad / DM4310_TRACE_MAX_ACCELERATION_RAD_S2);
-    actual_duration_s = requested_duration_s;
+    float distance_rad = abs_float(delta_position_rad);
+    float minimum_velocity_duration_s = MOTOR_QUINTIC_PEAK_VELOCITY_FACTOR * distance_rad / 20.94f;
+    float minimum_acceleration_duration_s = motor_sqrt_float(MOTOR_QUINTIC_PEAK_ACCELERATION_FACTOR * distance_rad / DM4310_TRACE_MAX_ACCELERATION_RAD_S2);
+    float actual_duration_s = requested_duration_s;
     if (actual_duration_s < minimum_velocity_duration_s) { actual_duration_s = minimum_velocity_duration_s; }
     if (actual_duration_s < minimum_acceleration_duration_s) { actual_duration_s = minimum_acceleration_duration_s; }
     if (actual_duration_s < MOTOR_CONTROL_DT_DEFAULT_S) { actual_duration_s = MOTOR_CONTROL_DT_DEFAULT_S; }
     return actual_duration_s;
 }
 
-void dm4310_set_trace(const struct motor_device *motor,
-                             float target_position_rad,
-                             float duration_s)
+void dm4310_set_trace(const struct motor_device *motor, float target_position_rad, float duration_s)
 {
     dm4310_data_t *data;
-    float position_epsilon_rad;
-    float end_position_rad;
     float delta_position_rad;
+    float position_epsilon_rad;
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
-    if (!motor_is_online(motor) || data->enabled == 0U || data->p_max <= 0.0f || data->v_max <= 0.0f || duration_s <= 0.0f) { return; }
+    if (!motor_is_online(motor) || data->enabled == 0U || duration_s <= 0.0f) { return; }
     data->trace.start_position_rad = data->position_rad;
-    end_position_rad = clamp_float(target_position_rad, -data->p_max, data->p_max);
-    delta_position_rad = end_position_rad - data->trace.start_position_rad;
-    data->trace.end_position_rad = end_position_rad;
+    delta_position_rad = dm4310_wrap_to_pi(target_position_rad - data->trace.start_position_rad);
     data->trace.delta_position_rad = delta_position_rad;
-    data->trace.duration_s = dm4310_trace_resolve_duration(data, delta_position_rad, duration_s);
+    data->trace.end_position_rad = data->trace.start_position_rad + delta_position_rad;
+    data->trace.duration_s = dm4310_trace_resolve_duration(delta_position_rad, duration_s);
     data->trace.position_ref_rad = data->trace.start_position_rad;
     data->trace.velocity_ref_rad_s = 0.0f;
     data->trace.acceleration_ref_rad_s2 = 0.0f;
@@ -1447,11 +1471,11 @@ void dm4310_set_trace(const struct motor_device *motor,
     position_epsilon_rad = 2.0f * data->p_max / 65535.0f;
     if (delta_position_rad > -position_epsilon_rad && delta_position_rad < position_epsilon_rad) {
         data->trace.active = 0U;
-        dm4310_trace_set_target(motor, data->trace.end_position_rad, 0.0f);
+        dm4310_trace_set_target(motor, data->trace.end_position_rad, 0.0f, 0.0f);
         return;
     }
     data->trace.active = 1U;
-    dm4310_trace_set_target(motor, data->trace.start_position_rad, 0.0f);
+    dm4310_trace_set_target(motor, data->trace.start_position_rad, 0.0f, 0.0f);
 }
 
 void dm4310_trace_update(struct motor_device *motor)
@@ -1473,7 +1497,7 @@ void dm4310_trace_update(struct motor_device *motor)
     if (trace->active == 0U) { return; }
     if (data->enabled == 0U || !motor_is_online(motor)) {
         trace->active = 0U;
-        dm4310_trace_set_target(motor, data->position_rad, 0.0f);
+        dm4310_trace_set_target(motor, data->position_rad, 0.0f, 0.0f);
         return;
     }
     elapsed_s = (float)(HAL_GetTick() - trace->start_tick) * 0.001f;
@@ -1482,7 +1506,7 @@ void dm4310_trace_update(struct motor_device *motor)
         trace->velocity_ref_rad_s = 0.0f;
         trace->acceleration_ref_rad_s2 = 0.0f;
         trace->active = 0U;
-        dm4310_trace_set_target(motor, trace->end_position_rad, 0.0f);
+        dm4310_trace_set_target(motor, trace->end_position_rad, 0.0f, 0.0f);
         return;
     }
     normalized_time = clamp_float(elapsed_s / trace->duration_s, 0.0f, 1.0f);
@@ -1496,7 +1520,7 @@ void dm4310_trace_update(struct motor_device *motor)
     trace->position_ref_rad = trace->start_position_rad + trace->delta_position_rad * position_scale;
     trace->velocity_ref_rad_s = trace->delta_position_rad / trace->duration_s * velocity_scale;
     trace->acceleration_ref_rad_s2 = trace->delta_position_rad / (trace->duration_s * trace->duration_s) * acceleration_scale;
-    dm4310_trace_set_target(motor, trace->position_ref_rad, trace->velocity_ref_rad_s);
+    dm4310_trace_set_target(motor, trace->position_ref_rad, trace->velocity_ref_rad_s, trace->acceleration_ref_rad_s2);
 }
 
 void dm4310_set_target(const struct motor_device *motor, int para_num, ...)
@@ -1504,44 +1528,50 @@ void dm4310_set_target(const struct motor_device *motor, int para_num, ...)
     dm4310_data_t *data;
     float target_position_rad;
     float target_velocity_rad_s;
-    float target_torque_nm;
+    float target_acceleration_rad_s2;
     va_list arguments;
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
     target_position_rad = data->target_position_rad;
     target_velocity_rad_s = data->target_velocity_rad_s;
-    target_torque_nm = data->target_torque_nm;
+    target_acceleration_rad_s2 = data->target_acceleration_rad_s2;
     va_start(arguments, para_num);
-    if (para_num >= 1) { target_position_rad = (float)va_arg(arguments, double); }
-    if (para_num >= 2) { target_velocity_rad_s = (float)va_arg(arguments, double); }
-    if (para_num >= 3) { target_torque_nm = (float)va_arg(arguments, double); }
+    if (para_num >= 1) { target_position_rad = (float)va_arg(arguments, double); target_velocity_rad_s = 0.0f; target_acceleration_rad_s2 = 0.0f; }
+    if (para_num >= 2) { target_velocity_rad_s = (float)va_arg(arguments, double); target_acceleration_rad_s2 = 0.0f; }
+    if (para_num >= 3) { target_acceleration_rad_s2 = (float)va_arg(arguments, double); }
     va_end(arguments);
     data->trace.active = 0U;
-    data->target_position_rad = target_position_rad;
-    data->target_velocity_rad_s = target_velocity_rad_s;
-    data->target_torque_nm = target_torque_nm;
+    dm4310_trace_set_target(motor, target_position_rad, target_velocity_rad_s, target_acceleration_rad_s2);
 }
 
-void dm4310_get_status(const struct motor_device *motor, const char *which,
-                              void *value)
+void dm4310_get_status(const struct motor_device *motor, const char *which, void *value)
 {
     dm4310_data_t *data;
     if (motor == NULL || motor->motor_data == NULL || which == NULL || value == NULL) { return; }
     data = motor->motor_data;
     if (strcmp(which, "POS") == 0) { *(float *)value = data->position_rad; }
     else if (strcmp(which, "VEL") == 0) { *(float *)value = data->velocity_rad_s; }
+    else if (strcmp(which, "TORQUE") == 0) { *(float *)value = data->torque_nm; }
     else if (strcmp(which, "TEMP") == 0) { *(uint8_t *)value = data->rotor_temperature; }
+    else if (strcmp(which, "MOS_TEMP") == 0) { *(uint8_t *)value = data->mos_temperature; }
     else if (strcmp(which, "ERR") == 0) { *(uint8_t *)value = data->error; }
+    else if (strcmp(which, "ID") == 0) { *(uint8_t *)value = data->can_id; }
+    else if (strcmp(which, "TARGET_POS") == 0) { *(float *)value = data->target_position_rad; }
+    else if (strcmp(which, "TARGET_VEL") == 0) { *(float *)value = data->target_velocity_rad_s; }
+    else if (strcmp(which, "TARGET_ACC") == 0) { *(float *)value = data->target_acceleration_rad_s2; }
 }
 
-void dm4310_set_para(const struct motor_device *motor, const char *which,
-                            const void *value)
+void dm4310_set_para(const struct motor_device *motor, const char *which, const void *value)
 {
     dm4310_data_t *data;
     if (motor == NULL || motor->motor_data == NULL || which == NULL || value == NULL) { return; }
     data = motor->motor_data;
-    if (strcmp(which, "KP") == 0) { data->kp = clamp_float(*(const float *)value, 0.0f, 500.0f); }
-    else if (strcmp(which, "KD") == 0) { data->kd = clamp_float(*(const float *)value, 0.0f, 5.0f); }
+    if (strcmp(which, "POS_KP") == 0) { data->position_pid.kp = *(const float *)value; }
+    else if (strcmp(which, "POS_KI") == 0) { data->position_pid.ki = *(const float *)value; }
+    else if (strcmp(which, "POS_KD") == 0) { data->position_pid.kd = *(const float *)value; }
+    else if (strcmp(which, "VEL_KP") == 0) { data->velocity_pid.kp = *(const float *)value; }
+    else if (strcmp(which, "VEL_KI") == 0) { data->velocity_pid.ki = *(const float *)value; }
+    else if (strcmp(which, "VEL_KD") == 0) { data->velocity_pid.kd = *(const float *)value; }
 }
 
 /* --------------------------- 信号发送与接收部分 --------------------------- */

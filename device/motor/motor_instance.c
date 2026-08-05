@@ -204,11 +204,37 @@ static struct motor_device dm3507_1 = {
     .set_para = dm3507_set_para,
 };
 
-static dm4310_data_t dm4310_pitch_data;
+static const dm4310_pid_config_t dm4310_pitch_pid_config = {
+    .position_pid = {
+        .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
+        .integral_limit = 0.0f,
+        .output_limit = 20.94f,
+        .derivative_filter_alpha = 0.5f,
+        .deadband = 0.002f,
+        .integral_separation_threshold = 0.0f,
+        .variable_integration_threshold = 0.0f,
+    },
+    .velocity_pid = {
+        .kp = 0.10f, .ki = 0.0f, .kd = 0.0f,
+        .integral_limit = 1.0f,
+        .output_limit = 10.0f,
+        .derivative_filter_alpha = 0.5f,
+        .deadband = 0.05f,
+        .integral_separation_threshold = 20.0f,
+        .variable_integration_threshold = 10.0f,
+    },
+};
+
+static dm4310_data_t dm4310_pitch_data = {
+    .pid_config = &dm4310_pitch_pid_config,
+    .master_id = 0x03U,
+    .command_id = 0x02U,
+    .rotational_inertia_kg_m2 = 0.0f,
+    .friction_torque = 0.0f,
+};
 
 static struct motor_device dm4310_pitch = {
     .motor_name = "DM4310_PITCH",
-    .motor_id = DM_4310_MASTER_ID,
     .motor_data = &dm4310_pitch_data,
     .init = dm4310_init,
     .feedback_calculate = dm4310_feedback_calculate,
@@ -244,7 +270,7 @@ void Motor_System_PowerOn_Init(void)
     gm6020_pitch.init(&gm6020_pitch, CAN_GM6020_PITCH_ID, &hfdcan1, 0);
     gm6020_yaw.init(&gm6020_yaw, CAN_GM6020_YAW_ID, &hfdcan1, 0);
     m3508_2.init(&m3508_2, CAN_M3508_2_ID, &hfdcan1, 0);
-    dm4310_pitch.init(&dm4310_pitch, DM_4310_MASTER_ID, &hfdcan1, 0);
+    dm4310_pitch.init(&dm4310_pitch, 0U, &hfdcan1, 0);
     dm3507_1.init(&dm3507_1, 0U, &hfdcan1, 0);
 
     gm6020_pitch.send_disable_cmd(&gm6020_pitch);
