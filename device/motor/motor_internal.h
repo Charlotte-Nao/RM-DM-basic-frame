@@ -29,17 +29,10 @@
 #define M3508_TRACE_POSITION_EPSILON_RAD (TWO_PI / M3508_ENCODER_RESOLUTION)
 #define M3508_TRACE_MAX_ACCELERATION_RAD_S2 300.0f
 
-#define DM3507_MASTER_ID                  0x00U
-#define DM3507_COMMAND_ID                 0x01U
 #define DM3507_P_MAX                      12.566f
 #define DM3507_V_MAX                      100.0f
 #define DM3507_T_MAX                      5.0f
 #define DM3507_TORQUE_LIMIT_NM            3.0f
-#define DM3507_ERR_ENABLED                0x1U
-#define DM3507_ERR_FAULT_MIN              0x2U
-#define DM3507_ERR_FAULT_MAX              0xEU
-#define DM3507_CLEAR_RETRY_MS             50U
-#define DM3507_ENABLE_RETRY_MS            20U
 #define DM3507_TRACE_MAX_ACCELERATION_RAD_S2 100.0f
 
 #define DM4310_COMMAND_ID                 CAN_J4310_PITCH_ID
@@ -53,13 +46,6 @@
 #define DM4310_CLEAR_RETRY_MS              50U
 #define DM4310_ENABLE_RETRY_MS             20U
 #define DM4310_TRACE_MAX_ACCELERATION_RAD_S2 30.0f
-
-#if (DM3507_MASTER_ID == DM_4310_MASTER_ID) || \
-    (DM3507_MASTER_ID == DM4310_COMMAND_ID) || \
-    (DM3507_COMMAND_ID == DM_4310_MASTER_ID) || \
-    (DM3507_COMMAND_ID == DM4310_COMMAND_ID)
-#error "DM3507 and DM4310 CAN identifiers must be unique on FDCAN1"
-#endif
 
 typedef struct {
     pid_t position_pid;
@@ -146,6 +132,8 @@ typedef struct {
 
 typedef struct {
     const dm3507_pid_config_t *pid_config;
+    uint32_t master_id;
+    uint32_t command_id;
     pid_t position_pid;
     pid_t velocity_pid;
     float target_position_rad;

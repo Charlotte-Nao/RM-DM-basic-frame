@@ -163,7 +163,7 @@ static const dm3507_pid_config_t dm3507_1_pid_config = {
     .position_pid = {
         .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
         .integral_limit = 0.0f,
-        .output_limit = DM3507_V_MAX,
+        .output_limit = 48.17f,
         .derivative_filter_alpha = 0.5f,
         .deadband = 0.002f,
         .integral_separation_threshold = 0.0f,
@@ -182,13 +182,14 @@ static const dm3507_pid_config_t dm3507_1_pid_config = {
 
 static dm3507_data_t dm3507_1_data = {
     .pid_config = &dm3507_1_pid_config,
+    .master_id = 0x00U,
+    .command_id = 0x01U,
     .rotational_inertia_kg_m2 = 0.0f,
     .friction_torque = 0.0f,
 };
 
 static struct motor_device dm3507_1 = {
     .motor_name = "DM3507_1",
-    .motor_id = DM3507_MASTER_ID,
     .motor_data = &dm3507_1_data,
     .init = dm3507_init,
     .feedback_calculate = dm3507_feedback_calculate,
@@ -244,7 +245,7 @@ void Motor_System_PowerOn_Init(void)
     gm6020_yaw.init(&gm6020_yaw, CAN_GM6020_YAW_ID, &hfdcan1, 0);
     m3508_2.init(&m3508_2, CAN_M3508_2_ID, &hfdcan1, 0);
     dm4310_pitch.init(&dm4310_pitch, DM_4310_MASTER_ID, &hfdcan1, 0);
-    dm3507_1.init(&dm3507_1, DM3507_MASTER_ID, &hfdcan1, 0);
+    dm3507_1.init(&dm3507_1, 0U, &hfdcan1, 0);
 
     gm6020_pitch.send_disable_cmd(&gm6020_pitch);
     gm6020_yaw.send_disable_cmd(&gm6020_yaw);
