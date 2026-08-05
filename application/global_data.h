@@ -7,8 +7,6 @@
 
 #include <stdint.h>
 
-struct four_axis_robotic_arm;
-
 /* Shared IMU attitude.  The sensor task is the sole writer. */
 typedef struct {
     volatile float imu_roll_rad;

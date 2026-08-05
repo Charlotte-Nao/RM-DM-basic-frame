@@ -4,6 +4,8 @@
  */
 
 #include "motor.h"
+#include "motor_instance.h"
+#include "motor_internal.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -13,200 +15,12 @@
 #include "../../dsp/pid/pid.h"
 #include "../../dsp/math.h"
 
-#define MOTOR_CONTROL_DT_DEFAULT_S       0.001f
-#define MOTOR_OFFLINE_TIMEOUT_MS         100U
-
-#define GM6020_CONTROL_GROUP_ID          0x1FEU
-#define GM6020_ENCODER_RESOLUTION        8192.0f
-#define GM6020_OUTPUT_LIMIT              16384.0f
-#define GM6020_SPEED_LIMIT_RPM           320.0f
-
-#define GM6020_TRACE_POSITION_EPSILON_RAD (TWO_PI / GM6020_ENCODER_RESOLUTION)
-
-#define MOTOR_QUINTIC_PEAK_VELOCITY_FACTOR     1.875f
-#define MOTOR_QUINTIC_PEAK_ACCELERATION_FACTOR 5.773502691896258f
-#define GM6020_TRACE_MAX_ACCELERATION_RAD_S2    300.0f
-
-#define M3508_CONTROL_GROUP_ID           0x200U
-#define M3508_ENCODER_RESOLUTION         8192.0f
-#define M3508_OUTPUT_LIMIT               16384.0f
-#define M3508_SPEED_LIMIT_RPM            9085.0f
-#define M3508_MAX_TORQUE_CURRENT_A       20.0f
-#define M3508_TRACE_POSITION_EPSILON_RAD (TWO_PI / M3508_ENCODER_RESOLUTION)
-#define M3508_TRACE_MAX_ACCELERATION_RAD_S2 300.0f
-
-#define DM3507_MASTER_ID                  0x00U
-#define DM3507_COMMAND_ID                 0x01U
-#define DM3507_P_MAX                      12.566f
-#define DM3507_V_MAX                      100.0f
-#define DM3507_T_MAX                      5.0f
-#define DM3507_TORQUE_LIMIT_NM            3.0f
-#define DM3507_ERR_ENABLED                0x1U
-#define DM3507_ERR_FAULT_MIN              0x2U
-#define DM3507_ERR_FAULT_MAX              0xEU
-#define DM3507_CLEAR_RETRY_MS             50U
-#define DM3507_ENABLE_RETRY_MS            20U
-#define DM3507_TRACE_MAX_ACCELERATION_RAD_S2 100.0f
-
-#define DM4310_COMMAND_ID                 CAN_J4310_PITCH_ID
-#define DM4310_P_MAX                      12.5f
-#define DM4310_V_MAX                      3.0f
-#define DM4310_T_MAX                      10.0f
-#define DM4310_ERR_DISABLED                0x0U
-#define DM4310_ERR_ENABLED                 0x1U
-#define DM4310_ERR_FAULT_MIN               0x8U
-#define DM4310_ERR_FAULT_MAX               0xEU
-#define DM4310_CLEAR_RETRY_MS              50U
-#define DM4310_ENABLE_RETRY_MS             20U
-#define DM4310_TRACE_MAX_ACCELERATION_RAD_S2 30.0f
-
-#if (DM3507_MASTER_ID == DM_4310_MASTER_ID) || \
-    (DM3507_MASTER_ID == DM4310_COMMAND_ID) || \
-    (DM3507_COMMAND_ID == DM_4310_MASTER_ID) || \
-    (DM3507_COMMAND_ID == DM4310_COMMAND_ID)
-#error "DM3507 and DM4310 CAN identifiers must be unique on FDCAN1"
-#endif
-
 volatile uint32_t g_can1_irq_count = 0U;
 volatile uint32_t g_can1_frame_count = 0U;
 volatile uint32_t g_can1_last_id = 0U;
 volatile uint32_t g_can1_last_dlc = 0U;
 volatile uint32_t g_can1_tx_ok_count = 0U;
 volatile uint32_t g_can1_tx_fail_count = 0U;
-
-typedef struct {
-    pid_t position_pid;
-    pid_t velocity_pid;
-} gm6020_pid_config_t;
-
-typedef struct {
-    pid_t position_pid;
-    pid_t velocity_pid;
-} m3508_pid_config_t;
-
-typedef struct {
-    pid_t position_pid;
-    pid_t velocity_pid;
-} dm3507_pid_config_t;
-
-typedef struct {
-    float start_position_rad;
-    float end_position_rad;
-    float delta_position_rad;
-    float duration_s;
-    float position_ref_rad;
-    float velocity_ref_rad_s;
-    float acceleration_ref_rad_s2;
-    uint32_t start_tick;
-    uint8_t active;
-} motor_trace_t;
-
-/* ------------------------------ 电机结构体封装 ---------------------------------- */
-typedef struct {
-    const gm6020_pid_config_t *pid_config;
-    pid_t position_pid;
-    pid_t velocity_pid;
-    float target_position_rad;
-    float target_velocity_rpm;  // 速度前馈
-    float target_acceleration_rad_s2; // 加速度前馈
-    float rotational_inertia_kg_m2;
-    float friction_torque;
-    float K_t_Nm_A;
-    motor_trace_t trace;
-    float position_rad;
-    float velocity_rpm;
-    float torque_current;
-    float output_current_code;
-    uint16_t encoder;
-    uint16_t last_encoder;
-    int16_t speed_rpm;
-    int16_t current;
-    uint8_t temperature;
-    uint8_t encoder_initialized;
-    uint8_t enabled;
-    uint32_t last_update_tick;
-    uint8_t control_slot;               /* GM6020 ID: 1..4 in group 0x1FF. */
-    float position_continuous_rad;
-} gm6020_data_t;
-
-typedef struct {
-    const m3508_pid_config_t *pid_config;
-    pid_t position_pid;
-    pid_t velocity_pid;
-    float target_position_rad;
-    float target_velocity_rpm;
-    float target_acceleration_rad_s2;
-    float rotational_inertia_kg_m2;
-    float friction_torque;
-    float K_t_Nm_A;
-    motor_trace_t trace;
-    float position_rad;
-    float velocity_rpm;
-    float torque_current;
-    float output_current_code;
-    uint16_t encoder;
-    uint16_t last_encoder;
-    int16_t speed_rpm;
-    int16_t current;
-    uint8_t temperature;
-    uint8_t error;
-    uint8_t encoder_initialized;
-    uint8_t enabled;
-    uint32_t last_update_tick;
-    uint8_t control_slot;
-    float position_continuous_rad;
-} m3508_data_t;
-
-typedef struct {
-    const dm3507_pid_config_t *pid_config;
-    pid_t position_pid;
-    pid_t velocity_pid;
-    float target_position_rad;
-    float target_velocity_rad_s;
-    float target_acceleration_rad_s2;
-    float rotational_inertia_kg_m2;
-    float friction_torque;
-    motor_trace_t trace;
-    float position_rad;
-    float velocity_rad_s;
-    float torque_nm;
-    float output_torque_nm;
-    float p_max;
-    float v_max;
-    float t_max;
-    uint8_t can_id;
-    uint8_t error;
-    uint8_t mos_temperature;
-    uint8_t rotor_temperature;
-    uint8_t enable_requested;
-    uint8_t enabled;
-    uint8_t hold_position_pending;
-    uint32_t last_update_tick;
-    uint32_t last_clear_cmd_tick;
-    uint32_t last_enable_cmd_tick;
-} dm3507_data_t;
-
-typedef struct {
-    float target_position_rad;
-    float target_velocity_rad_s;
-    float target_torque_nm;
-    motor_trace_t trace;
-    float kp;
-    float kd;
-    float position_rad;
-    float velocity_rad_s;
-    float torque_nm;
-    float p_max;
-    float v_max;
-    float t_max;
-    uint8_t error;
-    uint8_t mos_temperature;
-    uint8_t rotor_temperature;
-    uint8_t enable_requested; /* Software request, latched until explicit disable. */
-    uint8_t enabled;          /* Confirmed only by a feedback frame reporting enabled. */
-    uint32_t last_clear_cmd_tick;
-    uint32_t last_enable_cmd_tick;
-} dm4310_data_t;
 
 /* ------------------------------ 工具化函数 ---------------------------------- */
 
@@ -321,7 +135,7 @@ static void m3508_send_group(FDCAN_HandleTypeDef *can_handle);
 /* ------------------------------ GM6020 ---------------------------------- */
 // 初始化6020对象 传入要实例化电机对象，反馈id，can句柄
 // 作用为清空6020初始状态，绑定can和id，确定组帧槽位，并加载pid参数
-static void gm6020_init(struct motor_device *motor, uint32_t motor_id,
+void gm6020_init(struct motor_device *motor, uint32_t motor_id,
                         FDCAN_HandleTypeDef *can_handle, int para_num, ...)
 {
     gm6020_data_t *data;
@@ -364,7 +178,7 @@ static void gm6020_init(struct motor_device *motor, uint32_t motor_id,
 
 // 解析6020反馈帧数据，传入实例化电机与反馈帧
 // 数据存储在该实例对应的私有数据中
-static void gm6020_feedback_calculate(const struct motor_device *motor,
+void gm6020_feedback_calculate(const struct motor_device *motor,
                                       const uint8_t frame[8])
 {
     gm6020_data_t *data;
@@ -411,7 +225,7 @@ static void gm6020_feedback_calculate(const struct motor_device *motor,
 }
 
 // 打包6020电机数据组帧发送
-static void gm6020_send_ctrl_cmd(struct motor_device *motor)
+void gm6020_send_ctrl_cmd(struct motor_device *motor)
 {
     if (motor == NULL || motor->motor_data == NULL) {
         return;
@@ -421,7 +235,7 @@ static void gm6020_send_ctrl_cmd(struct motor_device *motor)
 }
 
 // 使能6020
-static void gm6020_enable(struct motor_device *motor)
+void gm6020_enable(struct motor_device *motor)
 {
     gm6020_data_t *data;
 
@@ -446,7 +260,7 @@ static void gm6020_enable(struct motor_device *motor)
 }
 
 // 失能6020
-static void gm6020_disable(struct motor_device *motor)
+void gm6020_disable(struct motor_device *motor)
 {
     gm6020_data_t *data;
 
@@ -471,7 +285,7 @@ static void gm6020_disable(struct motor_device *motor)
 }
 
 // 不断更新gm6020应该下发的值
-static void gm6020_update(struct motor_device *motor)
+void gm6020_update(struct motor_device *motor)
 {
     gm6020_data_t *data;
     float position_error;
@@ -593,7 +407,7 @@ static float gm6020_trace_resolve_duration(float delta_position_rad, float reque
 }
 
 // 初始化生成轨迹参数
-static void gm6020_set_trace(const struct motor_device *motor,
+void gm6020_set_trace(const struct motor_device *motor,
                              float target_position_rad,
                              float duration_s)
 {
@@ -630,7 +444,7 @@ static void gm6020_set_trace(const struct motor_device *motor,
 }
 
 // 依据strace进度更新strace
-static void gm6020_trace_update(struct motor_device *motor)
+void gm6020_trace_update(struct motor_device *motor)
 {
     gm6020_data_t *data;
     motor_trace_t *trace;
@@ -691,7 +505,7 @@ static void gm6020_trace_update(struct motor_device *motor)
 }
 
 // 设置目标位置，参数顺序为目标位置，速度前馈
-static void gm6020_set_target(const struct motor_device *motor, int para_num, ...)
+void gm6020_set_target(const struct motor_device *motor, int para_num, ...)
 {
     gm6020_data_t *data;
     float target_position_rad;
@@ -726,7 +540,7 @@ static void gm6020_set_target(const struct motor_device *motor, int para_num, ..
 }
 
 //获取电机的某个状态值，存入value中
-static void gm6020_get_status(const struct motor_device *motor, const char *which,
+void gm6020_get_status(const struct motor_device *motor, const char *which,
                               void *value)
 {
     gm6020_data_t *data;
@@ -743,7 +557,7 @@ static void gm6020_get_status(const struct motor_device *motor, const char *whic
 
 
 // 运行时把对应的pid参数修改为value
-static void gm6020_set_para(const struct motor_device *motor, const char *which,
+void gm6020_set_para(const struct motor_device *motor, const char *which,
                             const void *value)
 {
     gm6020_data_t *data;
@@ -760,7 +574,7 @@ static void gm6020_set_para(const struct motor_device *motor, const char *which,
 /* ------------------------------ M3508 ---------------------------------- */
 // 初始化3508对象 传入要实例化电机对象，反馈id，can句柄
 // 作用为清空3508初始状态，绑定can和id，确定组帧槽位，并加载pid参数
-static void m3508_init(struct motor_device *motor, uint32_t motor_id,
+void m3508_init(struct motor_device *motor, uint32_t motor_id,
                        FDCAN_HandleTypeDef *can_handle, int para_num, ...)
 {
     m3508_data_t *data;
@@ -794,7 +608,7 @@ static void m3508_init(struct motor_device *motor, uint32_t motor_id,
 
 // 解析3508反馈帧数据，传入实例化电机与反馈帧
 // 数据存储在该实例对应的私有数据中
-static void m3508_feedback_calculate(const struct motor_device *motor,
+void m3508_feedback_calculate(const struct motor_device *motor,
                                      const uint8_t frame[8])
 {
     m3508_data_t *data;
@@ -825,14 +639,14 @@ static void m3508_feedback_calculate(const struct motor_device *motor,
 }
 
 // 打包3508电机数据组帧发送
-static void m3508_send_ctrl_cmd(struct motor_device *motor)
+void m3508_send_ctrl_cmd(struct motor_device *motor)
 {
     if (motor == NULL || motor->motor_data == NULL) { return; }
     m3508_send_group(motor->motor_can_handle);
 }
 
 // 使能3508
-static void m3508_enable(struct motor_device *motor)
+void m3508_enable(struct motor_device *motor)
 {
     m3508_data_t *data;
     if (motor == NULL || motor->motor_data == NULL || !motor_is_online(motor)) { return; }
@@ -848,7 +662,7 @@ static void m3508_enable(struct motor_device *motor)
 }
 
 // 失能3508
-static void m3508_disable(struct motor_device *motor)
+void m3508_disable(struct motor_device *motor)
 {
     m3508_data_t *data;
     if (motor == NULL || motor->motor_data == NULL) { return; }
@@ -866,7 +680,7 @@ static void m3508_disable(struct motor_device *motor)
 }
 
 // 不断更新m3508应该下发的值
-static void m3508_update(struct motor_device *motor)
+void m3508_update(struct motor_device *motor)
 {
     m3508_data_t *data;
     float position_error;
@@ -948,7 +762,7 @@ static float m3508_trace_resolve_duration(float delta_position_rad, float reques
 }
 
 // 初始化生成轨迹参数
-static void m3508_set_trace(const struct motor_device *motor,
+void m3508_set_trace(const struct motor_device *motor,
                             float target_position_rad,
                             float duration_s)
 {
@@ -976,7 +790,7 @@ static void m3508_set_trace(const struct motor_device *motor,
 }
 
 // 依据strace进度更新strace
-static void m3508_trace_update(struct motor_device *motor)
+void m3508_trace_update(struct motor_device *motor)
 {
     m3508_data_t *data;
     motor_trace_t *trace;
@@ -1024,7 +838,7 @@ static void m3508_trace_update(struct motor_device *motor)
 }
 
 // 设置目标位置，参数顺序为目标位置，速度前馈，加速度前馈
-static void m3508_set_target(const struct motor_device *motor, int para_num, ...)
+void m3508_set_target(const struct motor_device *motor, int para_num, ...)
 {
     m3508_data_t *data;
     float target_position_rad;
@@ -1053,7 +867,7 @@ static void m3508_set_target(const struct motor_device *motor, int para_num, ...
 }
 
 // 获取电机的某个状态值，存入value中
-static void m3508_get_status(const struct motor_device *motor, const char *which,
+void m3508_get_status(const struct motor_device *motor, const char *which,
                              void *value)
 {
     m3508_data_t *data;
@@ -1071,7 +885,7 @@ static void m3508_get_status(const struct motor_device *motor, const char *which
 }
 
 // 运行时把对应的pid参数修改为value
-static void m3508_set_para(const struct motor_device *motor, const char *which,
+void m3508_set_para(const struct motor_device *motor, const char *which,
                            const void *value)
 {
     m3508_data_t *data;
@@ -1094,7 +908,7 @@ static void dm3507_send_special(struct motor_device *motor, uint8_t command)
     motor_send_standard(motor->motor_can_handle, DM3507_COMMAND_ID, frame);
 }
 
-static void dm3507_init(struct motor_device *motor, uint32_t motor_id, FDCAN_HandleTypeDef *can_handle, int para_num, ...)
+void dm3507_init(struct motor_device *motor, uint32_t motor_id, FDCAN_HandleTypeDef *can_handle, int para_num, ...)
 {
     dm3507_data_t *data;
     const dm3507_pid_config_t *pid_config;
@@ -1122,7 +936,7 @@ static void dm3507_init(struct motor_device *motor, uint32_t motor_id, FDCAN_Han
     (void)para_num;
 }
 
-static void dm3507_feedback_calculate(const struct motor_device *motor, const uint8_t frame[8])
+void dm3507_feedback_calculate(const struct motor_device *motor, const uint8_t frame[8])
 {
     dm3507_data_t *data;
     uint16_t position;
@@ -1143,7 +957,7 @@ static void dm3507_feedback_calculate(const struct motor_device *motor, const ui
     data->rotor_temperature = frame[7];
 }
 
-static void dm3507_send_ctrl_cmd(struct motor_device *motor)
+void dm3507_send_ctrl_cmd(struct motor_device *motor)
 {
     dm3507_data_t *data;
     uint16_t position;
@@ -1167,7 +981,7 @@ static void dm3507_send_ctrl_cmd(struct motor_device *motor)
     motor_send_standard(motor->motor_can_handle, DM3507_COMMAND_ID, frame);
 }
 
-static void dm3507_enable(struct motor_device *motor)
+void dm3507_enable(struct motor_device *motor)
 {
     dm3507_data_t *data;
     if (motor == NULL || motor->motor_data == NULL) { return; }
@@ -1189,7 +1003,7 @@ static void dm3507_enable(struct motor_device *motor)
     data->last_enable_cmd_tick = data->last_clear_cmd_tick;
 }
 
-static void dm3507_disable(struct motor_device *motor)
+void dm3507_disable(struct motor_device *motor)
 {
     dm3507_data_t *data;
     if (motor == NULL || motor->motor_data == NULL) { return; }
@@ -1208,7 +1022,7 @@ static void dm3507_disable(struct motor_device *motor)
     dm3507_send_special(motor, 0xFDU);
 }
 
-static void dm3507_update(struct motor_device *motor)
+void dm3507_update(struct motor_device *motor)
 {
     dm3507_data_t *data;
     float position_error;
@@ -1286,7 +1100,7 @@ static float dm3507_trace_resolve_duration(float delta_position_rad, float reque
     return actual_duration_s;
 }
 
-static void dm3507_set_trace(const struct motor_device *motor, float target_position_rad, float duration_s)
+void dm3507_set_trace(const struct motor_device *motor, float target_position_rad, float duration_s)
 {
     dm3507_data_t *data;
     float delta_position_rad;
@@ -1313,7 +1127,7 @@ static void dm3507_set_trace(const struct motor_device *motor, float target_posi
     dm3507_trace_set_target(motor, data->trace.start_position_rad, 0.0f, 0.0f);
 }
 
-static void dm3507_trace_update(struct motor_device *motor)
+void dm3507_trace_update(struct motor_device *motor)
 {
     dm3507_data_t *data;
     motor_trace_t *trace;
@@ -1358,7 +1172,7 @@ static void dm3507_trace_update(struct motor_device *motor)
     dm3507_trace_set_target(motor, trace->position_ref_rad, trace->velocity_ref_rad_s, trace->acceleration_ref_rad_s2);
 }
 
-static void dm3507_set_target(const struct motor_device *motor, int para_num, ...)
+void dm3507_set_target(const struct motor_device *motor, int para_num, ...)
 {
     dm3507_data_t *data;
     float target_position_rad;
@@ -1380,7 +1194,7 @@ static void dm3507_set_target(const struct motor_device *motor, int para_num, ..
     // LED_PURPLE_SET();
 }
 
-static void dm3507_get_status(const struct motor_device *motor, const char *which, void *value)
+void dm3507_get_status(const struct motor_device *motor, const char *which, void *value)
 {
     dm3507_data_t *data;
     if (motor == NULL || motor->motor_data == NULL || which == NULL || value == NULL) { return; }
@@ -1397,7 +1211,7 @@ static void dm3507_get_status(const struct motor_device *motor, const char *whic
     else if (strcmp(which, "TARGET_ACC") == 0) { *(float *)value = data->target_acceleration_rad_s2; }
 }
 
-static void dm3507_set_para(const struct motor_device *motor, const char *which, const void *value)
+void dm3507_set_para(const struct motor_device *motor, const char *which, const void *value)
 {
     dm3507_data_t *data;
     if (motor == NULL || motor->motor_data == NULL || which == NULL || value == NULL) { return; }
@@ -1423,7 +1237,7 @@ static void dm4310_send_special(struct motor_device *motor, uint8_t command)
     (void)data;
 }
 
-static void dm4310_init(struct motor_device *motor, uint32_t motor_id,
+void dm4310_init(struct motor_device *motor, uint32_t motor_id,
                         FDCAN_HandleTypeDef *can_handle, int para_num, ...)
 {
     dm4310_data_t *data;
@@ -1449,7 +1263,7 @@ static void dm4310_init(struct motor_device *motor, uint32_t motor_id,
     va_end(arguments);
 }
 
-static void dm4310_feedback_calculate(const struct motor_device *motor,
+void dm4310_feedback_calculate(const struct motor_device *motor,
                                       const uint8_t frame[8])
 {
     dm4310_data_t *data;
@@ -1471,7 +1285,7 @@ static void dm4310_feedback_calculate(const struct motor_device *motor,
     data->rotor_temperature = frame[7];
 }
 
-static void dm4310_send_ctrl_cmd(struct motor_device *motor)
+void dm4310_send_ctrl_cmd(struct motor_device *motor)
 {
     dm4310_data_t *data;
     uint16_t position;
@@ -1502,7 +1316,7 @@ static void dm4310_send_ctrl_cmd(struct motor_device *motor)
     motor_send_standard(motor->motor_can_handle, DM4310_COMMAND_ID, frame);
 }
 
-static void dm4310_enable(struct motor_device *motor)
+void dm4310_enable(struct motor_device *motor)
 {
     dm4310_data_t *data;
     if (motor == NULL || motor->motor_data == NULL) { return; }
@@ -1519,7 +1333,7 @@ static void dm4310_enable(struct motor_device *motor)
     data->last_enable_cmd_tick = data->last_clear_cmd_tick;
 }
 
-static void dm4310_disable(struct motor_device *motor)
+void dm4310_disable(struct motor_device *motor)
 {
     dm4310_data_t *data;
     if (motor == NULL || motor->motor_data == NULL) { return; }
@@ -1533,7 +1347,7 @@ static void dm4310_disable(struct motor_device *motor)
     dm4310_send_special(motor, 0xFDU);
 }
 
-static void dm4310_update(struct motor_device *motor)
+void dm4310_update(struct motor_device *motor)
 {
     dm4310_data_t *data;
     uint32_t now;
@@ -1600,7 +1414,7 @@ static float dm4310_trace_resolve_duration(const dm4310_data_t *data, float delt
     return actual_duration_s;
 }
 
-static void dm4310_set_trace(const struct motor_device *motor,
+void dm4310_set_trace(const struct motor_device *motor,
                              float target_position_rad,
                              float duration_s)
 {
@@ -1631,7 +1445,7 @@ static void dm4310_set_trace(const struct motor_device *motor,
     dm4310_trace_set_target(motor, data->trace.start_position_rad, 0.0f);
 }
 
-static void dm4310_trace_update(struct motor_device *motor)
+void dm4310_trace_update(struct motor_device *motor)
 {
     dm4310_data_t *data;
     motor_trace_t *trace;
@@ -1676,7 +1490,7 @@ static void dm4310_trace_update(struct motor_device *motor)
     dm4310_trace_set_target(motor, trace->position_ref_rad, trace->velocity_ref_rad_s);
 }
 
-static void dm4310_set_target(const struct motor_device *motor, int para_num, ...)
+void dm4310_set_target(const struct motor_device *motor, int para_num, ...)
 {
     dm4310_data_t *data;
     float target_position_rad;
@@ -1699,7 +1513,7 @@ static void dm4310_set_target(const struct motor_device *motor, int para_num, ..
     data->target_torque_nm = target_torque_nm;
 }
 
-static void dm4310_get_status(const struct motor_device *motor, const char *which,
+void dm4310_get_status(const struct motor_device *motor, const char *which,
                               void *value)
 {
     dm4310_data_t *data;
@@ -1711,7 +1525,7 @@ static void dm4310_get_status(const struct motor_device *motor, const char *whic
     else if (strcmp(which, "ERR") == 0) { *(uint8_t *)value = data->error; }
 }
 
-static void dm4310_set_para(const struct motor_device *motor, const char *which,
+void dm4310_set_para(const struct motor_device *motor, const char *which,
                             const void *value)
 {
     dm4310_data_t *data;
@@ -1721,223 +1535,6 @@ static void dm4310_set_para(const struct motor_device *motor, const char *which,
     else if (strcmp(which, "KD") == 0) { data->kd = clamp_float(*(const float *)value, 0.0f, 5.0f); }
 }
 
-/* --------------------------- Static instances --------------------------- */
-// 6020pitch实例化
-static const gm6020_pid_config_t gm6020_pitch_pid_config = {
-    .position_pid = {
-        .kp = 50.0f,
-        .ki = 0.0f,
-        .kd = 0.0f,
-        .integral_limit = 0.0f,
-        .output_limit = GM6020_SPEED_LIMIT_RPM,
-        .derivative_filter_alpha = 0.5f,
-        .deadband = 0.0f,
-        .integral_separation_threshold = 0.0f,
-        .variable_integration_threshold = 0.0f,
-    },
-    .velocity_pid = {
-        .kp = 20.0f,
-        .ki = 0.0f,
-        .kd = 0.0f,
-        .integral_limit = 3000.0f,
-        .output_limit = GM6020_OUTPUT_LIMIT,
-        .derivative_filter_alpha = 0.5f,
-        .deadband = 0.0f,
-        .integral_separation_threshold = 100.0f,
-        .variable_integration_threshold = 50.0f,
-    },
-};
-
-static gm6020_data_t gm6020_pitch_data = {
-    .pid_config = &gm6020_pitch_pid_config,
-    .rotational_inertia_kg_m2 = 0.0005,
-    .friction_torque = 0.0f,
-    .K_t_Nm_A = 0.741,
-
-};
-
-static struct motor_device gm6020_pitch = {
-    .motor_name = "GM6020_PITCH",
-    .motor_id = CAN_GM6020_PITCH_ID,
-    .motor_data = &gm6020_pitch_data,
-    .init = gm6020_init,
-    .feedback_calculate = gm6020_feedback_calculate,
-    .send_enable_cmd = gm6020_enable,
-    .send_disable_cmd = gm6020_disable,
-    .send_ctrl_cmd = gm6020_send_ctrl_cmd,
-    .update = gm6020_update,
-    .set_target = gm6020_set_target,
-    .set_trace = gm6020_set_trace,
-    .trace_update = gm6020_trace_update,
-    .get_status = gm6020_get_status,
-    .set_para = gm6020_set_para,
-};
-
-//6020yaw实例化
-static const gm6020_pid_config_t gm6020_yaw_pid_config = {
-    .position_pid = {
-        .kp = 200.0f,
-        .ki = 0.0f,
-        .kd = 0.0f,
-        .integral_limit = 10.0f,
-        .output_limit = GM6020_SPEED_LIMIT_RPM,
-        .derivative_filter_alpha = 0.2f,
-        .deadband = 0.0f,
-        .integral_separation_threshold = 0.0f,
-        .variable_integration_threshold = 0.0f,
-    },
-    .velocity_pid = {
-        .kp = 30.0f,
-        .ki = 200.0f,
-        .kd = 0.0f,
-        .integral_limit = 40.0f,
-        .output_limit = GM6020_OUTPUT_LIMIT,
-        .derivative_filter_alpha = 0.5f,
-        .deadband = 0.0f,
-        .integral_separation_threshold = 100.0f,
-        .variable_integration_threshold = 50.0f,
-    },
-};
-
-static gm6020_data_t gm6020_yaw_data = {
-    .pid_config = &gm6020_yaw_pid_config,
-    .rotational_inertia_kg_m2 = 0.000f,
-    .friction_torque = 0.0f,
-    .K_t_Nm_A = 0.741,
-};
-
-static struct motor_device gm6020_yaw = {
-    .motor_name = "GM6020_YAW",
-    .motor_id = CAN_GM6020_YAW_ID,
-    .motor_data = &gm6020_yaw_data,
-    .init = gm6020_init,
-    .feedback_calculate = gm6020_feedback_calculate,
-    .send_enable_cmd = gm6020_enable,
-    .send_disable_cmd = gm6020_disable,
-    .send_ctrl_cmd = gm6020_send_ctrl_cmd,
-    .update = gm6020_update,
-    .set_target = gm6020_set_target,
-    .set_trace = gm6020_set_trace,
-    .trace_update = gm6020_trace_update,
-    .get_status = gm6020_get_status,
-    .set_para = gm6020_set_para,
-};
-
-// 3508_1实例化
-static const m3508_pid_config_t m3508_2_pid_config = {
-    .position_pid = {
-        .kp = 80.0f,
-        .ki = 0.0f,
-        .kd = 0.0f,
-        .integral_limit = 0.0f,
-        .output_limit = M3508_SPEED_LIMIT_RPM,
-        .derivative_filter_alpha = 0.0f,
-        .deadband = 0.0f,
-        .integral_separation_threshold = 0.0f,
-        .variable_integration_threshold = 0.0f,
-    },
-    .velocity_pid = {
-        .kp = 15.0f,
-        .ki = 40.0f,
-        .kd = 0.0f,
-        .integral_limit = 50.0f,
-        .output_limit = M3508_OUTPUT_LIMIT,
-        .derivative_filter_alpha = 0.0f,
-        .deadband = 0.0f,
-        .integral_separation_threshold = 1000.0f,
-        .variable_integration_threshold = 500.0f,
-    },
-};
-
-static m3508_data_t m3508_2_data = {
-    .pid_config = &m3508_2_pid_config,
-    .rotational_inertia_kg_m2 = 0.000f,
-    .friction_torque = 0.0f,
-    .K_t_Nm_A = 0.02f,
-};
-
-static struct motor_device m3508_2 = {
-    .motor_name = "M3508_2",
-    .motor_id = CAN_M3508_2_ID,
-    .motor_data = &m3508_2_data,
-    .init = m3508_init,
-    .feedback_calculate = m3508_feedback_calculate,
-    .send_enable_cmd = m3508_enable,
-    .send_disable_cmd = m3508_disable,
-    .send_ctrl_cmd = m3508_send_ctrl_cmd,
-    .update = m3508_update,
-    .set_target = m3508_set_target,
-    .set_trace = m3508_set_trace,
-    .trace_update = m3508_trace_update,
-    .get_status = m3508_get_status,
-    .set_para = m3508_set_para,
-};
-
-// DM3507示例实例化：MIT模式，CAN ID为0x001，反馈Master ID为0x000
-static const dm3507_pid_config_t dm3507_1_pid_config = {
-    .position_pid = {
-        .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
-        .integral_limit = 0.0f,
-        .output_limit = DM3507_V_MAX,
-        .derivative_filter_alpha = 0.5f,
-        .deadband = 0.002f,
-        .integral_separation_threshold = 0.0f,
-        .variable_integration_threshold = 0.0f,
-    },
-    .velocity_pid = {
-        .kp = 0.10f, .ki = 0.0f, .kd = 0.0f,
-        .integral_limit = 1.0f,
-        .output_limit = DM3507_TORQUE_LIMIT_NM,
-        .derivative_filter_alpha = 0.5f,
-        .deadband = 0.05f,
-        .integral_separation_threshold = 20.0f,
-        .variable_integration_threshold = 10.0f,
-    },
-};
-
-static dm3507_data_t dm3507_1_data = {
-    .pid_config = &dm3507_1_pid_config,
-    .rotational_inertia_kg_m2 = 0.0f,
-    .friction_torque = 0.0f,
-};
-
-static struct motor_device dm3507_1 = {
-    .motor_name = "DM3507_1",
-    .motor_id = DM3507_MASTER_ID,
-    .motor_data = &dm3507_1_data,
-    .init = dm3507_init,
-    .feedback_calculate = dm3507_feedback_calculate,
-    .send_enable_cmd = dm3507_enable,
-    .send_disable_cmd = dm3507_disable,
-    .send_ctrl_cmd = dm3507_send_ctrl_cmd,
-    .update = dm3507_update,
-    .set_target = dm3507_set_target,
-    .set_trace = dm3507_set_trace,
-    .trace_update = dm3507_trace_update,
-    .get_status = dm3507_get_status,
-    .set_para = dm3507_set_para,
-};
-
-static dm4310_data_t dm4310_pitch_data;
-
-static struct motor_device dm4310_pitch = {
-    .motor_name = "DM4310_PITCH",
-    .motor_id = DM_4310_MASTER_ID,
-    .motor_data = &dm4310_pitch_data,
-    .init = dm4310_init,
-    .feedback_calculate = dm4310_feedback_calculate,
-    .send_enable_cmd = dm4310_enable,
-    .send_disable_cmd = dm4310_disable,
-    .send_ctrl_cmd = dm4310_send_ctrl_cmd,
-    .update = dm4310_update,
-    .set_target = dm4310_set_target,
-    .set_trace = dm4310_set_trace,
-    .trace_update = dm4310_trace_update,
-    .get_status = dm4310_get_status,
-    .set_para = dm4310_set_para,
-};
-
-static struct motor_device *const motor_list[] = {&gm6020_pitch, &dm4310_pitch, &gm6020_yaw, &m3508_2, &dm3507_1};
 /* --------------------------- 信号发送与接收部分 --------------------------- */
 /* Build every byte of 0x1FF from the registered GM6020s on this CAN bus.
  * This prevents one motor's update from zeroing the other three control slots. */
@@ -1950,8 +1547,8 @@ static void gm6020_send_group(FDCAN_HandleTypeDef *can_handle)
     if (can_handle == NULL) {
         return;
     }
-    for (index = 0U; index < (sizeof(motor_list) / sizeof(motor_list[0])); ++index) {
-        struct motor_device *motor = motor_list[index];
+    for (index = 0U; index < Motor_Get_Count(); ++index) {
+        struct motor_device *motor = motor_instance_get(index);
         gm6020_data_t *data;
         int16_t output;
         uint8_t offset;
@@ -1977,8 +1574,8 @@ static void m3508_send_group(FDCAN_HandleTypeDef *can_handle)
     uint8_t frame[8] = {0};
     uint32_t index;
     if (can_handle == NULL) { return; }
-    for (index = 0U; index < (sizeof(motor_list) / sizeof(motor_list[0])); ++index) {
-        struct motor_device *motor = motor_list[index];
+    for (index = 0U; index < Motor_Get_Count(); ++index) {
+        struct motor_device *motor = motor_instance_get(index);
         m3508_data_t *data;
         int16_t output;
         uint8_t offset;
@@ -1998,9 +1595,12 @@ struct motor_device *motor_get_device(const char *name)
 {
     uint32_t index;
     if (name == NULL) { return NULL; }
-    for (index = 0U; index < (sizeof(motor_list) / sizeof(motor_list[0])); ++index) {
-        if (strcmp(name, motor_list[index]->motor_name) == 0)
-            { return motor_list[index]; }
+    for (index = 0U; index < Motor_Get_Count(); ++index) {
+        struct motor_device *motor = motor_instance_get(index);
+
+        if (strcmp(name, motor->motor_name) == 0) {
+            return motor;
+        }
     }
     return NULL;
 }
@@ -2008,7 +1608,7 @@ struct motor_device *motor_get_device(const char *name)
 // 得到注册电机数量
 uint32_t Motor_Get_Count(void)
 {
-    return (uint32_t)(sizeof(motor_list) / sizeof(motor_list[0]));
+    return motor_instance_count();
 }
 
 bool motor_is_online(const struct motor_device *motor)
@@ -2019,27 +1619,15 @@ bool motor_is_online(const struct motor_device *motor)
     return (HAL_GetTick() - motor->last_rx_tick) <= MOTOR_OFFLINE_TIMEOUT_MS;
 }
 
-void Motor_System_PowerOn_Init(void)
-{
-    gm6020_pitch.init(&gm6020_pitch, CAN_GM6020_PITCH_ID, &hfdcan1, 0);
-    gm6020_yaw.init(&gm6020_yaw, CAN_GM6020_YAW_ID, &hfdcan1, 0);
-    m3508_2.init(&m3508_2, CAN_M3508_2_ID, &hfdcan1, 0);
-    dm4310_pitch.init(&dm4310_pitch, DM_4310_MASTER_ID, &hfdcan1, 0);
-    dm3507_1.init(&dm3507_1, DM3507_MASTER_ID, &hfdcan1, 0);
-    gm6020_pitch.send_disable_cmd(&gm6020_pitch);
-    gm6020_yaw.send_disable_cmd(&gm6020_yaw);
-    m3508_2.send_disable_cmd(&m3508_2);
-    dm4310_pitch.send_disable_cmd(&dm4310_pitch);
-    dm3507_1.send_disable_cmd(&dm3507_1);
-}
-
 void Motor_All_Trace_Update(void)
 {
     uint32_t index;
 
     for (index = 0U; index < Motor_Get_Count(); ++index) {
-        if (motor_list[index]->trace_update != NULL) {
-            motor_list[index]->trace_update(motor_list[index]);
+        struct motor_device *motor = motor_instance_get(index);
+
+        if (motor->trace_update != NULL) {
+            motor->trace_update(motor);
         }
     }
 }
@@ -2048,7 +1636,9 @@ void Motor_All_Update(void)
 {
     uint32_t index;
     for (index = 0U; index < Motor_Get_Count(); ++index) {
-        motor_list[index]->update(motor_list[index]);
+        struct motor_device *motor = motor_instance_get(index);
+
+        motor->update(motor);
     }
     Motor_Send_All_Control();
 }
@@ -2061,7 +1651,7 @@ void Motor_Send_All_Control(void)
     uint32_t m3508_sent_count = 0U;
     uint32_t index;
     for (index = 0U; index < Motor_Get_Count(); ++index) {
-        struct motor_device *motor = motor_list[index];
+        struct motor_device *motor = motor_instance_get(index);
         uint32_t sent_index;
         if (motor->motor_can_handle == NULL) { continue; }
         if (motor->send_ctrl_cmd == gm6020_send_ctrl_cmd) {
@@ -2106,7 +1696,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *handle, uint32_t interrupts)
         }
         if (header.IdType != FDCAN_STANDARD_ID || header.DataLength != FDCAN_DLC_BYTES_8) { continue; }
         for (index = 0U; index < Motor_Get_Count(); ++index) {
-            struct motor_device *motor = motor_list[index];
+            struct motor_device *motor = motor_instance_get(index);
             if (motor->motor_can_handle == handle && motor->motor_id == header.Identifier) {
                 motor->feedback_calculate(motor, frame);
                 motor->last_rx_tick = HAL_GetTick();

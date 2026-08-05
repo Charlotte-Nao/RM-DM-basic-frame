@@ -74,7 +74,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         bsp/pwm/pwm.h
         task/usb_task/usb_task.c
         task/usb_task/usb_task.h
-        task/usb_task/usb_task.h
         bsp/usb/usb.c
         bsp/usb/usb.h
         protocol/protocol.c
@@ -83,6 +82,9 @@ add_executable(${CMAKE_PROJECT_NAME}
         task/motor_task/motor_task.h
         task/uart_task/uart_task.c
         task/uart_task/uart_task.h
+        device/motor/motor_instance.c
+        device/motor/motor_instance.h
+        device/motor/motor_internal.h
 )
 
 # Add STM32CubeMX generated sources

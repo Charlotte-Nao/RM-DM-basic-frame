@@ -1,6 +1,6 @@
 /**
 * @file test_task.c
- * @brief YB-SD15M movement test.
+ * @brief just test
  */
 
 #include "test_task.h"
