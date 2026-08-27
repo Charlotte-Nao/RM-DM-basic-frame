@@ -46,6 +46,20 @@
 #define DM8009P_TORQUE_LIMIT_NM           40.0f
 #define DM8009P_TRACE_MAX_ACCELERATION_RAD_S2 45.0f
 
+#define MG4005E_CAN_BASE_ID               0x140U
+#define MG4005E_MIN_DEVICE_ID             1U
+#define MG4005E_MAX_DEVICE_ID             32U
+#define MG4005E_CONTROL_COMMAND           0xA2U
+#define MG4005E_STATE1_COMMAND            0x9AU
+#define MG4005E_CLEAR_ERROR_COMMAND      0x9BU
+#define MG4005E_STATE2_COMMAND            0x9CU
+#define MG4005E_MOTOR_OFF_COMMAND         0x80U
+#define MG4005E_MOTOR_ON_COMMAND          0x88U
+#define MG4005E_SPEED_LIMIT_DPS           72000.0f
+#define MG4005E_TORQUE_LIMIT_CODE         2048
+/* State2 exposes the encoder position as a 16-bit modulo value. */
+#define MG4005E_ENCODER_RESOLUTION        65536.0f
+
 typedef struct {
     pid_t position_pid;
     pid_t velocity_pid;
@@ -70,6 +84,29 @@ typedef struct {
     pid_t position_pid;
     pid_t velocity_pid;
 } dm8009p_pid_config_t;
+
+typedef struct {
+    float target_velocity_dps;           /* Command and feedback unit: dps. */
+    float position_rad;
+    float velocity_dps;
+    float torque_current_a;
+    float bus_voltage_v;
+    float bus_current_a;
+    uint16_t encoder;
+    uint16_t last_encoder;
+    int16_t iq_code;
+    int16_t speed_dps;
+    int8_t temperature;
+    uint8_t motor_state;
+    uint8_t error;
+    uint8_t device_id;
+    uint8_t encoder_initialized;
+    uint8_t enable_requested;
+    uint8_t enabled;
+    uint32_t last_enable_cmd_tick;
+    uint32_t last_state_request_tick;
+    float position_continuous_rad;
+} mg4005e_data_t;
 
 typedef struct {
     float start_position_rad;
@@ -255,6 +292,7 @@ MOTOR_DRIVER_DECLARATIONS(m3508);
 MOTOR_DRIVER_DECLARATIONS(dm3507);
 MOTOR_DRIVER_DECLARATIONS(dm4310);
 MOTOR_DRIVER_DECLARATIONS(dm8009p);
+MOTOR_DRIVER_DECLARATIONS(mg4005e);
 
 #undef MOTOR_DRIVER_DECLARATIONS
 

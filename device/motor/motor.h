@@ -1,6 +1,6 @@
 /**
  * @file motor.h
- * @brief Static, object-like motor device interface.
+ * @brief Static, object-like motor device interface for all registered motors.
  */
 
 #ifndef DM_MOTOR_H

@@ -295,7 +295,26 @@ static struct motor_device dm8009p_1 = {
     .set_para = dm8009p_set_para,
 };
 
-static struct motor_device *const motor_list[] = {&gm6020_pitch, &dm4310_pitch, &gm6020_yaw, &m3508_2, &dm3507_1, &dm8009p_1};
+static mg4005e_data_t mg4005e_1_data = {0};
+
+static struct motor_device mg4005e_1 = {
+    .motor_name = "MG4005E_1",
+    .motor_id = CAN_MG4005E_ID,
+    .motor_data = &mg4005e_1_data,
+    .init = mg4005e_init,
+    .feedback_calculate = mg4005e_feedback_calculate,
+    .send_enable_cmd = mg4005e_enable,
+    .send_disable_cmd = mg4005e_disable,
+    .send_ctrl_cmd = mg4005e_send_ctrl_cmd,
+    .update = mg4005e_update,
+    .set_target = mg4005e_set_target,
+    .set_trace = mg4005e_set_trace,
+    .trace_update = mg4005e_trace_update,
+    .get_status = mg4005e_get_status,
+    .set_para = mg4005e_set_para,
+};
+
+static struct motor_device *const motor_list[] = {&gm6020_pitch, &dm4310_pitch, &gm6020_yaw, &m3508_2, &dm3507_1, &dm8009p_1, &mg4005e_1};
 
 uint32_t motor_instance_count(void)
 {
@@ -319,6 +338,7 @@ void Motor_System_PowerOn_Init(void)
     dm4310_pitch.init(&dm4310_pitch, 0U, &hfdcan1, 0);
     dm3507_1.init(&dm3507_1, 0U, &hfdcan1, 0);
     dm8009p_1.init(&dm8009p_1, 0U, &hfdcan1, 0);
+    mg4005e_1.init(&mg4005e_1, CAN_MG4005E_ID, &hfdcan1, 0);
 
     gm6020_pitch.send_disable_cmd(&gm6020_pitch);
     gm6020_yaw.send_disable_cmd(&gm6020_yaw);
@@ -326,4 +346,5 @@ void Motor_System_PowerOn_Init(void)
     dm4310_pitch.send_disable_cmd(&dm4310_pitch);
     dm3507_1.send_disable_cmd(&dm3507_1);
     dm8009p_1.send_disable_cmd(&dm8009p_1);
+    mg4005e_1.send_disable_cmd(&mg4005e_1);
 }

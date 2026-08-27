@@ -1,6 +1,6 @@
 /**
  * @file motor.c
- * @brief GM6020, M3508 and DM motor-device implementations.
+ * @brief GM6020, M3508, DM and MG4005E motor-device implementations.
  */
 
 #include "motor.h"
@@ -911,6 +911,339 @@ void m3508_set_para(const struct motor_device *motor, const char *which,
     else if (strcmp(which, "VEL_KP") == 0) { data->velocity_pid.kp = *(const float *)value; }
     else if (strcmp(which, "VEL_KI") == 0) { data->velocity_pid.ki = *(const float *)value; }
     else if (strcmp(which, "VEL_KD") == 0) { data->velocity_pid.kd = *(const float *)value; }
+}
+
+/* ------------------------------ MG4005E ---------------------------------- */
+
+static void mg4005e_send_command(struct motor_device *motor, uint8_t command,
+                                 const uint8_t payload[8])
+{
+    uint8_t frame[8] = {0};
+
+    if (motor == NULL || payload == NULL || motor->motor_can_handle == NULL) {
+        return;
+    }
+    memcpy(frame, payload, sizeof(frame));
+    frame[0] = command;
+    motor_send_standard(motor->motor_can_handle, motor->motor_id, frame);
+}
+
+void mg4005e_init(struct motor_device *motor, uint32_t motor_id,
+                  FDCAN_HandleTypeDef *can_handle, int para_num, ...)
+{
+    mg4005e_data_t *data;
+    uint32_t command_id;
+
+    if (motor == NULL || motor->motor_data == NULL || can_handle == NULL) {
+        return;
+    }
+
+    if (motor_id >= MG4005E_MIN_DEVICE_ID && motor_id <= MG4005E_MAX_DEVICE_ID) {
+        command_id = MG4005E_CAN_BASE_ID + motor_id;
+    } else if (motor_id > MG4005E_CAN_BASE_ID &&
+               motor_id <= MG4005E_CAN_BASE_ID + MG4005E_MAX_DEVICE_ID) {
+        command_id = motor_id;
+    } else {
+        return;
+    }
+
+    data = motor->motor_data;
+    memset(data, 0, sizeof(*data));
+    data->device_id = (uint8_t)(command_id - MG4005E_CAN_BASE_ID);
+    motor->motor_id = command_id;
+    motor->motor_can_handle = can_handle;
+    motor->last_rx_tick = 0U;
+    data->target_velocity_dps = 0.0f;
+    data->position_rad = 0.0f;
+    data->velocity_dps = 0.0f;
+    data->torque_current_a = 0.0f;
+    data->bus_voltage_v = 0.0f;
+    data->bus_current_a = 0.0f;
+    data->enabled = 0U;
+    data->enable_requested = 0U;
+    (void)para_num;
+}
+
+void mg4005e_feedback_calculate(const struct motor_device *motor,
+                                const uint8_t frame[8])
+{
+    mg4005e_data_t *data;
+    uint16_t encoder;
+    int32_t delta_encoder;
+    int16_t iq_code;
+    int16_t speed_dps;
+    int16_t voltage_code;
+    int16_t current_code;
+
+    if (motor == NULL || motor->motor_data == NULL || frame == NULL) {
+        return;
+    }
+
+    data = motor->motor_data;
+    switch (frame[0]) {
+    case MG4005E_STATE1_COMMAND:
+    case MG4005E_CLEAR_ERROR_COMMAND:
+        voltage_code = (int16_t)((uint16_t)frame[2] |
+                                 ((uint16_t)frame[3] << 8));
+        current_code = (int16_t)((uint16_t)frame[4] |
+                                 ((uint16_t)frame[5] << 8));
+        data->temperature = (int8_t)frame[1];
+        data->bus_voltage_v = (float)voltage_code * 0.01f;
+        data->bus_current_a = (float)current_code * 0.01f;
+        data->motor_state = frame[6];
+        data->error = frame[7];
+        if (data->motor_state == 0x10U || data->error != 0U) {
+            data->enabled = 0U;
+        } else {
+            data->enabled = data->enable_requested;
+        }
+        break;
+
+    case MG4005E_STATE2_COMMAND:
+    case MG4005E_CONTROL_COMMAND:
+    case 0xA0U:
+    case 0xA1U:
+    case 0xA3U:
+    case 0xA4U:
+    case 0xA5U:
+    case 0xA6U:
+    case 0xA7U:
+    case 0xA8U:
+        data->temperature = (int8_t)frame[1];
+        iq_code = (int16_t)((uint16_t)frame[2] |
+                            ((uint16_t)frame[3] << 8));
+        speed_dps = (int16_t)((uint16_t)frame[4] |
+                              ((uint16_t)frame[5] << 8));
+        encoder = (uint16_t)((uint16_t)frame[6] |
+                             ((uint16_t)frame[7] << 8));
+
+        if (data->encoder_initialized == 0U) {
+            data->last_encoder = encoder;
+            data->position_continuous_rad =
+                (float)encoder * TWO_PI / MG4005E_ENCODER_RESOLUTION;
+            data->encoder_initialized = 1U;
+        } else {
+            delta_encoder = (int32_t)encoder - (int32_t)data->last_encoder;
+            if (delta_encoder > 32768) {
+                delta_encoder -= 65536;
+            } else if (delta_encoder < -32768) {
+                delta_encoder += 65536;
+            }
+            data->position_continuous_rad +=
+                (float)delta_encoder * TWO_PI / MG4005E_ENCODER_RESOLUTION;
+            data->last_encoder = encoder;
+        }
+
+        data->encoder = encoder;
+        data->iq_code = iq_code;
+        data->speed_dps = speed_dps;
+        data->position_rad = data->position_continuous_rad;
+        data->velocity_dps = (float)speed_dps;
+        data->torque_current_a = (float)iq_code * 66.0f / 4096.0f;
+        break;
+
+    case MG4005E_MOTOR_OFF_COMMAND:
+        data->enabled = 0U;
+        data->motor_state = 0x10U;
+        break;
+
+    case MG4005E_MOTOR_ON_COMMAND:
+        data->enabled = 1U;
+        data->motor_state = 0x00U;
+        break;
+
+    default:
+        break;
+    }
+}
+
+void mg4005e_send_ctrl_cmd(struct motor_device *motor)
+{
+    mg4005e_data_t *data;
+    int32_t speed_control;
+    float speed_scaled;
+    uint16_t torque_limit;
+    uint8_t frame[8] = {0};
+
+    if (motor == NULL || motor->motor_data == NULL) {
+        return;
+    }
+    data = motor->motor_data;
+    if (data->enable_requested == 0U || data->enabled == 0U) {
+        return;
+    }
+
+    speed_scaled = clamp_float(data->target_velocity_dps,
+                               -MG4005E_SPEED_LIMIT_DPS,
+                               MG4005E_SPEED_LIMIT_DPS) * 100.0f;
+    speed_control = (speed_scaled >= 0.0f) ?
+                    (int32_t)(speed_scaled + 0.5f) :
+                    (int32_t)(speed_scaled - 0.5f);
+    torque_limit = (uint16_t)MG4005E_TORQUE_LIMIT_CODE;
+    frame[2] = (uint8_t)torque_limit;
+    frame[3] = (uint8_t)(torque_limit >> 8);
+    frame[4] = (uint8_t)(uint32_t)speed_control;
+    frame[5] = (uint8_t)((uint32_t)speed_control >> 8);
+    frame[6] = (uint8_t)((uint32_t)speed_control >> 16);
+    frame[7] = (uint8_t)((uint32_t)speed_control >> 24);
+    mg4005e_send_command(motor, MG4005E_CONTROL_COMMAND, frame);
+}
+
+void mg4005e_enable(struct motor_device *motor)
+{
+    mg4005e_data_t *data;
+    uint8_t frame[8] = {0};
+
+    if (motor == NULL || motor->motor_data == NULL) {
+        return;
+    }
+    data = motor->motor_data;
+    data->enable_requested = 1U;
+    data->enabled = 0U;
+    data->motor_state = 0x00U;
+    data->last_enable_cmd_tick = HAL_GetTick();
+    mg4005e_send_command(motor, MG4005E_MOTOR_ON_COMMAND, frame);
+}
+
+void mg4005e_disable(struct motor_device *motor)
+{
+    mg4005e_data_t *data;
+    uint8_t frame[8] = {0};
+
+    if (motor == NULL || motor->motor_data == NULL) {
+        return;
+    }
+    data = motor->motor_data;
+    data->enable_requested = 0U;
+    data->enabled = 0U;
+    data->target_velocity_dps = 0.0f;
+    data->motor_state = 0x10U;
+    mg4005e_send_command(motor, MG4005E_MOTOR_OFF_COMMAND, frame);
+}
+
+void mg4005e_update(struct motor_device *motor)
+{
+    mg4005e_data_t *data;
+    uint8_t frame[8] = {0};
+    uint32_t now;
+
+    if (motor == NULL || motor->motor_data == NULL) {
+        return;
+    }
+    data = motor->motor_data;
+    if (data->enable_requested == 0U) {
+        return;
+    }
+
+    now = HAL_GetTick();
+    if (!motor_is_online(motor)) {
+        data->enabled = 0U;
+        if ((uint32_t)(now - data->last_enable_cmd_tick) >= 100U) {
+            data->last_enable_cmd_tick = now;
+            mg4005e_send_command(motor, MG4005E_MOTOR_ON_COMMAND, frame);
+        }
+        if ((uint32_t)(now - data->last_state_request_tick) >= 50U) {
+            data->last_state_request_tick = now;
+            mg4005e_send_command(motor, MG4005E_STATE1_COMMAND, frame);
+        }
+        return;
+    }
+    if (data->error != 0U) {
+        if ((uint32_t)(now - data->last_state_request_tick) >= 50U) {
+            data->last_state_request_tick = now;
+            mg4005e_send_command(motor, MG4005E_CLEAR_ERROR_COMMAND, frame);
+        }
+        return;
+    }
+    if (data->enabled == 0U) {
+        if ((uint32_t)(now - data->last_enable_cmd_tick) >= 20U) {
+            data->last_enable_cmd_tick = now;
+            mg4005e_send_command(motor, MG4005E_MOTOR_ON_COMMAND, frame);
+        }
+    } else {
+        mg4005e_send_ctrl_cmd(motor);
+    }
+
+    if ((uint32_t)(now - data->last_state_request_tick) >= 50U) {
+        data->last_state_request_tick = now;
+        mg4005e_send_command(motor, MG4005E_STATE1_COMMAND, frame);
+    }
+}
+
+void mg4005e_set_trace(const struct motor_device *motor,
+                       float target_position_rad, float duration_s)
+{
+    (void)motor;
+    (void)target_position_rad;
+    (void)duration_s;
+    return;
+}
+
+void mg4005e_trace_update(struct motor_device *motor)
+{
+    (void)motor;
+    return;
+}
+
+void mg4005e_set_target(const struct motor_device *motor, int para_num, ...)
+{
+    mg4005e_data_t *data;
+    float first_target;
+    va_list arguments;
+
+    if (motor == NULL || motor->motor_data == NULL || para_num <= 0) {
+        return;
+    }
+    data = motor->motor_data;
+    va_start(arguments, para_num);
+    first_target = (float)va_arg(arguments, double);
+    if (para_num >= 2) {
+        /* Keep compatibility with the common position, velocity signature. */
+        data->target_velocity_dps = (float)va_arg(arguments, double);
+    } else {
+        data->target_velocity_dps = first_target;
+    }
+    va_end(arguments);
+    data->target_velocity_dps = clamp_float(data->target_velocity_dps,
+                                            -MG4005E_SPEED_LIMIT_DPS,
+                                            MG4005E_SPEED_LIMIT_DPS);
+}
+
+void mg4005e_get_status(const struct motor_device *motor, const char *which,
+                        void *value)
+{
+    mg4005e_data_t *data;
+
+    if (motor == NULL || motor->motor_data == NULL || which == NULL ||
+        value == NULL) {
+        return;
+    }
+    data = motor->motor_data;
+    if (strcmp(which, "POS") == 0) { *(float *)value = data->position_rad; }
+    else if (strcmp(which, "VEL") == 0) { *(float *)value = data->velocity_dps; }
+    else if (strcmp(which, "VEL_DPS") == 0) { *(float *)value = data->velocity_dps; }
+    else if (strcmp(which, "CURRENT") == 0) { *(float *)value = data->torque_current_a; }
+    else if (strcmp(which, "TEMP") == 0) { *(int8_t *)value = data->temperature; }
+    else if (strcmp(which, "VOLTAGE") == 0) { *(float *)value = data->bus_voltage_v; }
+    else if (strcmp(which, "BUS_CURRENT") == 0) { *(float *)value = data->bus_current_a; }
+    else if (strcmp(which, "ERR") == 0) { *(uint8_t *)value = data->error; }
+    else if (strcmp(which, "STATE") == 0) { *(uint8_t *)value = data->motor_state; }
+    else if (strcmp(which, "ID") == 0) { *(uint8_t *)value = data->device_id; }
+    else if (strcmp(which, "ENC") == 0) { *(uint16_t *)value = data->encoder; }
+    else if (strcmp(which, "TARGET_VEL") == 0) { *(float *)value = data->target_velocity_dps; }
+    else if (strcmp(which, "TARGET_VEL_DPS") == 0) { *(float *)value = data->target_velocity_dps; }
+    else if (strcmp(which, "TARGET_POS") == 0) { *(float *)value = data->position_rad; }
+    else if (strcmp(which, "TARGET_ACC") == 0) { *(float *)value = 0.0f; }
+}
+
+void mg4005e_set_para(const struct motor_device *motor, const char *which,
+                      const void *value)
+{
+    /* PI and current-loop parameters are configured in the MG driver. */
+    (void)motor;
+    (void)which;
+    (void)value;
+    return;
 }
 
 /* ------------------------------ DM3507 ---------------------------------- */
