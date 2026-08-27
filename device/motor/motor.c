@@ -1042,7 +1042,12 @@ void dm3507_update(struct motor_device *motor)
 {
     dm3507_data_t *data;
     float position_error;
-    float desired_velocity_rad_s;
+    float position_pid_out_rad_s;
+    float velocity_target_rad_s;
+    float output_torque_nm;
+    float acc_torque_nm;
+    float gravity_torque_nm;
+    float friction_torque_nm;
     float feedforward_torque_nm;
     float dt;
     uint32_t now;
@@ -1087,11 +1092,16 @@ void dm3507_update(struct motor_device *motor)
     else { dt = clamp_float((float)(now - data->last_update_tick) * 0.001f, 0.0001f, 0.020f); }
     data->last_update_tick = now;
     position_error = dm3507_wrap_to_pi(data->target_position_rad - data->position_rad);
-    desired_velocity_rad_s = data->target_velocity_rad_s + pid_update(&data->position_pid, position_error, 0.0f, dt);
-    desired_velocity_rad_s = clamp_float(desired_velocity_rad_s, -48.17f, 48.17f);
-    feedforward_torque_nm = data->target_acceleration_rad_s2 * data->rotational_inertia_kg_m2 + data->friction_torque;
-    data->output_torque_nm = pid_update(&data->velocity_pid, desired_velocity_rad_s, data->velocity_rad_s, dt) + feedforward_torque_nm;
-    data->output_torque_nm = clamp_float(data->output_torque_nm, -3.0f, 3.0f);
+    position_pid_out_rad_s = pid_update(&data->position_pid, position_error, 0.0f, dt);
+    velocity_target_rad_s = data->target_velocity_rad_s + position_pid_out_rad_s;
+    velocity_target_rad_s = clamp_float(velocity_target_rad_s, -48.17f, 48.17f);
+    output_torque_nm = pid_update(&data->velocity_pid, velocity_target_rad_s, data->velocity_rad_s, dt);
+    acc_torque_nm = data->target_acceleration_rad_s2 * data->rotational_inertia_kg_m2;
+    gravity_torque_nm = 0.0f;
+    friction_torque_nm = data->friction_torque;
+    feedforward_torque_nm = acc_torque_nm + gravity_torque_nm + friction_torque_nm;
+    output_torque_nm += feedforward_torque_nm;
+    data->output_torque_nm = clamp_float(output_torque_nm, -3.0f, 3.0f);
     dm3507_send_ctrl_cmd(motor);
 }
 
@@ -1376,7 +1386,12 @@ void dm4310_update(struct motor_device *motor)
 {
     dm4310_data_t *data;
     float position_error;
-    float desired_velocity_rad_s;
+    float position_pid_out_rad_s;
+    float velocity_target_rad_s;
+    float output_torque_nm;
+    float acc_torque_nm;
+    float gravity_torque_nm;
+    float friction_torque_nm;
     float feedforward_torque_nm;
     float dt;
     uint32_t now;
@@ -1421,11 +1436,16 @@ void dm4310_update(struct motor_device *motor)
     else { dt = clamp_float((float)(now - data->last_update_tick) * 0.001f, 0.0001f, 0.020f); }
     data->last_update_tick = now;
     position_error = dm4310_wrap_to_pi(data->target_position_rad - data->position_rad);
-    desired_velocity_rad_s = data->target_velocity_rad_s + pid_update(&data->position_pid, position_error, 0.0f, dt);
-    desired_velocity_rad_s = clamp_float(desired_velocity_rad_s, -20.94f, 20.94f);
-    feedforward_torque_nm = data->target_acceleration_rad_s2 * data->rotational_inertia_kg_m2 + data->friction_torque;
-    data->output_torque_nm = pid_update(&data->velocity_pid, desired_velocity_rad_s, data->velocity_rad_s, dt) + feedforward_torque_nm;
-    data->output_torque_nm = clamp_float(data->output_torque_nm, -10.0f, 10.0f);
+    position_pid_out_rad_s = pid_update(&data->position_pid, position_error, 0.0f, dt);
+    velocity_target_rad_s = data->target_velocity_rad_s + position_pid_out_rad_s;
+    velocity_target_rad_s = clamp_float(velocity_target_rad_s, -20.94f, 20.94f);
+    output_torque_nm = pid_update(&data->velocity_pid, velocity_target_rad_s, data->velocity_rad_s, dt);
+    acc_torque_nm = data->target_acceleration_rad_s2 * data->rotational_inertia_kg_m2;
+    gravity_torque_nm = 0.0f;
+    friction_torque_nm = data->friction_torque;
+    feedforward_torque_nm = acc_torque_nm + gravity_torque_nm + friction_torque_nm;
+    output_torque_nm += feedforward_torque_nm;
+    data->output_torque_nm = clamp_float(output_torque_nm, -10.0f, 10.0f);
     dm4310_send_ctrl_cmd(motor);
 }
 
