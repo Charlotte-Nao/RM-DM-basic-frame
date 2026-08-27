@@ -40,6 +40,12 @@
 #define DM4310_T_MAX                      10.0f
 #define DM4310_TRACE_MAX_ACCELERATION_RAD_S2 30.0f
 
+#define DM8009P_P_MAX                     3.14f
+#define DM8009P_V_MAX                     45.0f
+#define DM8009P_T_MAX                     54.0f
+#define DM8009P_TORQUE_LIMIT_NM           40.0f
+#define DM8009P_TRACE_MAX_ACCELERATION_RAD_S2 45.0f
+
 typedef struct {
     pid_t position_pid;
     pid_t velocity_pid;
@@ -59,6 +65,11 @@ typedef struct {
     pid_t position_pid;
     pid_t velocity_pid;
 } dm4310_pid_config_t;
+
+typedef struct {
+    pid_t position_pid;
+    pid_t velocity_pid;
+} dm8009p_pid_config_t;
 
 typedef struct {
     float start_position_rad;
@@ -190,6 +201,37 @@ typedef struct {
     uint32_t last_enable_cmd_tick;
 } dm4310_data_t;
 
+typedef struct {
+    const dm8009p_pid_config_t *pid_config;
+    uint32_t master_id;
+    uint32_t command_id;
+    pid_t position_pid;
+    pid_t velocity_pid;
+    float target_position_rad;
+    float target_velocity_rad_s;
+    float target_acceleration_rad_s2;
+    float rotational_inertia_kg_m2;
+    float friction_torque;
+    motor_trace_t trace;
+    float position_rad;
+    float velocity_rad_s;
+    float torque_nm;
+    float output_torque_nm;
+    float p_max;
+    float v_max;
+    float t_max;
+    uint8_t can_id;
+    uint8_t error;
+    uint8_t mos_temperature;
+    uint8_t rotor_temperature;
+    uint8_t enable_requested;
+    uint8_t enabled;
+    uint8_t hold_position_pending;
+    uint32_t last_update_tick;
+    uint32_t last_clear_cmd_tick;
+    uint32_t last_enable_cmd_tick;
+} dm8009p_data_t;
+
 #define MOTOR_DRIVER_DECLARATIONS(prefix) \
     void prefix##_init(struct motor_device *motor, uint32_t motor_id, \
                        FDCAN_HandleTypeDef *can_handle, int para_num, ...); \
@@ -212,6 +254,7 @@ MOTOR_DRIVER_DECLARATIONS(gm6020);
 MOTOR_DRIVER_DECLARATIONS(m3508);
 MOTOR_DRIVER_DECLARATIONS(dm3507);
 MOTOR_DRIVER_DECLARATIONS(dm4310);
+MOTOR_DRIVER_DECLARATIONS(dm8009p);
 
 #undef MOTOR_DRIVER_DECLARATIONS
 

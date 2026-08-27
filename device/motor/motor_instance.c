@@ -249,7 +249,53 @@ static struct motor_device dm4310_pitch = {
     .set_para = dm4310_set_para,
 };
 
-static struct motor_device *const motor_list[] = {&gm6020_pitch, &dm4310_pitch, &gm6020_yaw, &m3508_2, &dm3507_1};
+// DM8009P示例实例化：MIT模式，CAN ID为0x003，反馈Master ID为0x004
+static const dm8009p_pid_config_t dm8009p_1_pid_config = {
+    .position_pid = {
+        .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
+        .integral_limit = 0.0f,
+        .output_limit = DM8009P_V_MAX,
+        .derivative_filter_alpha = 0.5f,
+        .deadband = 0.002f,
+        .integral_separation_threshold = 0.0f,
+        .variable_integration_threshold = 0.0f,
+    },
+    .velocity_pid = {
+        .kp = 0.10f, .ki = 0.0f, .kd = 0.0f,
+        .integral_limit = 1.0f,
+        .output_limit = DM8009P_TORQUE_LIMIT_NM,
+        .derivative_filter_alpha = 0.5f,
+        .deadband = 0.05f,
+        .integral_separation_threshold = 20.0f,
+        .variable_integration_threshold = 10.0f,
+    },
+};
+
+static dm8009p_data_t dm8009p_1_data = {
+    .pid_config = &dm8009p_1_pid_config,
+    .master_id = 0x04U,
+    .command_id = 0x03U,
+    .rotational_inertia_kg_m2 = 0.0f,
+    .friction_torque = 0.0f,
+};
+
+static struct motor_device dm8009p_1 = {
+    .motor_name = "DM8009P_1",
+    .motor_data = &dm8009p_1_data,
+    .init = dm8009p_init,
+    .feedback_calculate = dm8009p_feedback_calculate,
+    .send_enable_cmd = dm8009p_enable,
+    .send_disable_cmd = dm8009p_disable,
+    .send_ctrl_cmd = dm8009p_send_ctrl_cmd,
+    .update = dm8009p_update,
+    .set_target = dm8009p_set_target,
+    .set_trace = dm8009p_set_trace,
+    .trace_update = dm8009p_trace_update,
+    .get_status = dm8009p_get_status,
+    .set_para = dm8009p_set_para,
+};
+
+static struct motor_device *const motor_list[] = {&gm6020_pitch, &dm4310_pitch, &gm6020_yaw, &m3508_2, &dm3507_1, &dm8009p_1};
 
 uint32_t motor_instance_count(void)
 {
@@ -272,10 +318,12 @@ void Motor_System_PowerOn_Init(void)
     m3508_2.init(&m3508_2, CAN_M3508_2_ID, &hfdcan1, 0);
     dm4310_pitch.init(&dm4310_pitch, 0U, &hfdcan1, 0);
     dm3507_1.init(&dm3507_1, 0U, &hfdcan1, 0);
+    dm8009p_1.init(&dm8009p_1, 0U, &hfdcan1, 0);
 
     gm6020_pitch.send_disable_cmd(&gm6020_pitch);
     gm6020_yaw.send_disable_cmd(&gm6020_yaw);
     m3508_2.send_disable_cmd(&m3508_2);
     dm4310_pitch.send_disable_cmd(&dm4310_pitch);
     dm3507_1.send_disable_cmd(&dm3507_1);
+    dm8009p_1.send_disable_cmd(&dm8009p_1);
 }
