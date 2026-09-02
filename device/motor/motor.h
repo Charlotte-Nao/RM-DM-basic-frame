@@ -53,19 +53,10 @@ extern volatile uint32_t g_can1_last_dlc;
 extern volatile uint32_t g_can1_tx_ok_count;
 extern volatile uint32_t g_can1_tx_fail_count;
 
-/** True only after a feedback frame has arrived within the offline timeout. */
 bool motor_is_online(const struct motor_device *motor);
-
-/** Initialise every registered motor in a disabled, zero-output state. */
 void Motor_System_PowerOn_Init(void);
-
-/** Update active trajectory references before running the motor controllers. */
 void Motor_All_Trace_Update(void);
-
-/** Call periodically from one control task (nominally 1 kHz). */
 void Motor_All_Update(void);
-
-/** Send complete DJI grouped control frames after all outputs are calculated. */
 void Motor_Send_All_Control(void);
 
 #ifdef __cplusplus

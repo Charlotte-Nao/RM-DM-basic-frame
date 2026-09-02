@@ -158,7 +158,7 @@ static struct motor_device m3508_2 = {
     .set_para = m3508_set_para,
 };
 
-// DM3507示例实例化：MIT模式，CAN ID为0x001，反馈Master ID为0x000
+// DM3507实例化：MIT模式，CAN ID为0x001，反馈Master ID为0x000
 static const dm3507_pid_config_t dm3507_1_pid_config = {
     .position_pid = {
         .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
@@ -249,7 +249,7 @@ static struct motor_device dm4310_pitch = {
     .set_para = dm4310_set_para,
 };
 
-// DM8009P示例实例化：MIT模式，CAN ID为0x003，反馈Master ID为0x004
+// DM8009P实例化：MIT模式，CAN ID为0x003，反馈Master ID为0x004
 static const dm8009p_pid_config_t dm8009p_1_pid_config = {
     .position_pid = {
         .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
@@ -295,6 +295,7 @@ static struct motor_device dm8009p_1 = {
     .set_para = dm8009p_set_para,
 };
 
+// MG4005E实例化 ： 速度模式，关因而无pid参数以及轨迹等
 static mg4005e_data_t mg4005e_1_data = {0};
 
 static struct motor_device mg4005e_1 = {

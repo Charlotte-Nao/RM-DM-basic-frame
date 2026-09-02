@@ -65,12 +65,10 @@ static float clamp_float(float value, float minimum, float maximum)
     }
     return value;
 }
-
 static float abs_float(float value)
 {
     return (value >= 0.0f) ? value : -value;
 }
-
 static float motor_sqrt_float(float value)
 {
     float estimate;
@@ -86,40 +84,7 @@ static float motor_sqrt_float(float value)
     }
     return estimate;
 }
-
-static float gm6020_wrap_to_pi(float angle_rad)
-{
-    while (angle_rad > PI) {
-        angle_rad -= TWO_PI;
-    }
-    while (angle_rad < -PI) {
-        angle_rad += TWO_PI;
-    }
-    return angle_rad;
-}
-
-static float m3508_wrap_to_pi(float angle_rad)
-{
-    while (angle_rad > PI) { angle_rad -= TWO_PI; }
-    while (angle_rad < -PI) { angle_rad += TWO_PI; }
-    return angle_rad;
-}
-
-static float dm3507_wrap_to_pi(float angle_rad)
-{
-    while (angle_rad > PI) { angle_rad -= TWO_PI; }
-    while (angle_rad < -PI) { angle_rad += TWO_PI; }
-    return angle_rad;
-}
-
-static float dm4310_wrap_to_pi(float angle_rad)
-{
-    while (angle_rad > PI) { angle_rad -= TWO_PI; }
-    while (angle_rad < -PI) { angle_rad += TWO_PI; }
-    return angle_rad;
-}
-
-static float dm8009p_wrap_to_pi(float angle_rad)
+static float wrap_to_pi(float angle_rad)
 {
     while (angle_rad > PI) { angle_rad -= TWO_PI; }
     while (angle_rad < -PI) { angle_rad += TWO_PI; }
@@ -136,7 +101,6 @@ static uint16_t float_to_uint(float value, float minimum, float maximum, uint16_
     scaled = (value - minimum) * (float)maximum_integer / (maximum - minimum);
     return (uint16_t)scaled;
 }
-
 static float uint_to_float(uint32_t value, float minimum, float maximum, uint16_t bits)
 {
     uint32_t maximum_integer = (1UL << bits) - 1UL;
@@ -210,19 +174,19 @@ void gm6020_feedback_calculate(const struct motor_device *motor,
     if (data->encoder_initialized == 0U) {
         data->last_encoder = encoder;
         data->position_continuous_rad =
-            (float)encoder * TWO_PI / GM6020_ENCODER_RESOLUTION;
+            (float)encoder * TWO_PI / GM6020_ENCODER;
         data->encoder_initialized = 1U;
     } else {
         delta_encoder = (int32_t)encoder - (int32_t)data->last_encoder;
 
-        if (delta_encoder > 4096) {
-            delta_encoder -= 8192;
-        } else if (delta_encoder < -4096) {
-            delta_encoder += 8192;
+        if (delta_encoder > GM6020_ENCODER / 2) {
+            delta_encoder -= GM6020_ENCODER;
+        } else if (delta_encoder < - GM6020_ENCODER / 2) {
+            delta_encoder += GM6020_ENCODER;
         }
 
         data->position_continuous_rad +=
-            (float)delta_encoder * TWO_PI / GM6020_ENCODER_RESOLUTION;
+            (float)delta_encoder * TWO_PI / GM6020_ENCODER;
 
         data->last_encoder = encoder;
     }
@@ -320,7 +284,7 @@ void gm6020_update(struct motor_device *motor)
 
     data = motor->motor_data;
 
-    if (data->enabled == 0U || motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_TIMEOUT_MS) {
+    if (data->enabled == 0U || motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_MS) {
         data->output_current_code = 0.0f;
         data->target_position_rad = data->position_rad;
         data->target_velocity_rpm = 0.0f;
@@ -337,7 +301,7 @@ void gm6020_update(struct motor_device *motor)
     now = HAL_GetTick();
 
     if (data->last_update_tick == 0U) {
-        dt = MOTOR_CONTROL_DT_DEFAULT_S;
+        dt = MOTOR_CONTROL_S;
     } else {
         dt = (float)(now - data->last_update_tick) * 0.001f;
         dt = clamp_float(dt, 0.0001f, 0.020f);
@@ -345,7 +309,7 @@ void gm6020_update(struct motor_device *motor)
 
     data->last_update_tick = now;
 
-    position_error = gm6020_wrap_to_pi(data->target_position_rad - data->position_rad);
+    position_error = wrap_to_pi(data->target_position_rad - data->position_rad);
 
     position_pid_out_rpm = pid_update(&data->position_pid, position_error, 0.0f, dt);
 
@@ -413,8 +377,8 @@ static float gm6020_trace_resolve_duration(float delta_position_rad, float reque
     if (actual_duration_s < minimum_acceleration_duration_s) {
         actual_duration_s = minimum_acceleration_duration_s;
     }
-    if (actual_duration_s < MOTOR_CONTROL_DT_DEFAULT_S) {
-        actual_duration_s = MOTOR_CONTROL_DT_DEFAULT_S;
+    if (actual_duration_s < MOTOR_CONTROL_S) {
+        actual_duration_s = MOTOR_CONTROL_S;
     }
 
     return actual_duration_s;
@@ -438,7 +402,7 @@ void gm6020_set_trace(const struct motor_device *motor,
     }
 
     data->trace.start_position_rad = data->position_rad;
-    delta_position_rad = gm6020_wrap_to_pi(target_position_rad - data->trace.start_position_rad);
+    delta_position_rad = wrap_to_pi(target_position_rad - data->trace.start_position_rad);
     data->trace.delta_position_rad = delta_position_rad;
     data->trace.end_position_rad = data->trace.start_position_rad + delta_position_rad;
     data->trace.duration_s = gm6020_trace_resolve_duration(delta_position_rad, duration_s);
@@ -447,7 +411,7 @@ void gm6020_set_trace(const struct motor_device *motor,
     data->trace.acceleration_ref_rad_s2 = 0.0f;
     data->trace.start_tick = HAL_GetTick();
 
-    if (delta_position_rad > -GM6020_TRACE_POSITION_EPSILON_RAD && delta_position_rad < GM6020_TRACE_POSITION_EPSILON_RAD) {
+    if (delta_position_rad > - TWO_PI / GM6020_ENCODER && delta_position_rad < TWO_PI / GM6020_ENCODER) {
         data->trace.active = 0U;
         gm6020_trace_set_target(motor, data->trace.end_position_rad, 0.0f,0.0f);
         return;
@@ -633,13 +597,13 @@ void m3508_feedback_calculate(const struct motor_device *motor,
     encoder = (uint16_t)(((uint16_t)frame[0] << 8) | frame[1]);
     if (data->encoder_initialized == 0U) {
         data->last_encoder = encoder;
-        data->position_continuous_rad = (float)encoder * TWO_PI / M3508_ENCODER_RESOLUTION;
+        data->position_continuous_rad = (float)encoder * TWO_PI / M3508_ENCODER;
         data->encoder_initialized = 1U;
     } else {
         delta_encoder = (int32_t)encoder - (int32_t)data->last_encoder;
-        if (delta_encoder > 4096) { delta_encoder -= 8192; }
-        else if (delta_encoder < -4096) { delta_encoder += 8192; }
-        data->position_continuous_rad += (float)delta_encoder * TWO_PI / M3508_ENCODER_RESOLUTION;
+        if (delta_encoder > M3508_ENCODER / 2) { delta_encoder -= M3508_ENCODER; }
+        else if (delta_encoder < -M3508_ENCODER / 2) { delta_encoder += M3508_ENCODER; }
+        data->position_continuous_rad += (float)delta_encoder * TWO_PI / M3508_ENCODER;
         data->last_encoder = encoder;
     }
     data->encoder = encoder;
@@ -710,7 +674,7 @@ void m3508_update(struct motor_device *motor)
     uint32_t now;
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
-    if (data->enabled == 0U || data->error != 0U || motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_TIMEOUT_MS) {
+    if (data->enabled == 0U || data->error != 0U || motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_MS) {
         data->output_current_code = 0.0f;
         data->target_position_rad = data->position_rad;
         data->target_velocity_rpm = 0.0f;
@@ -722,13 +686,13 @@ void m3508_update(struct motor_device *motor)
         return;
     }
     now = HAL_GetTick();
-    if (data->last_update_tick == 0U) { dt = MOTOR_CONTROL_DT_DEFAULT_S; }
+    if (data->last_update_tick == 0U) { dt = MOTOR_CONTROL_S; }
     else {
         dt = (float)(now - data->last_update_tick) * 0.001f;
         dt = clamp_float(dt, 0.0001f, 0.020f);
     }
     data->last_update_tick = now;
-    position_error = m3508_wrap_to_pi(data->target_position_rad - data->position_rad);
+    position_error = wrap_to_pi(data->target_position_rad - data->position_rad);
     position_pid_out_rpm = pid_update(&data->position_pid, position_error, 0.0f, dt);
     velocity_pid_out_rpm = data->target_velocity_rpm + position_pid_out_rpm;
     velocity_pid_out_rpm = clamp_float(velocity_pid_out_rpm, -M3508_SPEED_LIMIT_RPM, M3508_SPEED_LIMIT_RPM);
@@ -771,7 +735,7 @@ static float m3508_trace_resolve_duration(float delta_position_rad, float reques
     actual_duration_s = requested_duration_s;
     if (actual_duration_s < minimum_velocity_duration_s) { actual_duration_s = minimum_velocity_duration_s; }
     if (actual_duration_s < minimum_acceleration_duration_s) { actual_duration_s = minimum_acceleration_duration_s; }
-    if (actual_duration_s < MOTOR_CONTROL_DT_DEFAULT_S) { actual_duration_s = MOTOR_CONTROL_DT_DEFAULT_S; }
+    if (actual_duration_s < MOTOR_CONTROL_S) { actual_duration_s = MOTOR_CONTROL_S; }
     return actual_duration_s;
 }
 
@@ -786,7 +750,7 @@ void m3508_set_trace(const struct motor_device *motor,
     data = motor->motor_data;
     if (!motor_is_online(motor) || data->enabled == 0U || duration_s <= 0.0f) { return; }
     data->trace.start_position_rad = data->position_rad;
-    delta_position_rad = m3508_wrap_to_pi(target_position_rad - data->trace.start_position_rad);
+    delta_position_rad = wrap_to_pi(target_position_rad - data->trace.start_position_rad);
     data->trace.delta_position_rad = delta_position_rad;
     data->trace.end_position_rad = data->trace.start_position_rad + delta_position_rad;
     data->trace.duration_s = m3508_trace_resolve_duration(delta_position_rad, duration_s);
@@ -794,7 +758,7 @@ void m3508_set_trace(const struct motor_device *motor,
     data->trace.velocity_ref_rad_s = 0.0f;
     data->trace.acceleration_ref_rad_s2 = 0.0f;
     data->trace.start_tick = HAL_GetTick();
-    if (delta_position_rad > -M3508_TRACE_POSITION_EPSILON_RAD && delta_position_rad < M3508_TRACE_POSITION_EPSILON_RAD) {
+    if (delta_position_rad > - TWO_PI / M3508_ENCODER && delta_position_rad < TWO_PI / M3508_ENCODER) {
         data->trace.active = 0U;
         m3508_trace_set_target(motor, data->trace.end_position_rad, 0.0f, 0.0f);
         return;
@@ -938,10 +902,10 @@ void mg4005e_init(struct motor_device *motor, uint32_t motor_id,
         return;
     }
 
-    if (motor_id >= MG4005E_MIN_DEVICE_ID && motor_id <= MG4005E_MAX_DEVICE_ID) {
+    if (motor_id >= 1U && motor_id <= 32U) {
         command_id = MG4005E_CAN_BASE_ID + motor_id;
     } else if (motor_id > MG4005E_CAN_BASE_ID &&
-               motor_id <= MG4005E_CAN_BASE_ID + MG4005E_MAX_DEVICE_ID) {
+               motor_id <= MG4005E_CAN_BASE_ID + 32U) {
         command_id = motor_id;
     } else {
         return;
@@ -981,8 +945,8 @@ void mg4005e_feedback_calculate(const struct motor_device *motor,
 
     data = motor->motor_data;
     switch (frame[0]) {
-    case MG4005E_STATE1_COMMAND:
-    case MG4005E_CLEAR_ERROR_COMMAND:
+    case 0x9AU:
+    case 0x9BU:
         voltage_code = (int16_t)((uint16_t)frame[2] |
                                  ((uint16_t)frame[3] << 8));
         current_code = (int16_t)((uint16_t)frame[4] |
@@ -999,8 +963,8 @@ void mg4005e_feedback_calculate(const struct motor_device *motor,
         }
         break;
 
-    case MG4005E_STATE2_COMMAND:
-    case MG4005E_CONTROL_COMMAND:
+    case 0x9CU:
+    case 0xA2U:
     case 0xA0U:
     case 0xA1U:
     case 0xA3U:
@@ -1020,7 +984,7 @@ void mg4005e_feedback_calculate(const struct motor_device *motor,
         if (data->encoder_initialized == 0U) {
             data->last_encoder = encoder;
             data->position_continuous_rad =
-                (float)encoder * TWO_PI / MG4005E_ENCODER_RESOLUTION;
+                (float)encoder * TWO_PI / MG4005E_ENCODER;
             data->encoder_initialized = 1U;
         } else {
             delta_encoder = (int32_t)encoder - (int32_t)data->last_encoder;
@@ -1030,7 +994,7 @@ void mg4005e_feedback_calculate(const struct motor_device *motor,
                 delta_encoder += 65536;
             }
             data->position_continuous_rad +=
-                (float)delta_encoder * TWO_PI / MG4005E_ENCODER_RESOLUTION;
+                (float)delta_encoder * TWO_PI / MG4005E_ENCODER;
             data->last_encoder = encoder;
         }
 
@@ -1042,12 +1006,12 @@ void mg4005e_feedback_calculate(const struct motor_device *motor,
         data->torque_current_a = (float)iq_code * 66.0f / 4096.0f;
         break;
 
-    case MG4005E_MOTOR_OFF_COMMAND:
+    case 0x80U:
         data->enabled = 0U;
         data->motor_state = 0x10U;
         break;
 
-    case MG4005E_MOTOR_ON_COMMAND:
+    case 0x88U:
         data->enabled = 1U;
         data->motor_state = 0x00U;
         break;
@@ -1086,7 +1050,7 @@ void mg4005e_send_ctrl_cmd(struct motor_device *motor)
     frame[5] = (uint8_t)((uint32_t)speed_control >> 8);
     frame[6] = (uint8_t)((uint32_t)speed_control >> 16);
     frame[7] = (uint8_t)((uint32_t)speed_control >> 24);
-    mg4005e_send_command(motor, MG4005E_CONTROL_COMMAND, frame);
+    mg4005e_send_command(motor, 0xA2U, frame);
 }
 
 void mg4005e_enable(struct motor_device *motor)
@@ -1102,7 +1066,7 @@ void mg4005e_enable(struct motor_device *motor)
     data->enabled = 0U;
     data->motor_state = 0x00U;
     data->last_enable_cmd_tick = HAL_GetTick();
-    mg4005e_send_command(motor, MG4005E_MOTOR_ON_COMMAND, frame);
+    mg4005e_send_command(motor, 0x88U, frame);
 }
 
 void mg4005e_disable(struct motor_device *motor)
@@ -1118,7 +1082,7 @@ void mg4005e_disable(struct motor_device *motor)
     data->enabled = 0U;
     data->target_velocity_dps = 0.0f;
     data->motor_state = 0x10U;
-    mg4005e_send_command(motor, MG4005E_MOTOR_OFF_COMMAND, frame);
+    mg4005e_send_command(motor, 0x80U, frame);
 }
 
 void mg4005e_update(struct motor_device *motor)
@@ -1140,25 +1104,25 @@ void mg4005e_update(struct motor_device *motor)
         data->enabled = 0U;
         if ((uint32_t)(now - data->last_enable_cmd_tick) >= 100U) {
             data->last_enable_cmd_tick = now;
-            mg4005e_send_command(motor, MG4005E_MOTOR_ON_COMMAND, frame);
+            mg4005e_send_command(motor, 0x88U, frame);
         }
         if ((uint32_t)(now - data->last_state_request_tick) >= 50U) {
             data->last_state_request_tick = now;
-            mg4005e_send_command(motor, MG4005E_STATE1_COMMAND, frame);
+            mg4005e_send_command(motor, 0x9AU, frame);
         }
         return;
     }
     if (data->error != 0U) {
         if ((uint32_t)(now - data->last_state_request_tick) >= 50U) {
             data->last_state_request_tick = now;
-            mg4005e_send_command(motor, MG4005E_CLEAR_ERROR_COMMAND, frame);
+            mg4005e_send_command(motor, 0x9BU, frame);
         }
         return;
     }
     if (data->enabled == 0U) {
         if ((uint32_t)(now - data->last_enable_cmd_tick) >= 20U) {
             data->last_enable_cmd_tick = now;
-            mg4005e_send_command(motor, MG4005E_MOTOR_ON_COMMAND, frame);
+            mg4005e_send_command(motor, 0x88U, frame);
         }
     } else {
         mg4005e_send_ctrl_cmd(motor);
@@ -1166,7 +1130,7 @@ void mg4005e_update(struct motor_device *motor)
 
     if ((uint32_t)(now - data->last_state_request_tick) >= 50U) {
         data->last_state_request_tick = now;
-        mg4005e_send_command(motor, MG4005E_STATE1_COMMAND, frame);
+        mg4005e_send_command(motor, 0x9AU, frame);
     }
 }
 
@@ -1394,7 +1358,7 @@ void dm3507_update(struct motor_device *motor)
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
     if (data->enable_requested == 0U) { return; }
-    if (motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_TIMEOUT_MS) {
+    if (motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_MS) {
         data->enabled = 0U;
         data->output_torque_nm = 0.0f;
         data->trace.active = 0U;
@@ -1428,10 +1392,10 @@ void dm3507_update(struct motor_device *motor)
         if ((uint32_t)(now - data->last_enable_cmd_tick) >= 20U) { dm3507_send_special(motor, 0xFCU); data->last_enable_cmd_tick = now; }
         return;
     }
-    if (data->last_update_tick == 0U) { dt = MOTOR_CONTROL_DT_DEFAULT_S; }
+    if (data->last_update_tick == 0U) { dt = MOTOR_CONTROL_S; }
     else { dt = clamp_float((float)(now - data->last_update_tick) * 0.001f, 0.0001f, 0.020f); }
     data->last_update_tick = now;
-    position_error = dm3507_wrap_to_pi(data->target_position_rad - data->position_rad);
+    position_error = wrap_to_pi(data->target_position_rad - data->position_rad);
     position_pid_out_rad_s = pid_update(&data->position_pid, position_error, 0.0f, dt);
     velocity_target_rad_s = data->target_velocity_rad_s + position_pid_out_rad_s;
     velocity_target_rad_s = clamp_float(velocity_target_rad_s, -48.17f, 48.17f);
@@ -1463,7 +1427,7 @@ static float dm3507_trace_resolve_duration(float delta_position_rad, float reque
     float actual_duration_s = requested_duration_s;
     if (actual_duration_s < minimum_velocity_duration_s) { actual_duration_s = minimum_velocity_duration_s; }
     if (actual_duration_s < minimum_acceleration_duration_s) { actual_duration_s = minimum_acceleration_duration_s; }
-    if (actual_duration_s < MOTOR_CONTROL_DT_DEFAULT_S) { actual_duration_s = MOTOR_CONTROL_DT_DEFAULT_S; }
+    if (actual_duration_s < MOTOR_CONTROL_S) { actual_duration_s = MOTOR_CONTROL_S; }
     return actual_duration_s;
 }
 
@@ -1476,7 +1440,7 @@ void dm3507_set_trace(const struct motor_device *motor, float target_position_ra
     data = motor->motor_data;
     if (!motor_is_online(motor) || data->enabled == 0U || duration_s <= 0.0f) { return; }
     data->trace.start_position_rad = data->position_rad;
-    delta_position_rad = dm3507_wrap_to_pi(target_position_rad - data->trace.start_position_rad);
+    delta_position_rad = wrap_to_pi(target_position_rad - data->trace.start_position_rad);
     data->trace.delta_position_rad = delta_position_rad;
     data->trace.end_position_rad = data->trace.start_position_rad + delta_position_rad;
     data->trace.duration_s = dm3507_trace_resolve_duration(delta_position_rad, duration_s);
@@ -1738,7 +1702,7 @@ void dm4310_update(struct motor_device *motor)
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
     if (data->enable_requested == 0U) { return; }
-    if (motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_TIMEOUT_MS) {
+    if (motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_MS) {
         data->enabled = 0U;
         data->output_torque_nm = 0.0f;
         data->trace.active = 0U;
@@ -1772,10 +1736,10 @@ void dm4310_update(struct motor_device *motor)
         if ((uint32_t)(now - data->last_enable_cmd_tick) >= 20U) { dm4310_send_special(motor, 0xFCU); data->last_enable_cmd_tick = now; }
         return;
     }
-    if (data->last_update_tick == 0U) { dt = MOTOR_CONTROL_DT_DEFAULT_S; }
+    if (data->last_update_tick == 0U) { dt = MOTOR_CONTROL_S; }
     else { dt = clamp_float((float)(now - data->last_update_tick) * 0.001f, 0.0001f, 0.020f); }
     data->last_update_tick = now;
-    position_error = dm4310_wrap_to_pi(data->target_position_rad - data->position_rad);
+    position_error = wrap_to_pi(data->target_position_rad - data->position_rad);
     position_pid_out_rad_s = pid_update(&data->position_pid, position_error, 0.0f, dt);
     velocity_target_rad_s = data->target_velocity_rad_s + position_pid_out_rad_s;
     velocity_target_rad_s = clamp_float(velocity_target_rad_s, -20.94f, 20.94f);
@@ -1807,7 +1771,7 @@ static float dm4310_trace_resolve_duration(float delta_position_rad, float reque
     float actual_duration_s = requested_duration_s;
     if (actual_duration_s < minimum_velocity_duration_s) { actual_duration_s = minimum_velocity_duration_s; }
     if (actual_duration_s < minimum_acceleration_duration_s) { actual_duration_s = minimum_acceleration_duration_s; }
-    if (actual_duration_s < MOTOR_CONTROL_DT_DEFAULT_S) { actual_duration_s = MOTOR_CONTROL_DT_DEFAULT_S; }
+    if (actual_duration_s < MOTOR_CONTROL_S) { actual_duration_s = MOTOR_CONTROL_S; }
     return actual_duration_s;
 }
 
@@ -1820,7 +1784,7 @@ void dm4310_set_trace(const struct motor_device *motor, float target_position_ra
     data = motor->motor_data;
     if (!motor_is_online(motor) || data->enabled == 0U || duration_s <= 0.0f) { return; }
     data->trace.start_position_rad = data->position_rad;
-    delta_position_rad = dm4310_wrap_to_pi(target_position_rad - data->trace.start_position_rad);
+    delta_position_rad = wrap_to_pi(target_position_rad - data->trace.start_position_rad);
     data->trace.delta_position_rad = delta_position_rad;
     data->trace.end_position_rad = data->trace.start_position_rad + delta_position_rad;
     data->trace.duration_s = dm4310_trace_resolve_duration(delta_position_rad, duration_s);
@@ -2082,7 +2046,7 @@ void dm8009p_update(struct motor_device *motor)
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
     if (data->enable_requested == 0U) { return; }
-    if (motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_TIMEOUT_MS) {
+    if (motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_MS) {
         data->enabled = 0U;
         data->output_torque_nm = 0.0f;
         data->trace.active = 0U;
@@ -2116,10 +2080,10 @@ void dm8009p_update(struct motor_device *motor)
         if ((uint32_t)(now - data->last_enable_cmd_tick) >= 20U) { dm8009p_send_special(motor, 0xFCU); data->last_enable_cmd_tick = now; }
         return;
     }
-    if (data->last_update_tick == 0U) { dt = MOTOR_CONTROL_DT_DEFAULT_S; }
+    if (data->last_update_tick == 0U) { dt = MOTOR_CONTROL_S; }
     else { dt = clamp_float((float)(now - data->last_update_tick) * 0.001f, 0.0001f, 0.020f); }
     data->last_update_tick = now;
-    position_error = dm8009p_wrap_to_pi(data->target_position_rad - data->position_rad);
+    position_error = wrap_to_pi(data->target_position_rad - data->position_rad);
     position_pid_out_rad_s = pid_update(&data->position_pid, position_error, 0.0f, dt);
     velocity_target_rad_s = data->target_velocity_rad_s + position_pid_out_rad_s;
     velocity_target_rad_s = clamp_float(velocity_target_rad_s, -DM8009P_V_MAX, DM8009P_V_MAX);
@@ -2151,7 +2115,7 @@ static float dm8009p_trace_resolve_duration(float delta_position_rad, float requ
     float actual_duration_s = requested_duration_s;
     if (actual_duration_s < minimum_velocity_duration_s) { actual_duration_s = minimum_velocity_duration_s; }
     if (actual_duration_s < minimum_acceleration_duration_s) { actual_duration_s = minimum_acceleration_duration_s; }
-    if (actual_duration_s < MOTOR_CONTROL_DT_DEFAULT_S) { actual_duration_s = MOTOR_CONTROL_DT_DEFAULT_S; }
+    if (actual_duration_s < MOTOR_CONTROL_S) { actual_duration_s = MOTOR_CONTROL_S; }
     return actual_duration_s;
 }
 
@@ -2164,7 +2128,7 @@ void dm8009p_set_trace(const struct motor_device *motor, float target_position_r
     data = motor->motor_data;
     if (!motor_is_online(motor) || data->enabled == 0U || duration_s <= 0.0f) { return; }
     data->trace.start_position_rad = data->position_rad;
-    delta_position_rad = dm8009p_wrap_to_pi(target_position_rad - data->trace.start_position_rad);
+    delta_position_rad = wrap_to_pi(target_position_rad - data->trace.start_position_rad);
     data->trace.delta_position_rad = delta_position_rad;
     data->trace.end_position_rad = data->trace.start_position_rad + delta_position_rad;
     data->trace.duration_s = dm8009p_trace_resolve_duration(delta_position_rad, duration_s);
@@ -2308,7 +2272,7 @@ static void gm6020_send_group(FDCAN_HandleTypeDef *can_handle)
         frame[offset] = (uint8_t)((uint16_t)output >> 8);
         frame[offset + 1U] = (uint8_t)output;
     }
-    motor_send_standard(can_handle, GM6020_CONTROL_GROUP_ID, frame);
+    motor_send_standard(can_handle, GM6020_GROUP_ID, frame);
 }
 
 // 将挂载在传入can句柄上的3508电机控制量打包下发
@@ -2330,7 +2294,7 @@ static void m3508_send_group(FDCAN_HandleTypeDef *can_handle)
         frame[offset] = (uint8_t)((uint16_t)output >> 8);
         frame[offset + 1U] = (uint8_t)output;
     }
-    motor_send_standard(can_handle, M3508_CONTROL_GROUP_ID, frame);
+    motor_send_standard(can_handle, M3508_GROUP_ID, frame);
 }
 
 //得到电机句柄
@@ -2359,7 +2323,7 @@ bool motor_is_online(const struct motor_device *motor)
     if (motor == NULL || motor->last_rx_tick == 0U) {
         return false;
     }
-    return (HAL_GetTick() - motor->last_rx_tick) <= MOTOR_OFFLINE_TIMEOUT_MS;
+    return (HAL_GetTick() - motor->last_rx_tick) <= MOTOR_OFFLINE_MS;
 }
 
 void Motor_All_Trace_Update(void)

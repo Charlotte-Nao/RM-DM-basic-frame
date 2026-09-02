@@ -67,8 +67,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         task/sensor_task/sensor_task.h
         application/global_data.c
         application/global_data.h
-        task/printf_task/printf_task.c
-        task/printf_task/printf_task.h
         dsp/math.h
         bsp/pwm/pwm.c
         bsp/pwm/pwm.h

@@ -56,13 +56,6 @@ const osThreadAttr_t sensor_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
-/* Definitions for printf */
-osThreadId_t printfHandle;
-const osThreadAttr_t printf_attributes = {
-  .name = "printf",
-  .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
 /* Definitions for usb */
 osThreadId_t usbHandle;
 const osThreadAttr_t usb_attributes = {
@@ -98,7 +91,6 @@ const osThreadAttr_t uart_task_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void seneor_task_entry(void *argument);
-void printf_entry(void *argument);
 void usb_entry(void *argument);
 void test_task_entry(void *argument);
 void motor_entry(void *argument);
@@ -166,9 +158,6 @@ void MX_FREERTOS_Init(void) {
   /* creation of sensor */
   sensorHandle = osThreadNew(seneor_task_entry, NULL, &sensor_attributes);
 
-  /* creation of printf */
-  printfHandle = osThreadNew(printf_entry, NULL, &printf_attributes);
-
   /* creation of usb */
   usbHandle = osThreadNew(usb_entry, NULL, &usb_attributes);
 
@@ -210,25 +199,6 @@ void seneor_task_entry(void *argument)
     osDelay(1);
   }
   /* USER CODE END seneor_task_entry */
-}
-
-/* USER CODE BEGIN Header_printf_entry */
-/**
-* @brief Function implementing the printf thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_printf_entry */
-void printf_entry(void *argument)
-{
-  /* USER CODE BEGIN printf_entry */
-  printf_task();
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END printf_entry */
 }
 
 /* USER CODE BEGIN Header_usb_entry */
@@ -279,10 +249,10 @@ void test_task_entry(void *argument)
 void motor_entry(void *argument)
 {
   /* USER CODE BEGIN motor_entry */
+  motor_task();
   /* Infinite loop */
   for(;;)
   {
-    motor_task();
     osDelay(1);
   }
   /* USER CODE END motor_entry */

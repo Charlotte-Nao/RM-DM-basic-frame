@@ -7,58 +7,47 @@
 #include "../../dsp/math.h"
 #include "../../dsp/pid/pid.h"
 
-#define MOTOR_CONTROL_DT_DEFAULT_S       0.001f
-#define MOTOR_OFFLINE_TIMEOUT_MS         100U
+#define MOTOR_CONTROL_S                         0.001f
+#define MOTOR_OFFLINE_MS                        100U
 
-#define GM6020_CONTROL_GROUP_ID          0x1FEU
-#define GM6020_ENCODER_RESOLUTION        8192.0f
-#define GM6020_OUTPUT_LIMIT              16384.0f
-#define GM6020_SPEED_LIMIT_RPM           320.0f
+#define MOTOR_QUINTIC_PEAK_VELOCITY_FACTOR      1.875f
+#define MOTOR_QUINTIC_PEAK_ACCELERATION_FACTOR  5.773502691896258f
 
-
-#define GM6020_TRACE_POSITION_EPSILON_RAD (TWO_PI / GM6020_ENCODER_RESOLUTION)
-#define MOTOR_QUINTIC_PEAK_VELOCITY_FACTOR     1.875f
-#define MOTOR_QUINTIC_PEAK_ACCELERATION_FACTOR 5.773502691896258f
+#define GM6020_GROUP_ID                         0x1FEU
+#define GM6020_ENCODER                          8192
+#define GM6020_OUTPUT_LIMIT                     16384.0f
+#define GM6020_SPEED_LIMIT_RPM                  320.0f
 #define GM6020_TRACE_MAX_ACCELERATION_RAD_S2    300.0f
 
-#define M3508_CONTROL_GROUP_ID           0x200U
-#define M3508_ENCODER_RESOLUTION         8192.0f
-#define M3508_OUTPUT_LIMIT               16384.0f
-#define M3508_SPEED_LIMIT_RPM            9085.0f
-#define M3508_MAX_TORQUE_CURRENT_A       20.0f
-#define M3508_TRACE_POSITION_EPSILON_RAD (TWO_PI / M3508_ENCODER_RESOLUTION)
-#define M3508_TRACE_MAX_ACCELERATION_RAD_S2 300.0f
 
-#define DM3507_P_MAX                      12.566f
-#define DM3507_V_MAX                      100.0f
-#define DM3507_T_MAX                      5.0f
-#define DM3507_TORQUE_LIMIT_NM            3.0f
-#define DM3507_TRACE_MAX_ACCELERATION_RAD_S2 100.0f
+#define M3508_GROUP_ID                          0x200U
+#define M3508_ENCODER                           8192
+#define M3508_OUTPUT_LIMIT                      16384.0f
+#define M3508_SPEED_LIMIT_RPM                   9085.0f
+#define M3508_MAX_TORQUE_CURRENT_A              20.0f
+#define M3508_TRACE_MAX_ACCELERATION_RAD_S2     300.0f
 
-#define DM4310_P_MAX                      12.5f
-#define DM4310_V_MAX                      30.0f
-#define DM4310_T_MAX                      10.0f
-#define DM4310_TRACE_MAX_ACCELERATION_RAD_S2 30.0f
+#define DM3507_P_MAX                            12.566f
+#define DM3507_V_MAX                            100.0f
+#define DM3507_T_MAX                            5.0f
+#define DM3507_TORQUE_LIMIT_NM                  3.0f
+#define DM3507_TRACE_MAX_ACCELERATION_RAD_S2    100.0f
 
-#define DM8009P_P_MAX                     3.14f
-#define DM8009P_V_MAX                     45.0f
-#define DM8009P_T_MAX                     54.0f
-#define DM8009P_TORQUE_LIMIT_NM           40.0f
-#define DM8009P_TRACE_MAX_ACCELERATION_RAD_S2 45.0f
+#define DM4310_P_MAX                            12.5f
+#define DM4310_V_MAX                            30.0f
+#define DM4310_T_MAX                            10.0f
+#define DM4310_TRACE_MAX_ACCELERATION_RAD_S2    30.0f
 
-#define MG4005E_CAN_BASE_ID               0x140U
-#define MG4005E_MIN_DEVICE_ID             1U
-#define MG4005E_MAX_DEVICE_ID             32U
-#define MG4005E_CONTROL_COMMAND           0xA2U
-#define MG4005E_STATE1_COMMAND            0x9AU
-#define MG4005E_CLEAR_ERROR_COMMAND      0x9BU
-#define MG4005E_STATE2_COMMAND            0x9CU
-#define MG4005E_MOTOR_OFF_COMMAND         0x80U
-#define MG4005E_MOTOR_ON_COMMAND          0x88U
-#define MG4005E_SPEED_LIMIT_DPS           72000.0f
-#define MG4005E_TORQUE_LIMIT_CODE         2048
-/* State2 exposes the encoder position as a 16-bit modulo value. */
-#define MG4005E_ENCODER_RESOLUTION        65536.0f
+#define DM8009P_P_MAX                           3.14f
+#define DM8009P_V_MAX                           45.0f
+#define DM8009P_T_MAX                           54.0f
+#define DM8009P_TORQUE_LIMIT_NM                 40.0f
+#define DM8009P_TRACE_MAX_ACCELERATION_RAD_S2   45.0f
+
+#define MG4005E_CAN_BASE_ID                     0x140U
+#define MG4005E_SPEED_LIMIT_DPS                 72000.0f
+#define MG4005E_TORQUE_LIMIT_CODE               2048
+#define MG4005E_ENCODER                         65536.0f
 
 typedef struct {
     pid_t position_pid;

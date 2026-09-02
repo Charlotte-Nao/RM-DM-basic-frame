@@ -17,7 +17,6 @@
 extern "C" {
 #endif
 
-/** Configure filters, start FDCAN1/2/3 in Classic CAN mode, and enable FIFO0 RX notification. */
 void can_init(void);
 
 #ifdef __cplusplus

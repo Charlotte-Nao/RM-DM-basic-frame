@@ -7,7 +7,6 @@
 
 #include "test_task/test_task.h"
 #include "sensor_task/sensor_task.h"
-#include "printf_task/printf_task.h"
 #include "usb_task/usb_task.h"
 #include "motor_task/motor_task.h"
 #include "uart_task/uart_task.h"

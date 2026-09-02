@@ -35,20 +35,12 @@ struct usb_device_status {
 struct usb_device {
     const char *name;
     int (*usb_init)(struct usb_device *device);
-    int (*usb_send_bytes)(struct usb_device *device,
-                          const uint8_t *data,
-                          uint16_t length);
+    int (*usb_send_bytes)(struct usb_device *device,const uint8_t *data,uint16_t length);
     int (*usb_send)(struct usb_device *device, const char *message);
     int (*usb_printf)(struct usb_device *device, const char *format, ...);
     uint16_t (*usb_available)(struct usb_device *device);
-
-    int (*usb_read)(struct usb_device *device,
-                    uint8_t *data,
-                    uint16_t max_length);
-
-    int (*usb_get_status)(struct usb_device *device,
-                          struct usb_device_status *status);
-
+    int (*usb_read)(struct usb_device *device,uint8_t *data,uint16_t max_length);
+    int (*usb_get_status)(struct usb_device *device,struct usb_device_status *status);
     void *priv_data;
 };
 

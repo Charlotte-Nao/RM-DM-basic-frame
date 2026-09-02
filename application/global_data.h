@@ -16,8 +16,12 @@ typedef struct {
     volatile uint8_t imu_ready;
 } imu_data_t;
 
+typedef struct
+{
+    imu_data_t imu_data;
 
+} global_data_t;
 
-extern volatile imu_data_t imu_data;
+extern volatile global_data_t global_data;
 
 #endif //DM_GLOBAL_DATA_H

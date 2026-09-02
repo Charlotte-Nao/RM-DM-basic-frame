@@ -1,5 +1,5 @@
 #include "global_data.h"
 
 
-volatile imu_data_t imu_data = {0};
+volatile global_data_t global_data = {0};
 

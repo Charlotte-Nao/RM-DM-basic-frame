@@ -12,6 +12,10 @@
 extern "C" {
 #endif
 
+/**
+ * 点灯函数不要在中断中调用，原因自行判断
+ */
+
 void LED_init(void);
 
 void LED_SET_RGB(uint8_t red, uint8_t green, uint8_t blue);
