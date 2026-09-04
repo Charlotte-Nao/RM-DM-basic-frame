@@ -9,19 +9,12 @@
 #include <stdint.h>
 
 #include "../../bsp/uart/uart.h"
+#include "../../bus/uart/uart_all.h"
 #include "../../protocol/protocol.h"
 #include"../../application/global_data.h"
 #include "../../bsp/LED/LED.h"
 
-static void uart1_recv_callback(struct uart_device *device,const uint8_t *data,uint16_t length)
-{
-}
-static void uart7_recv_callback(struct uart_device *device,const uint8_t *data,uint16_t length)
-{
-}
-static void uart10_recv_callback(struct uart_device *device,const uint8_t *data,uint16_t length)
-{
-}
+
 
 void uart_task(void)
 {

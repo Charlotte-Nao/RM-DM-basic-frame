@@ -2381,34 +2381,4 @@ void Motor_Send_All_Control(void)
     }
 }
 
-void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *handle, uint32_t interrupts)
-{
-    FDCAN_RxHeaderTypeDef header;
-    uint8_t frame[8];
-    uint32_t index;
 
-
-
-    if (handle == &hfdcan1) {
-        ++g_can1_irq_count;
-    }
-
-    if ((interrupts & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) == 0U) { return; }
-    while (HAL_FDCAN_GetRxFifoFillLevel(handle, FDCAN_RX_FIFO0) > 0U) {
-        if (HAL_FDCAN_GetRxMessage(handle, FDCAN_RX_FIFO0, &header, frame) != HAL_OK) { break; }
-        if (handle == &hfdcan1) {
-            ++g_can1_frame_count;
-            g_can1_last_id = header.Identifier;
-            g_can1_last_dlc = header.DataLength;
-        }
-        if (header.IdType != FDCAN_STANDARD_ID || header.DataLength != FDCAN_DLC_BYTES_8) { continue; }
-        for (index = 0U; index < Motor_Get_Count(); ++index) {
-            struct motor_device *motor = motor_instance_get(index);
-            if (motor->motor_can_handle == handle && motor->motor_id == header.Identifier) {
-                motor->feedback_calculate(motor, frame);
-                motor->last_rx_tick = HAL_GetTick();
-                break;
-            }
-        }
-    }
-}

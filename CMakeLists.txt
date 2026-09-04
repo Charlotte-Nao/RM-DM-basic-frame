@@ -83,6 +83,16 @@ add_executable(${CMAKE_PROJECT_NAME}
         device/motor/motor_instance.c
         device/motor/motor_instance.h
         device/motor/motor_internal.h
+        bus/can/can_receive.c
+        bus/can/can_receive.h
+        bus/can/can_send.c
+        bus/can/can_send.h
+        bus/uart/uart_receive.c
+        bus/uart/uart_receive.h
+        bus/uart/uart_send.c
+        bus/uart/uart_send.h
+        bus/uart/uart_all.h
+        bus/can/can_all.h
 )
 
 # Add STM32CubeMX generated sources

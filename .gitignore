@@ -1,2 +1,25 @@
 build/
 cmake-build-*/
+
+# IDE metadata
+.idea/
+
+# CMake/Ninja generated files and build directories
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+build.ninja
+.ninja_deps
+.ninja_log
+compile_commands.json
+
+# Embedded build products and compiler intermediates
+*.elf
+*.hex
+*.bin
+*.map
+*.o
+*.obj
+*.d
+*.su
+*.lst
