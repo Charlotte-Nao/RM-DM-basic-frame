@@ -93,6 +93,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         bus/uart/uart_send.h
         bus/uart/uart_all.h
         bus/can/can_all.h
+        protocol/remote.c
+        protocol/remote.h
 )
 
 # Add STM32CubeMX generated sources

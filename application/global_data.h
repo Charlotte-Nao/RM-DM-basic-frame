@@ -18,8 +18,27 @@ typedef struct {
 
 typedef struct
 {
-    imu_data_t imu_data;
+    struct
+    {
+        volatile int16_t ch0; //右遥杆左右 -660 ~ 660
+        volatile int16_t ch1; //右遥杆上下
+        volatile int16_t ch2; //左遥杆左右
+        volatile int16_t ch3; //左遥杆上下
 
+        volatile uint8_t s1;  //左上拨杆
+        volatile uint8_t s2;  //右上拨杆
+
+        volatile uint32_t remote_update_tick;
+        volatile uint8_t remote_ready;
+    }rc;
+
+
+} remote_data_t;
+
+typedef struct
+{
+    imu_data_t imu_data;
+    remote_data_t remote_data;
 } global_data_t;
 
 extern volatile global_data_t global_data;
