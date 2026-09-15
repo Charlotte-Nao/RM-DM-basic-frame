@@ -9,7 +9,7 @@
 /* Motor standard identifiers. */
 #define CAN_GM6020_PITCH_ID          0x205U
 #define CAN_GM6020_YAW_ID          0x206U
-#define CAN_M3508_2_ID              0x202U
+#define CAN_M3508_1_ID              0x201U
 #define CAN_MG4005E_ID              0x141U
 #define CAN_MG4005E_1_ID            CAN_MG4005E_ID
 

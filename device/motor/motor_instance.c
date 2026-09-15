@@ -109,7 +109,7 @@ static struct motor_device gm6020_yaw = {
 };
 
 // 3508_1实例化
-static const m3508_pid_config_t m3508_2_pid_config = {
+static const m3508_pid_config_t m3508_1_pid_config = {
     .position_pid = {
         .kp = 80.0f,
         .ki = 0.0f,
@@ -134,17 +134,17 @@ static const m3508_pid_config_t m3508_2_pid_config = {
     },
 };
 
-static m3508_data_t m3508_2_data = {
-    .pid_config = &m3508_2_pid_config,
+static m3508_data_t m3508_1_data = {
+    .pid_config = &m3508_1_pid_config,
     .rotational_inertia_kg_m2 = 0.000f,
     .friction_torque = 0.0f,
     .K_t_Nm_A = 0.02f,
 };
 
-static struct motor_device m3508_2 = {
-    .motor_name = "M3508_2",
-    .motor_id = CAN_M3508_2_ID,
-    .motor_data = &m3508_2_data,
+static struct motor_device m3508_1 = {
+    .motor_name = "M3508_1",
+    .motor_id = CAN_M3508_1_ID,
+    .motor_data = &m3508_1_data,
     .init = m3508_init,
     .feedback_calculate = m3508_feedback_calculate,
     .send_enable_cmd = m3508_enable,
@@ -315,7 +315,7 @@ static struct motor_device mg4005e_1 = {
     .set_para = mg4005e_set_para,
 };
 
-static struct motor_device *const motor_list[] = {&gm6020_pitch, &dm4310_pitch, &gm6020_yaw, &m3508_2, &dm3507_1, &dm8009p_1, &mg4005e_1};
+static struct motor_device *const motor_list[] = {&gm6020_pitch, &dm4310_pitch, &gm6020_yaw, &m3508_1, &dm3507_1, &dm8009p_1, &mg4005e_1};
 
 uint32_t motor_instance_count(void)
 {
@@ -335,7 +335,7 @@ void Motor_System_PowerOn_Init(void)
 {
     gm6020_pitch.init(&gm6020_pitch, CAN_GM6020_PITCH_ID, &hfdcan1, 0);
     gm6020_yaw.init(&gm6020_yaw, CAN_GM6020_YAW_ID, &hfdcan1, 0);
-    m3508_2.init(&m3508_2, CAN_M3508_2_ID, &hfdcan1, 0);
+    m3508_1.init(&m3508_1, CAN_M3508_1_ID, &hfdcan1, 0);
     dm4310_pitch.init(&dm4310_pitch, 0U, &hfdcan1, 0);
     dm3507_1.init(&dm3507_1, 0U, &hfdcan1, 0);
     dm8009p_1.init(&dm8009p_1, 0U, &hfdcan1, 0);
@@ -343,7 +343,7 @@ void Motor_System_PowerOn_Init(void)
 
     gm6020_pitch.send_disable_cmd(&gm6020_pitch);
     gm6020_yaw.send_disable_cmd(&gm6020_yaw);
-    m3508_2.send_disable_cmd(&m3508_2);
+    m3508_1.send_disable_cmd(&m3508_1);
     dm4310_pitch.send_disable_cmd(&dm4310_pitch);
     dm3507_1.send_disable_cmd(&dm3507_1);
     dm8009p_1.send_disable_cmd(&dm8009p_1);

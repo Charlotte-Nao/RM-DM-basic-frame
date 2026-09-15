@@ -44,8 +44,8 @@ static void can1_dispatch(uint32_t identifier, const uint8_t frame[8])
         motor->last_rx_tick = HAL_GetTick();
         break;
 
-    case CAN_M3508_2_ID:
-        motor = motor_get_device("M3508_2");
+    case CAN_M3508_1_ID:
+        motor = motor_get_device("M3508_1");
         m3508_feedback_calculate(motor, frame);
         motor->last_rx_tick = HAL_GetTick();
         break;

@@ -35,12 +35,13 @@ void uart_task(void)
     for (;;)
     {
 
-        uart1->uart_printf(uart1,"%ldx\r\n ",global_data.remote_data.rc.remote_update_tick);
+        uart1->uart_printf(uart1,"%d\r\n ",global_data.remote_data.rc.remote_update_tick);
+        osDelay(100U);
+        uart1->uart_printf(uart1,"%d\r\n ",global_data.remote_data.rc.remote_ready);
         osDelay(100U);
         uart1->uart_printf(uart1,"%d \r\n",global_data.remote_data.rc.ch0);
         osDelay(100U);
         uart1->uart_printf(uart1,"111 \r\n");
-        LED_PINK_SET();
         osDelay(100U);
 
     }

@@ -236,7 +236,10 @@ static int uart_device_init(struct uart_device *device)
     }
 
     device_data = device->priv_data;
-    if (device_data->initialised && device_data->port->rx_owner == device) {
+    if (device_data->initialised &&
+        device_data->port->rx_owner == device &&
+        device_data->port->handle->RxState == HAL_UART_STATE_BUSY_RX)
+    {
         return UART_DEVICE_OK;
     }
 
@@ -471,6 +474,20 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *handle, uint16_t position)
     if (device_data->transfer_mode == UART_TRANSFER_DMA) {
         uart_dma_deliver(port, position);
     }
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *handle)
+{
+    struct uart_port_data *port;
+
+    port = uart_port_from_handle(handle);
+
+    if (port == NULL || port->rx_owner == NULL)
+    {
+        return;
+    }
+
+    (void)uart_start_receive(port->rx_owner);
 }
 
 struct uart_device *uart_get_device(const char *name)
