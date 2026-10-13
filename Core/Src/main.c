@@ -135,7 +135,7 @@ int main(void)
   LED_init();
   can_init();
   Motor_System_PowerOn_Init();
-  LED_SKY_SET();
+  LED_YELLOW_SET();
   pwm_power_enable();
   HAL_GPIO_WritePin(POWER_OUT2_EN_GPIO_Port, POWER_OUT2_EN_Pin, GPIO_PIN_SET);
 
