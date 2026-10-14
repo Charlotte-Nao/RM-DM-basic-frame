@@ -36,41 +36,41 @@ void test_task(void)
     }
 
     // // DM8009P_LF使能
-    //
-    // {
-    //     struct motor_device *dm8009p_lf = motor_get_device("DM8009P_LF");
-    //     if (dm8009p_lf != NULL && dm8009p_lf->send_enable_cmd != NULL) {
-    //         dm8009p_lf->send_enable_cmd(dm8009p_lf);
-    //     }
-    //
-    //     osDelay(100U);
-    // }
+
+    {
+        struct motor_device *dm8009p_lf = motor_get_device("DM8009P_LF");
+        if (dm8009p_lf != NULL && dm8009p_lf->send_enable_cmd != NULL) {
+            dm8009p_lf->send_enable_cmd(dm8009p_lf);
+        }
+
+        osDelay(100U);
+    }
     //8009P_LB使能
     {
-        // struct motor_device *dm_8009p_lb = motor_get_device("DM_8009P_LB");
-        // if (dm_8009p_lb != NULL && dm_8009p_lb->send_enable_cmd != NULL) {
-        //     dm_8009p_lb->send_enable_cmd(dm_8009p_lb);
-        // }
-        // LED_SKY_SET();
-        // osDelay(100U);
-    }
-    //DM_8009P_RF使能
-    {
-        struct motor_device *dm_8009p_rf = motor_get_device("DM_8009P_RF");
-        if (dm_8009p_rf != NULL && dm_8009p_rf->send_enable_cmd != NULL) {
-            dm_8009p_rf->send_enable_cmd(dm_8009p_rf);
+        struct motor_device *dm_8009p_lb = motor_get_device("DM_8009P_LB");
+        if (dm_8009p_lb != NULL && dm_8009p_lb->send_enable_cmd != NULL) {
+            dm_8009p_lb->send_enable_cmd(dm_8009p_lb);
         }
+        LED_SKY_SET();
         osDelay(100U);
     }
+    // DM_8009P_RF使能
+     {
+         struct motor_device *dm_8009p_rf = motor_get_device("DM_8009P_RF");
+         if (dm_8009p_rf != NULL && dm_8009p_rf->send_enable_cmd != NULL) {
+             dm_8009p_rf->send_enable_cmd(dm_8009p_rf);
+         }
+         osDelay(100U);
+     }
 
 
-    // // DM_8009P_RB使能
-        struct motor_device *dm_8009p_rb = motor_get_device("DM_8009P_RB");
-        if (dm_8009p_rb != NULL && dm_8009p_rb->send_enable_cmd != NULL) {
-            dm_8009p_rb->send_enable_cmd(dm_8009p_rb);
-            LED_SKY_SET();
-        }
-        osDelay(100U);
+    // DM_8009P_RB使能
+    struct motor_device *dm_8009p_rb = motor_get_device("DM_8009P_RB");
+    if (dm_8009p_rb != NULL && dm_8009p_rb->send_enable_cmd != NULL) {
+        dm_8009p_rb->send_enable_cmd(dm_8009p_rb);
+        LED_SKY_SET();
+    }
+    osDelay(100U);
 
 
     // // GM6020_YAW使能
@@ -93,7 +93,7 @@ void test_task(void)
 
     for (;;) {
 
-        dm_8009p_rb->send_enable_cmd(dm_8009p_rb);
+        // dm_8009p_rb->send_enable_cmd(dm_8009p_rb);
         osDelay(100);
     }
 }
