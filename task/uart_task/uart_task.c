@@ -34,15 +34,17 @@ void uart_task(void)
 
     for (;;)
     {
-
-        uart1->uart_printf(uart1,"%d\r\n ",global_data.remote_data.rc.remote_update_tick);
+        uart1->uart_printf(uart1,
+            "ch0=%d ch1=%d ch2=%d ch3=%d s1=%d s2=%d reserved=%d ready=%d tick=%lu\r\n",
+            global_data.remote_data.rc.ch0,
+            global_data.remote_data.rc.ch1,
+            global_data.remote_data.rc.ch2,
+            global_data.remote_data.rc.ch3,
+            global_data.remote_data.rc.s1,
+            global_data.remote_data.rc.s2,
+            global_data.remote_data.rc.reserved,
+            global_data.remote_data.rc.remote_ready,
+            (unsigned long)global_data.remote_data.rc.remote_update_tick);
         osDelay(100U);
-        uart1->uart_printf(uart1,"%d\r\n ",global_data.remote_data.rc.remote_ready);
-        osDelay(100U);
-        uart1->uart_printf(uart1,"%d \r\n",global_data.remote_data.rc.ch0);
-        osDelay(100U);
-        uart1->uart_printf(uart1,"111 \r\n");
-        osDelay(100U);
-
     }
 }

@@ -20,13 +20,14 @@ typedef struct
 {
     struct
     {
-        volatile int16_t ch0; //右遥杆左右 -660 ~ 660
-        volatile int16_t ch1; //右遥杆上下
-        volatile int16_t ch2; //左遥杆左右
-        volatile int16_t ch3; //左遥杆上下
+        volatile int16_t ch0; //左水平，中位0，范围-660 ~ 660，
+        volatile int16_t ch1; //左竖直，中位0，范围-660 ~ 660，
+        volatile int16_t ch2; //右水平，中位0，范围-660 ~ 660，
+        volatile int16_t ch3; //右竖直，中位0，范围-660 ~ 660，
 
-        volatile uint8_t s1;  //左上拨杆
-        volatile uint8_t s2;  //右上拨杆
+        volatile uint8_t s1;  //左拨杆S1：上1、中2、下3
+        volatile uint8_t s2;  //右拨杆S2：上1、中2、下3
+        volatile int16_t reserved; //滚轮：下-660，上660
 
         volatile uint32_t remote_update_tick;
         volatile uint8_t remote_ready;

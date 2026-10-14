@@ -15,9 +15,10 @@
 #define REMOTE_CHANNEL_CENTER    1024U
 #define REMOTE_CHANNEL_MAX       1684U
 
+/* Parsed switch values, ordered from top to bottom. */
 #define REMOTE_SWITCH_UP         1U
-#define REMOTE_SWITCH_DOWN       2U
-#define REMOTE_SWITCH_MID        3U
+#define REMOTE_SWITCH_MID        2U
+#define REMOTE_SWITCH_DOWN       3U
 
 int remote_parse(const uint8_t *data,
                  uint16_t length,

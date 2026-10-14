@@ -105,19 +105,24 @@ static int remote_unpack_frame(
         return -2;
     }
 
-    if (((s1 != REMOTE_SWITCH_UP) &&(s1 != REMOTE_SWITCH_DOWN) &&(s1 != REMOTE_SWITCH_MID)) ||
-        ((s2 != REMOTE_SWITCH_UP) &&(s2 != REMOTE_SWITCH_DOWN) &&(s2 != REMOTE_SWITCH_MID)))
+    /* Each raw switch is two bits; 0 is invalid, 1/2/3 are valid. */
+    if ((s1 == 0U) || (s2 == 0U))
     {
         return -2;
     }
 
-    remote_data->rc.ch0 = (int16_t)((int32_t)ch0_raw - (int32_t)REMOTE_CHANNEL_CENTER);
-    remote_data->rc.ch1 = (int16_t)((int32_t)ch1_raw - (int32_t)REMOTE_CHANNEL_CENTER);
-    remote_data->rc.ch2 = (int16_t)((int32_t)ch2_raw - (int32_t)REMOTE_CHANNEL_CENTER);
-    remote_data->rc.ch3 = (int16_t)((int32_t)ch3_raw - (int32_t)REMOTE_CHANNEL_CENTER);
+    remote_data->rc.ch0 = (int16_t)((int32_t)ch2_raw - (int32_t)REMOTE_CHANNEL_CENTER);
+    remote_data->rc.ch1 = (int16_t)((int32_t)ch3_raw - (int32_t)REMOTE_CHANNEL_CENTER);
+    remote_data->rc.ch2 = (int16_t)((int32_t)ch0_raw - (int32_t)REMOTE_CHANNEL_CENTER);
+    remote_data->rc.ch3 = (int16_t)((int32_t)ch1_raw - (int32_t)REMOTE_CHANNEL_CENTER);
 
-    remote_data->rc.s1 = s1;
-    remote_data->rc.s2 = s2;
+    /* DBUS raw values: up=1, middle=3, down=2. */
+    remote_data->rc.s1 = (s1 == 1U) ? REMOTE_SWITCH_UP :
+                         (s1 == 3U) ? REMOTE_SWITCH_MID : REMOTE_SWITCH_DOWN;
+    remote_data->rc.s2 = (s2 == 1U) ? REMOTE_SWITCH_UP :
+                         (s2 == 3U) ? REMOTE_SWITCH_MID : REMOTE_SWITCH_DOWN;
+    remote_data->rc.reserved = (int16_t)((int32_t)REMOTE_CHANNEL_CENTER -
+        (int32_t)((uint16_t)frame[16] | ((uint16_t)frame[17] << 8)));
 
     return 0;
 }
