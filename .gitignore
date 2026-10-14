@@ -23,3 +23,6 @@ compile_commands.json
 *.d
 *.su
 *.lst
+
+# Local reference material
+/refe_pdf/

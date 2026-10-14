@@ -7,15 +7,7 @@
 
 #include <stdint.h>
 
-/* Shared IMU attitude.  The sensor task is the sole writer. */
-typedef struct {
-    volatile float imu_roll_rad;
-    volatile float imu_pitch_rad;
-    volatile float imu_yaw_rad;
-    volatile uint32_t imu_update_tick;
-    volatile uint8_t imu_ready;
-} imu_data_t;
-
+// 遥控器数据
 typedef struct
 {
     struct
@@ -32,14 +24,32 @@ typedef struct
         volatile uint32_t remote_update_tick;
         volatile uint8_t remote_ready;
     }rc;
-
-
 } remote_data_t;
+
+// imu数据
+typedef struct {
+    volatile float imu_roll_rad;
+    volatile float imu_pitch_rad;
+    volatile float imu_yaw_rad;
+    volatile uint32_t imu_update_tick;
+    volatile uint8_t imu_ready;
+} imu_data_t;
+
+// 顺序与 MATLAB 六状态模型一致：[theta, theta_dot, x, x_dot, phi, phi_dot]。
+typedef struct {
+    volatile float theta_rad;               // 世界系虚拟腿倾角，rad
+    volatile float theta_dot_rad_s;         // 虚拟腿倾角变化率，rad/s
+    volatile float x_m;                     // 模型水平位移，m
+    volatile float x_dot_m_s;               // 模型水平速度，m/s
+    volatile float phi_rad;                 // 机体俯仰角，rad
+    volatile float phi_dot_rad_s;           // 机体俯仰角变化率，rad/s
+} state_data_t;
 
 typedef struct
 {
     imu_data_t imu_data;
     remote_data_t remote_data;
+    state_data_t state_data;
 } global_data_t;
 
 extern volatile global_data_t global_data;
