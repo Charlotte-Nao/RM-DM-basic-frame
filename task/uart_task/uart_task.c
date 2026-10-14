@@ -12,6 +12,8 @@
 #include "../../bus/uart/uart_all.h"
 #include "../../protocol/protocol.h"
 #include"../../application/global_data.h"
+#include "../../dsp/VMC/vmc.h"
+#include "../../dsp/math.h"
 #include "../../bsp/LED/LED.h"
 
 
@@ -32,19 +34,12 @@ void uart_task(void)
     uart5->uart_recv_callback = uart5_recv_callback;
 
 
+    osDelay(2000);
     for (;;)
     {
-        uart1->uart_printf(uart1,
-            "ch0=%d ch1=%d ch2=%d ch3=%d s1=%d s2=%d reserved=%d ready=%d tick=%lu\r\n",
-            global_data.remote_data.rc.ch0,
-            global_data.remote_data.rc.ch1,
-            global_data.remote_data.rc.ch2,
-            global_data.remote_data.rc.ch3,
-            global_data.remote_data.rc.s1,
-            global_data.remote_data.rc.s2,
-            global_data.remote_data.rc.reserved,
-            global_data.remote_data.rc.remote_ready,
-            (unsigned long)global_data.remote_data.rc.remote_update_tick);
-        osDelay(100U);
+
+        osDelay(2000);
+
+
     }
 }

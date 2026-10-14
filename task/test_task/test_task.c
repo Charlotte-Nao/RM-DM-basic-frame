@@ -17,7 +17,7 @@
 
 void test_task(void)
 {
-    osDelay(2000U);
+    osDelay(1000U);
     // M3508_L使能
     {
         struct motor_device *m3508_l = motor_get_device("M3508_L");
@@ -68,10 +68,10 @@ void test_task(void)
     struct motor_device *dm_8009p_rb = motor_get_device("DM_8009P_RB");
     if (dm_8009p_rb != NULL && dm_8009p_rb->send_enable_cmd != NULL) {
         dm_8009p_rb->send_enable_cmd(dm_8009p_rb);
-        LED_SKY_SET();
     }
     osDelay(100U);
 
+    LED_SKY_SET();
 
     // // GM6020_YAW使能
     // {
