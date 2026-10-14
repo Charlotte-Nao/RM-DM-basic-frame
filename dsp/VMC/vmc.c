@@ -17,6 +17,9 @@ float lf_vel, lb_vel, rf_vel, rb_vel;
 
 float l_beta, l_phi0, r_beta, r_phi0;
 float L_l, L_r;
+float l_beta_dot, r_beta_dot;
+float l_phi0_dot, r_phi0_dot;
+float L_l_dot, L_r_dot;
 float Jl[2][2], JR[2][2];
 
 void vmc_calculate(void)
@@ -68,4 +71,37 @@ void vmc_calculate(void)
     JR[0][1] = k_r;
     JR[1][0] = 0.5f;
     JR[1][1] = 0.5f;
+
+    // 零偏固定时，模型关节角速度直接取对应电机 VEL。
+    float l_phi1_dot = lb_vel;
+    float l_phi4_dot = lf_vel;
+    float r_phi1_dot = rb_vel;
+    float r_phi4_dot = rf_vel;
+
+    l_beta_dot = (l_phi1_dot - l_phi4_dot) / 2.0f;
+    r_beta_dot = (r_phi1_dot - r_phi4_dot) / 2.0f;
+    L_l_dot = Jl[0][0] * l_phi1_dot + Jl[0][1] * l_phi4_dot;
+    L_r_dot = JR[0][0] * r_phi1_dot + JR[0][1] * r_phi4_dot;
+    l_phi0_dot = Jl[1][0] * l_phi1_dot + Jl[1][1] * l_phi4_dot;
+    r_phi0_dot = JR[1][0] * r_phi1_dot + JR[1][1] * r_phi4_dot;
+
+    global_data.middle_data.L_l = L_l;
+    global_data.middle_data.L_r = L_r;
+    global_data.middle_data.L_l_dot = L_l_dot;
+    global_data.middle_data.L_r_dot = L_r_dot;
+    global_data.middle_data.l_phi1_dot = l_phi1_dot;
+    global_data.middle_data.l_phi4_dot = l_phi4_dot;
+    global_data.middle_data.l_phi0_dot = l_phi0_dot;
+    global_data.middle_data.r_phi1_dot = r_phi1_dot;
+    global_data.middle_data.r_phi4_dot = r_phi4_dot;
+    global_data.middle_data.r_phi0_dot = r_phi0_dot;
+
+    global_data.middle_data.Jl[0][0] = Jl[0][0];
+    global_data.middle_data.Jl[0][1] = Jl[0][1];
+    global_data.middle_data.Jl[1][0] = Jl[1][0];
+    global_data.middle_data.Jl[1][1] = Jl[1][1];
+    global_data.middle_data.Jr[0][0] = JR[0][0];
+    global_data.middle_data.Jr[0][1] = JR[0][1];
+    global_data.middle_data.Jr[1][0] = JR[1][0];
+    global_data.middle_data.Jr[1][1] = JR[1][1];
 }

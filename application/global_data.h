@@ -35,6 +35,21 @@ typedef struct {
     volatile uint8_t imu_ready;
 } imu_data_t;
 
+typedef struct {
+    volatile float L_l;
+    volatile float L_r;
+    volatile float L_l_dot;
+    volatile float L_r_dot;
+    volatile float l_phi1_dot;
+    volatile float l_phi4_dot;
+    volatile float l_phi0_dot;
+    volatile float r_phi1_dot;
+    volatile float r_phi4_dot;
+    volatile float r_phi0_dot;
+    volatile float Jl[2][2];
+    volatile float Jr[2][2];
+} middle_data_t;
+
 // 顺序与 MATLAB 六状态模型一致：[theta, theta_dot, x, x_dot, phi, phi_dot]。
 typedef struct {
     volatile float theta_rad;               // 世界系虚拟腿倾角，rad
@@ -49,6 +64,7 @@ typedef struct
 {
     imu_data_t imu_data;
     remote_data_t remote_data;
+    middle_data_t middle_data;
     state_data_t state_data;
 } global_data_t;
 

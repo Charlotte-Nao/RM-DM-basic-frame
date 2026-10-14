@@ -95,8 +95,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         bus/can/can_all.h
         protocol/remote.c
         protocol/remote.h
-        application/data_update.c
-        application/data_update.h
         dsp/VMC/vmc.c
         dsp/VMC/vmc.h
 )
