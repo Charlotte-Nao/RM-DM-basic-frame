@@ -8,7 +8,7 @@
 
 
 // 安装零偏，单位 rad
-// l_phi1 =+ 11.12deg , l_phi4 -= 63.66deg, r_phi1 +=133.914deg, r_phi4 += 49.518deg 转化为电机零偏
+// l_phi1 = 303.1675625deg , l_phi4 = 225.5121875deg, r_phi1 = -86.1044375fdeg, r_phi4 = -133.3859375fdeg 转化为电机零偏
 float lf_offset = 303.1675625f * DEG_TO_RAD;
 float lb_offset = 225.5121875f * DEG_TO_RAD;
 float rf_offset = -133.3859375f * DEG_TO_RAD;
@@ -64,7 +64,7 @@ void vmc_calculate(void)
     rf_pos = rf_pos - rf_offset;
     rb_pos = rb_pos - rb_offset;
 
-    // 前杆为 phi4，由后电机b控制、前关节为 phi1，由后点击f控制。
+    // 前杆为 phi4，由后电机b控制、前关节为 phi1，由后电机f控制。
     float l_phi1 = - lf_pos / transmission;
     float l_phi4 = - lb_pos / transmission;
     float r_phi1 = rf_pos / transmission;
@@ -75,8 +75,8 @@ void vmc_calculate(void)
     r_beta =  (r_phi1 - r_phi4) / 2.0f;
     r_phi0 = (r_phi1 + r_phi4) / 2.0f;
 
-    l_theta = PI / 2.0f - l_phi0;
-    r_theta = PI / 2.0f - r_phi0;
+    l_theta = l_phi0 - PI / 2.0f;
+    r_theta = r_phi0 - PI / 2.0f;
 
     L_l = l1 * cosf(l_beta) + sqrtf(l2 * l2 - l1 * l1 * sinf(l_beta) * sinf(l_beta));
     L_r = l1 * cosf(r_beta) + sqrtf(l2 * l2 - l1 * l1 * sinf(r_beta) * sinf(r_beta));
@@ -86,7 +86,7 @@ void vmc_calculate(void)
     float k_r = 0.5f * (l1 * sinf(r_beta) +
         l1 * l1 * sinf(r_beta) * cosf(r_beta) / sqrtf(l2 * l2 - l1 * l1 * sinf(r_beta) * sinf(r_beta)));
 
-    // 行对应 L、phi0，列对应 phi1（后关节）、phi4（前关节）。
+    // 行对应 L、phi0/theta，列对应模型角 phi1、phi4。
     Jl[0][0] = -k_l;
     Jl[0][1] = k_l;
     Jl[1][0] = 0.5f;
@@ -97,11 +97,10 @@ void vmc_calculate(void)
     JR[1][0] = 0.5f;
     JR[1][1] = 0.5f;
 
-    // 零偏固定时，模型关节角速度直接取对应电机 VEL。
-    float l_phi1_dot = lb_vel;
-    float l_phi4_dot = lf_vel;
-    float r_phi1_dot = rb_vel;
-    float r_phi4_dot = rf_vel;
+    float l_phi1_dot = -lf_vel / transmission;
+    float l_phi4_dot = -lb_vel / transmission;
+    float r_phi1_dot = rf_vel / transmission;
+    float r_phi4_dot = rb_vel / transmission;
 
     l_beta_dot = (l_phi1_dot - l_phi4_dot) / 2.0f;
     r_beta_dot = (r_phi1_dot - r_phi4_dot) / 2.0f;
