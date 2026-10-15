@@ -14,6 +14,7 @@
 #include "../../bsp/LED/LED.h"
 #include "../../bsp/pwm/pwm.h"
 #include "../../bsp/usb/usb.h"
+#include "../../dsp/VMC/vmc.h"
 
 void test_task(void)
 {
@@ -92,8 +93,8 @@ void test_task(void)
 
 
     for (;;) {
+        vmc_calculate();
 
-        // dm_8009p_rb->send_enable_cmd(dm_8009p_rb);
-        osDelay(100);
+        osDelay(1);
     }
 }

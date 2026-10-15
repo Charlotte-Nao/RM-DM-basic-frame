@@ -97,8 +97,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         protocol/remote.h
         dsp/VMC/vmc.c
         dsp/VMC/vmc.h
-        task/dsp_task/dsp_task.c
-        task/dsp_task/dsp_task.h
 )
 
 # Add STM32CubeMX generated sources

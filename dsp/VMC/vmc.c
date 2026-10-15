@@ -3,19 +3,26 @@
 //
 
 #include "vmc.h"
+#include "../../dsp/math.h"
 #include <math.h>
 
-// 安装零偏，单位 rad；由你手动填写，0.0f 仅为占位。
-float lf_offset = 0.0f;
-float lb_offset = 0.0f;
-float rf_offset = 0.0f;
-float rb_offset = 0.0f;
+
+// 安装零偏，单位 rad
+// l_phi1 =+ 11.12deg , l_phi4 -= 63.66deg, r_phi1 +=133.914deg, r_phi4 += 49.518deg 转化为电机零偏
+float lf_offset = - 13.205f * DEG_TO_RAD;
+float lb_offset = 75.59625f * DEG_TO_RAD;
+float rf_offset = -159.022875f * DEG_TO_RAD;
+float rb_offset = -58.802625f * DEG_TO_RAD;
+
+// 传动比
+float transmission = 1.1875f;
 
 // 电机原始反馈：pos 为 rad，vel 为 rad/s。
 float lf_pos, lb_pos, rf_pos, rb_pos;
 float lf_vel, lb_vel, rf_vel, rb_vel;
 
 float l_beta, l_phi0, r_beta, r_phi0;
+float l_theta, r_theta;
 float L_l, L_r;
 float l_beta_dot, r_beta_dot;
 float l_phi0_dot, r_phi0_dot;
@@ -42,16 +49,30 @@ void vmc_calculate(void)
     rf_motor->get_status(rf_motor, "VEL", &rf_vel);
     rb_motor->get_status(rb_motor, "VEL", &rb_vel);
 
-    // 此处约定后关节为 phi1、前关节为 phi4；安装正负方向仍需实车确认。
-    float l_phi1 = lb_pos - lb_offset;
-    float l_phi4 = lf_pos - lf_offset;
-    float r_phi1 = rb_pos - rb_offset;
-    float r_phi4 = rf_pos - rf_offset;
+    // 顺时针为正，车腿前向摆动，角度增加
+    lf_pos = - lf_pos;
+    lb_pos = - lb_pos;
+    lf_vel = - lf_vel;
+    lb_vel = - lb_vel;
 
-    l_beta = (l_phi1 - l_phi4) / 2.0f;
+    lf_pos = lf_pos - lf_offset;
+    lb_pos = lb_pos - lb_offset;
+    rf_pos = rf_pos - rf_offset;
+    rb_pos = rb_pos - rb_offset;
+
+    // 前关节为 phi1、后关节为 phi4。
+    float l_phi1 = lf_pos / transmission;
+    float l_phi4 = lb_pos / transmission;
+    float r_phi1 = rf_pos / transmission;
+    float r_phi4 = rb_pos / transmission;
+
+    l_beta =  (l_phi1 - l_phi4) / 2.0f;
     l_phi0 = (l_phi1 + l_phi4) / 2.0f;
-    r_beta = (r_phi1 - r_phi4) / 2.0f;
+    r_beta =  (r_phi1 - r_phi4) / 2.0f;
     r_phi0 = (r_phi1 + r_phi4) / 2.0f;
+
+    l_theta = PI / 2.0f - l_phi0;
+    r_theta = PI / 2.0f - r_phi0;
 
     L_l = l1 * cosf(l_beta) + sqrtf(l2 * l2 - l1 * l1 * sinf(l_beta) * sinf(l_beta));
     L_r = l1 * cosf(r_beta) + sqrtf(l2 * l2 - l1 * l1 * sinf(r_beta) * sinf(r_beta));
@@ -89,12 +110,20 @@ void vmc_calculate(void)
     global_data.middle_data.L_r = L_r;
     global_data.middle_data.L_l_dot = L_l_dot;
     global_data.middle_data.L_r_dot = L_r_dot;
+    global_data.middle_data.l_phi1 = l_phi1;
+    global_data.middle_data.l_phi4 = l_phi4;
+    global_data.middle_data.l_phi0 = l_phi0;
     global_data.middle_data.l_phi1_dot = l_phi1_dot;
     global_data.middle_data.l_phi4_dot = l_phi4_dot;
     global_data.middle_data.l_phi0_dot = l_phi0_dot;
+    global_data.middle_data.r_phi1 = r_phi1;
+    global_data.middle_data.r_phi4 = r_phi4;
+    global_data.middle_data.r_phi0 = r_phi0;
     global_data.middle_data.r_phi1_dot = r_phi1_dot;
     global_data.middle_data.r_phi4_dot = r_phi4_dot;
     global_data.middle_data.r_phi0_dot = r_phi0_dot;
+    global_data.middle_data.l_theta = l_theta;
+    global_data.middle_data.r_theta = r_theta;
 
     global_data.middle_data.Jl[0][0] = Jl[0][0];
     global_data.middle_data.Jl[0][1] = Jl[0][1];

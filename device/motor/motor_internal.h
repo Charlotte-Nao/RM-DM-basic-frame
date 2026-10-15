@@ -38,7 +38,7 @@
 #define DM4310_T_MAX                            10.0f
 #define DM4310_TRACE_MAX_ACCELERATION_RAD_S2    30.0f
 
-#define DM8009P_P_MAX                           3.14f
+#define DM8009P_P_MAX                           12.5f
 #define DM8009P_V_MAX                           45.0f
 #define DM8009P_T_MAX                           54.0f
 #define DM8009P_TORQUE_LIMIT_NM                 40.0f

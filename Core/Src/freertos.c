@@ -84,13 +84,6 @@ const osThreadAttr_t uart_task_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityHigh,
 };
-/* Definitions for dsp */
-osThreadId_t dspHandle;
-const osThreadAttr_t dsp_attributes = {
-  .name = "dsp",
-  .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityLow,
-};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -102,7 +95,6 @@ void usb_entry(void *argument);
 void test_task_entry(void *argument);
 void motor_entry(void *argument);
 void uart_entry(void *argument);
-void dsp_task_entry(void *argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -177,9 +169,6 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of uart_task */
   uart_taskHandle = osThreadNew(uart_entry, NULL, &uart_task_attributes);
-
-  /* creation of dsp */
-  dspHandle = osThreadNew(dsp_task_entry, NULL, &dsp_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -286,25 +275,6 @@ void uart_entry(void *argument)
     osDelay(1);
   }
   /* USER CODE END uart_entry */
-}
-
-/* USER CODE BEGIN Header_dsp_task_entry */
-/**
-* @brief Function implementing the dsp thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_dsp_task_entry */
-void dsp_task_entry(void *argument)
-{
-  /* USER CODE BEGIN dsp_task_entry */
-  dsp_task();
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END dsp_task_entry */
 }
 
 /* Private application code --------------------------------------------------*/
