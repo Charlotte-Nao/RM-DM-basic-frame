@@ -99,6 +99,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         dsp/VMC/vmc.h
         dsp/LegLength/leg_length.c
         dsp/LegLength/leg_length.h
+        dsp/State/state.c
+        dsp/State/state.h
+        dsp/LQR/lqr.c
+        dsp/LQR/lqr.h
 )
 
 # Add STM32CubeMX generated sources

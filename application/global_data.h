@@ -30,6 +30,7 @@ typedef struct
 typedef struct {
     volatile float imu_roll_rad;
     volatile float imu_pitch_rad;
+    volatile float imu_pitch_dot_rad_s; // 与 imu_pitch 同方向，当前平面运动取去偏 gyro X
     volatile float imu_yaw_rad;
     volatile uint32_t imu_update_tick;
     volatile uint8_t imu_ready;

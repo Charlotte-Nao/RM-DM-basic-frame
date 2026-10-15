@@ -16,6 +16,8 @@
 #include "../../bsp/usb/usb.h"
 #include "../../dsp/VMC/vmc.h"
 #include "../../dsp/LegLength/leg_length.h"
+#include "../../dsp/State/state.h"
+#include "../../dsp/LQR/lqr.h"
 
 void test_task(void)
 {
@@ -73,6 +75,22 @@ void test_task(void)
     }
     osDelay(100U);
 
+    {
+        struct motor_device *m3508_l = motor_get_device("M3508_L");
+        if (m3508_l != NULL && m3508_l->send_enable_cmd != NULL) {
+            m3508_l->send_enable_cmd(m3508_l);
+        }
+        osDelay(100U);
+    }
+    // M3508_R使能
+    {
+        struct motor_device *m3508_r = motor_get_device("M3508_R");
+        if (m3508_r != NULL && m3508_r->send_enable_cmd != NULL) {
+            m3508_r->send_enable_cmd(m3508_r);
+        }
+        osDelay(100U);
+    }
+
     LED_SKY_SET();
 
     // // GM6020_YAW使能
@@ -95,8 +113,9 @@ void test_task(void)
 
     for (;;) {
         vmc_calculate();
-        leg_pd();
-
+        // leg_pd();
+        // state_update();
+        // lqr_calculate();
         osDelay(1);
     }
 }

@@ -64,19 +64,19 @@ void leg_pd(void)
     // F_l = F_l - F_spring_divid_l;
     // F_r = F_r - F_spring_divid_r;
 
-    float tao_lf = global_data.middle_data.Jl[0][0] * F_l / transmission;
-    float tao_lb = global_data.middle_data.Jl[0][1] * F_l / transmission;
-    float tao_rf = -global_data.middle_data.Jr[0][0] * F_r / transmission;
-    float tao_rb = -global_data.middle_data.Jr[0][1] * F_r / transmission;
-
-
-    dm8009p_data_t *lf_data = motor_get_device("DM8009P_LF")->motor_data;
-    dm8009p_data_t *lb_data = motor_get_device("DM_8009P_LB")->motor_data;
-    dm8009p_data_t *rf_data = motor_get_device("DM_8009P_RF")->motor_data;
-    dm8009p_data_t *rb_data = motor_get_device("DM_8009P_RB")->motor_data;
-
-    lf_data->output_torque_nm = tao_lf;
-    lb_data->output_torque_nm = tao_lb;
-    rf_data->output_torque_nm = tao_rf;
-    rb_data->output_torque_nm = tao_rb;
+    // float tao_lf = global_data.middle_data.Jl[0][0] * F_l / transmission;
+    // float tao_lb = global_data.middle_data.Jl[0][1] * F_l / transmission;
+    // float tao_rf = -global_data.middle_data.Jr[0][0] * F_r / transmission;
+    // float tao_rb = -global_data.middle_data.Jr[0][1] * F_r / transmission;
+    //
+    //
+    // dm8009p_data_t *lf_data = motor_get_device("DM8009P_LF")->motor_data;
+    // dm8009p_data_t *lb_data = motor_get_device("DM_8009P_LB")->motor_data;
+    // dm8009p_data_t *rf_data = motor_get_device("DM_8009P_RF")->motor_data;
+    // dm8009p_data_t *rb_data = motor_get_device("DM_8009P_RB")->motor_data;
+    //
+    // lf_data->output_torque_nm = tao_lf;
+    // lb_data->output_torque_nm = tao_lb;
+    // rf_data->output_torque_nm = tao_rf;
+    // rb_data->output_torque_nm = tao_rb;
 }

@@ -93,7 +93,7 @@ void sensor_task(void)
     {
         BMI088_read(gyro, accel, &temperature);
 
-        /* BMI088 gyro output is degrees/s; Mahony requires radians/s. */
+        /* BMI088 driver already outputs gyro data in radians/s. */
         MahonyAHRSupdateIMU(quaternion,
                             (gyro[0] - gyro_bias[0]) ,
                             (gyro[1] - gyro_bias[1]) ,
@@ -104,6 +104,8 @@ void sensor_task(void)
         quaternion_to_euler(quaternion, &roll, &pitch, &yaw);
         global_data.imu_data.imu_roll_rad = pitch;
         global_data.imu_data.imu_pitch_rad = roll;
+        // 当前 pitch 对应传感器 roll 通道；纵向平面运动时角速度对应 gyro X。
+        global_data.imu_data.imu_pitch_dot_rad_s = gyro[0] - gyro_bias[0];
         global_data.imu_data.imu_yaw_rad = yaw;
         global_data.imu_data.imu_update_tick = osKernelGetTickCount();
         global_data.imu_data.imu_ready = 1U;
