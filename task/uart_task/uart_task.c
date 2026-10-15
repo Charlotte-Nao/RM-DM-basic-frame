@@ -13,6 +13,8 @@
 #include "../../protocol/protocol.h"
 #include"../../application/global_data.h"
 #include "../../dsp/VMC/vmc.h"
+#include "../../dsp/LegLength/leg_length.h"
+#include "../../device/motor/motor_internal.h"
 #include "../../dsp/math.h"
 #include "../../bsp/LED/LED.h"
 
@@ -33,21 +35,27 @@ void uart_task(void)
     uart10->uart_recv_callback = uart10_recv_callback;
     uart5->uart_recv_callback = uart5_recv_callback;
 
+    dm8009p_data_t *lf_data = motor_get_device("DM8009P_LF")->motor_data;
+    dm8009p_data_t *lb_data = motor_get_device("DM_8009P_LB")->motor_data;
+    dm8009p_data_t *rf_data = motor_get_device("DM_8009P_RF")->motor_data;
+    dm8009p_data_t *rb_data = motor_get_device("DM_8009P_RB")->motor_data;
+
 
     osDelay(2000);
     for (;;)
     {
         uart1->uart_printf(uart1,
-            "l_phi1=%.3f     l_phi4=%.3f     l_beta=%.3f     l_phi0=%.3f     L_l=%.3f     lf_pos=%.3f     lb_pos=%.3f\r\n",
-            global_data.middle_data.l_phi1 * RAD_TO_DEG,
-            global_data.middle_data.l_phi4 * RAD_TO_DEG,
-            l_beta * RAD_TO_DEG,
-            global_data.middle_data.l_phi0 * RAD_TO_DEG,
+            "target_L_l=%.3f     L_l=%.3f     target_L_r=%.3f     L_r=%.3f     tao_lf=%.3f     tao_lb=%.3f     tao_rf=%.3f     tao_rb=%.3f\r\n",
+            target_length_l,
             global_data.middle_data.L_l,
-            lf_pos * RAD_TO_DEG,
-            lb_pos * RAD_TO_DEG);
+            target_length_r,
+            global_data.middle_data.L_r,
+            lf_data->output_torque_nm,
+            lb_data->output_torque_nm,
+            rf_data->output_torque_nm,
+            rb_data->output_torque_nm);
 
-        osDelay(500);
+        osDelay(2000);
 
 
 

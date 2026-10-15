@@ -2093,7 +2093,7 @@ void dm8009p_update(struct motor_device *motor)
     friction_torque_nm = data->friction_torque;
     feedforward_torque_nm = acc_torque_nm + gravity_torque_nm + friction_torque_nm;
     output_torque_nm += feedforward_torque_nm;
-    data->output_torque_nm = clamp_float(output_torque_nm, -DM8009P_TORQUE_LIMIT_NM, DM8009P_TORQUE_LIMIT_NM);
+    // data->output_torque_nm = clamp_float(output_torque_nm, -DM8009P_TORQUE_LIMIT_NM, DM8009P_TORQUE_LIMIT_NM);
     dm8009p_send_ctrl_cmd(motor);
 }
 

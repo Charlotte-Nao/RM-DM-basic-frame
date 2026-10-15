@@ -15,6 +15,7 @@
 #include "../../bsp/pwm/pwm.h"
 #include "../../bsp/usb/usb.h"
 #include "../../dsp/VMC/vmc.h"
+#include "../../dsp/LegLength/leg_length.h"
 
 void test_task(void)
 {
@@ -94,6 +95,7 @@ void test_task(void)
 
     for (;;) {
         vmc_calculate();
+        leg_pd();
 
         osDelay(1);
     }
