@@ -38,18 +38,16 @@ void uart_task(void)
     for (;;)
     {
         uart1->uart_printf(uart1,
-            "r_theta=%.3f     L_r=%.3f\r\n",
-            global_data.middle_data.r_theta * RAD_TO_DEG,
-            global_data.middle_data.L_r);
+            "l_phi1=%.3f     l_phi4=%.3f     l_beta=%.3f     l_phi0=%.3f     L_l=%.3f     lf_pos=%.3f     lb_pos=%.3f\r\n",
+            global_data.middle_data.l_phi1 * RAD_TO_DEG,
+            global_data.middle_data.l_phi4 * RAD_TO_DEG,
+            l_beta * RAD_TO_DEG,
+            global_data.middle_data.l_phi0 * RAD_TO_DEG,
+            global_data.middle_data.L_l,
+            lf_pos * RAD_TO_DEG,
+            lb_pos * RAD_TO_DEG);
 
-        osDelay(100);
-
-        uart1->uart_printf(uart1,
-            "l_theta=%.3f     L_l=%.3f\r\n",
-            global_data.middle_data.l_theta * RAD_TO_DEG,
-            global_data.middle_data.L_l);
-
-        osDelay(1000);
+        osDelay(500);
 
 
 

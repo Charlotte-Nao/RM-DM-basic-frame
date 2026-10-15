@@ -9,10 +9,10 @@
 
 // 安装零偏，单位 rad
 // l_phi1 =+ 11.12deg , l_phi4 -= 63.66deg, r_phi1 +=133.914deg, r_phi4 += 49.518deg 转化为电机零偏
-float lf_offset = - 13.205f * DEG_TO_RAD;
-float lb_offset = 75.59625f * DEG_TO_RAD;
-float rf_offset = -159.022875f * DEG_TO_RAD;
-float rb_offset = -58.802625f * DEG_TO_RAD;
+float lf_offset = 303.1675625f * DEG_TO_RAD;
+float lb_offset = 225.5121875f * DEG_TO_RAD;
+float rf_offset = -133.3859375f * DEG_TO_RAD;
+float rb_offset = -86.1044375f * DEG_TO_RAD;
 
 // 传动比
 float transmission = 1.1875f;
@@ -52,17 +52,21 @@ void vmc_calculate(void)
     // 顺时针为正，车腿前向摆动，角度增加
     lf_pos = - lf_pos;
     lb_pos = - lb_pos;
+    rf_pos = - rf_pos;
+    rb_pos = - rb_pos;
     lf_vel = - lf_vel;
     lb_vel = - lb_vel;
+    rf_vel = - rf_vel;
+    rb_vel = - rb_vel;
 
     lf_pos = lf_pos - lf_offset;
     lb_pos = lb_pos - lb_offset;
     rf_pos = rf_pos - rf_offset;
     rb_pos = rb_pos - rb_offset;
 
-    // 前关节为 phi1、后关节为 phi4。
-    float l_phi1 = lf_pos / transmission;
-    float l_phi4 = lb_pos / transmission;
+    // 前杆为 phi4，由后电机b控制、前关节为 phi1，由后点击f控制。
+    float l_phi1 = - lf_pos / transmission;
+    float l_phi4 = - lb_pos / transmission;
     float r_phi1 = rf_pos / transmission;
     float r_phi4 = rb_pos / transmission;
 
