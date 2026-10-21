@@ -59,7 +59,7 @@ typedef struct {
     volatile float Jr[2][2];
 } middle_data_t;
 
-// 顺序与 MATLAB 六状态模型一致：[theta, theta_dot, x, x_dot, phi, phi_dot]。
+// 状态空间矩阵：[theta, theta_dot, x, x_dot, phi, phi_dot]。
 typedef struct {
     volatile float theta_rad;               // 世界系虚拟腿倾角，rad
     volatile float theta_dot_rad_s;         // 虚拟腿倾角变化率，rad/s

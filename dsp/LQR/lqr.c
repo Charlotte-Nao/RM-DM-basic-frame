@@ -44,40 +44,16 @@ void lqr_calculate(void)
     T_w_l = T_p_l = T_w_r = T_p_r = 0.0f;
     tao_lf = tao_lb = tao_rf = tao_rb = 0.0f;
     current_l = current_r = 0.0f;
-    for (int row = 0; row < 2; ++row)
+    for (int row = 0; row < 2; row ++ )
     {
-        for (int col = 0; col < 6; ++col)
+        for (int col = 0; col < 6; col ++)
         {
             K_l[row][col] = 0.0f;
             K_r[row][col] = 0.0f;
         }
     }
 
-    // 沿用电机的离线时间窗口；无有效反馈时不保留上一周期输出。
-    uint32_t imu_age = osKernelGetTickCount() - global_data.imu_data.imu_update_tick;
-    bool valid = global_data.imu_data.imu_ready &&
-        imu_age <= osKernelGetTickFreq() * MOTOR_OFFLINE_MS / 1000U &&
-        motor_is_online(wheel_l) && motor_is_online(wheel_r) &&
-        motor_is_online(lf_motor) && motor_is_online(lb_motor) &&
-        motor_is_online(rf_motor) && motor_is_online(rb_motor) &&
-        wheel_l_data->enabled && wheel_r_data->enabled &&
-        wheel_l_data->error == 0U && wheel_r_data->error == 0U &&
-        lf_data->enable_requested && lf_data->enabled && lb_data->enable_requested && lb_data->enabled &&
-        rf_data->enable_requested && rf_data->enabled && rb_data->enable_requested && rb_data->enabled &&
-        isfinite(length[0]) && length[0] >= 0.15f && length[0] <= 0.35f &&
-        isfinite(length[1]) && length[1] >= 0.15f && length[1] <= 0.35f &&
-        isfinite(F_l) && isfinite(F_r) && isfinite(transmission) && transmission > 0.0f &&
-        isfinite(wheel_transmission) && wheel_transmission > 0.0f &&
-        isfinite(wheel_l_data->K_t_Nm_A) && wheel_l_data->K_t_Nm_A > 0.0f &&
-        isfinite(wheel_r_data->K_t_Nm_A) && wheel_r_data->K_t_Nm_A > 0.0f;
-    for (int i = 0; i < 6; ++i)
-    {
-        valid = valid && isfinite(state[i]);
-    }
-
-    if (valid)
-    {
-        // 同 SPR：左右分别按各自腿长求 K，共用六状态，输出按各侧使用，不额外除以 2。
+        // 左右分别按各自腿长求 K。
         for (int side = 0; side < 2; ++side)
         {
             float L_0 = length[side];
@@ -87,7 +63,6 @@ void lqr_calculate(void)
             float wheel_torque = 0.0f;
             float hip_torque = 0.0f;
 
-            // 系数来自 ../matlab/LQR_K.m（2026-10-15 23:37:25），已转换 MATLAB 列优先排列。
             gain[0][0] = L_0 * (-6.972298677723907e+1f) + t2 * 5.86240998197075e+1f - t3 * 2.056355411564627e+1f - 4.437958705450612f;
             gain[0][1] = L_0 * (-3.613317163281752f) - t2 * 1.586851657043222e+1f + t3 * 1.501969355371675e+1f - 5.61642271527292e-1f;
             gain[0][2] = L_0 * (-7.44955344563899f) + t2 * 7.551282818665943f - t3 * 8.192156164389051e-1f + 8.598221972918148e-2f;
@@ -104,55 +79,43 @@ void lqr_calculate(void)
 
             for (int i = 0; i < 6; ++i)
             {
-                wheel_torque -= gain[0][i] * state[i];
-                hip_torque -= gain[1][i] * state[i];
+                wheel_torque = wheel_torque - gain[0][i] * state[i];
+                hip_torque = hip_torque - gain[1][i] * state[i];
             }
+
+            wheel_torque = wheel_torque / 2.0f;
+            hip_torque = hip_torque / 2.0f;
+
             if (side == 0)
             {
                 T_w_l = wheel_torque;
                 T_p_l = hip_torque;
             }
-            else
+            if (side == 1)
             {
                 T_w_r = wheel_torque;
                 T_p_r = hip_torque;
             }
         }
 
-        // J 的转置将各腿 [F,Tp] 转成模型关节力矩，再按本车方向和传动比转至电机侧。
-        // 此处 J 第二行的 0.5 是单腿两个关节间的系数，不是左右腿均分。
+        // J 的转置将各腿 [F,Tp] 转成模型关节力矩
         tao_lf = (global_data.middle_data.Jl[0][0] * F_l + global_data.middle_data.Jl[1][0] * T_p_l) / transmission;
         tao_lb = (global_data.middle_data.Jl[0][1] * F_l + global_data.middle_data.Jl[1][1] * T_p_l) / transmission;
         tao_rf = -(global_data.middle_data.Jr[0][0] * F_r + global_data.middle_data.Jr[1][0] * T_p_r) / transmission;
         tao_rb = -(global_data.middle_data.Jr[0][1] * F_r + global_data.middle_data.Jr[1][1] * T_p_r) / transmission;
 
-        // Tw 为轮端 Nm；Kt 使用当前实例的转子侧 Nm/A，不直接把 Nm 当成 CAN 电流码。
-        // 前进方向左负右正；电流码 +/-16384 对应当前驱动的 +/-20 A。
+        // 左轮反转为建模正方向： 电流码 +/-16384 对应当前驱动的 +/-20 A
         current_l = -T_w_l / (wheel_transmission * wheel_l_data->K_t_Nm_A) * M3508_OUTPUT_LIMIT / M3508_MAX_TORQUE_CURRENT_A;
         current_r = T_w_r / (wheel_transmission * wheel_r_data->K_t_Nm_A) * M3508_OUTPUT_LIMIT / M3508_MAX_TORQUE_CURRENT_A;
 
-        valid = isfinite(T_w_l) && isfinite(T_p_l) && isfinite(T_w_r) && isfinite(T_p_r) &&
-            isfinite(tao_lf) && isfinite(tao_lb) && isfinite(tao_rf) && isfinite(tao_rb) &&
-            isfinite(current_l) && isfinite(current_r);
-    }
-
-    if (!valid)
-    {
-        T_w_l = T_p_l = T_w_r = T_p_r = 0.0f;
-        tao_lf = tao_lb = tao_rf = tao_rb = 0.0f;
-        current_l = current_r = 0.0f;
-    }
-    else
-    {
         tao_lf = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_lf));
         tao_lb = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_lb));
         tao_rf = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_rf));
         tao_rb = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_rb));
         current_l = fminf(M3508_OUTPUT_LIMIT, fmaxf(-M3508_OUTPUT_LIMIT, current_l));
         current_r = fminf(M3508_OUTPUT_LIMIT, fmaxf(-M3508_OUTPUT_LIMIT, current_r));
-    }
 
-    // s1 为 2 时优先失能所有已注册电机，不再写入本周期控制目标。
+    // 急停啊
     if (global_data.remote_data.rc.s1 == 2U)
     {
         for (uint32_t i = 0U; i < Motor_Get_Count(); ++i)
@@ -166,7 +129,6 @@ void lqr_calculate(void)
     }
     else
     {
-        // 与腿长 PD 原来的方式相同：只写目标，仍由现有 motor_task 发送 CAN。
         lf_data->output_torque_nm = tao_lf;
         lb_data->output_torque_nm = tao_lb;
         rf_data->output_torque_nm = tao_rf;

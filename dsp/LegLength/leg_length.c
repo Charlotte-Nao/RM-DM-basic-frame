@@ -18,11 +18,15 @@ float F_spring = 300.0f;
 
 void leg_pd(void)
 {
-
-
+    // 遥控器控制腿长，用于测试
     // ch1 对应左腿，ch3 对应右腿；-660~660 映射到 0.15~0.4 m。
-    target_length_l = 0.15f + (global_data.remote_data.rc.ch1 + 660.0f) * (0.35f - 0.15f) / 1320.0f;
-    target_length_r = 0.15f + (global_data.remote_data.rc.ch3 + 660.0f) * (0.35f - 0.15f) / 1320.0f;
+    // target_length_l = 0.15f + (global_data.remote_data.rc.ch1 + 660.0f) * (0.35f - 0.15f) / 1320.0f;
+    // target_length_r = 0.15f + (global_data.remote_data.rc.ch3 + 660.0f) * (0.35f - 0.15f) / 1320.0f;
+
+    // 设置腿长target，测试阶段设置为0.3m
+    target_length_l = 0.3f;
+    target_length_r = 0.3f;
+
 
     float error_l = target_length_l - global_data.middle_data.L_l;
     float error_r = target_length_r - global_data.middle_data.L_r;
@@ -30,7 +34,7 @@ void leg_pd(void)
     F_l = kp * error_l - kd * global_data.middle_data.L_l_dot;
     F_r = kp * error_r - kd * global_data.middle_data.L_r_dot;
 
-    // 气弹簧解算，暂时有点问题
+    // 气弹簧解算，在长腿长段正常，短腿长段结算偏差较大
     // const float q1 = 0.21f;
     // const float q2 = 0.25f;
     // const float s2 = 0.04863f;

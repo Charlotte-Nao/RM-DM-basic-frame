@@ -10,7 +10,7 @@
 extern float wheel_radius;
 extern float wheel_transmission;
 
-// VMC 更新后连续调用；六状态按当前 MATLAB 的轮轴位移口径更新。
+// VMC 更新腿长后，在新腿长下更新状态矩阵
 void state_update(void);
 
 #endif //DM_STATE_H
