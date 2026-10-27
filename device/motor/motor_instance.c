@@ -8,9 +8,10 @@
 
 /* --------------------------- Static instances --------------------------- */
 // 3508_L实例化
+// 走力控，清空pid，原值以注释形式放在一边
 static const m3508_pid_config_t m3508_l_pid_config = {
     .position_pid = {
-        .kp = 80.0f,
+        .kp = 0.0f, // 原值 80.0f
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 0.0f,
@@ -21,8 +22,8 @@ static const m3508_pid_config_t m3508_l_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 15.0f,
-        .ki = 40.0f,
+        .kp = 0.0f, // 原值 15.0f
+        .ki = 0.0f, // 原值 40.0f
         .kd = 0.0f,
         .integral_limit = 50.0f,
         .output_limit = M3508_OUTPUT_LIMIT,
@@ -60,7 +61,7 @@ static struct motor_device m3508_l = {
 // 3508_R实例化
 static const m3508_pid_config_t m3508_r_pid_config = {
     .position_pid = {
-        .kp = 80.0f,
+        .kp = 0.0f, // 原值 80.0f
         .ki = 0.0f,
         .kd = 0.0f,
         .integral_limit = 0.0f,
@@ -71,8 +72,8 @@ static const m3508_pid_config_t m3508_r_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 15.0f,
-        .ki = 40.0f,
+        .kp = 0.0f, // 原值 15.0f
+        .ki = 0.0f, // 原值 40.0f
         .kd = 0.0f,
         .integral_limit = 50.0f,
         .output_limit = M3508_OUTPUT_LIMIT,
@@ -110,7 +111,7 @@ static struct motor_device m3508_r = {
 // DM8009P_LF实例化：MIT模式，CAN ID为0x001，反馈Master ID为0x011
 static const dm8009p_pid_config_t dm8009p_lf_pid_config = {
     .position_pid = {
-        .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 0.0f, .ki = 0.0f, .kd = 0.0f, // 原值 kp=20.0f，ki=0.0f，kd=0.0f
         .integral_limit = 0.0f,
         .output_limit = DM8009P_V_MAX,
         .derivative_filter_alpha = 0.5f,
@@ -119,7 +120,7 @@ static const dm8009p_pid_config_t dm8009p_lf_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 0.10f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 0.0f, .ki = 0.0f, .kd = 0.0f, // 原值 kp=0.10f，ki=0.0f，kd=0.0f
         .integral_limit = 1.0f,
         .output_limit = DM8009P_TORQUE_LIMIT_NM,
         .derivative_filter_alpha = 0.5f,
@@ -156,7 +157,7 @@ static struct motor_device dm8009p_lf = {
 // DM_8009P_LB实例化：MIT模式，CAN ID为0x002，反馈Master ID为0x012
 static const dm8009p_pid_config_t dm_8009p_lb_pid_config = {
     .position_pid = {
-        .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 0.0f, .ki = 0.0f, .kd = 0.0f, // 原值 kp=20.0f，ki=0.0f，kd=0.0f
         .integral_limit = 0.0f,
         .output_limit = DM8009P_V_MAX,
         .derivative_filter_alpha = 0.5f,
@@ -165,7 +166,7 @@ static const dm8009p_pid_config_t dm_8009p_lb_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 0.10f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 0.0f, .ki = 0.0f, .kd = 0.0f, // 原值 kp=0.10f，ki=0.0f，kd=0.0f
         .integral_limit = 1.0f,
         .output_limit = DM8009P_TORQUE_LIMIT_NM,
         .derivative_filter_alpha = 0.5f,
@@ -202,7 +203,7 @@ static struct motor_device dm_8009p_lb = {
 // DM_8009P_RF实例化：MIT模式，CAN ID为0x003，反馈Master ID为0x013
 static const dm8009p_pid_config_t dm_8009p_rf_pid_config = {
     .position_pid = {
-        .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 0.0f, .ki = 0.0f, .kd = 0.0f, // 原值 kp=20.0f，ki=0.0f，kd=0.0f
         .integral_limit = 0.0f,
         .output_limit = DM8009P_V_MAX,
         .derivative_filter_alpha = 0.5f,
@@ -211,7 +212,7 @@ static const dm8009p_pid_config_t dm_8009p_rf_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 0.10f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 0.0f, .ki = 0.0f, .kd = 0.0f, // 原值 kp=0.10f，ki=0.0f，kd=0.0f
         .integral_limit = 1.0f,
         .output_limit = DM8009P_TORQUE_LIMIT_NM,
         .derivative_filter_alpha = 0.5f,
@@ -248,7 +249,7 @@ static struct motor_device dm_8009p_rf = {
 // DM_8009P_RB实例化：MIT模式，CAN ID为0x004，反馈Master ID为0x014
 static const dm8009p_pid_config_t dm_8009p_rb_pid_config = {
     .position_pid = {
-        .kp = 20.0f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 0.0f, .ki = 0.0f, .kd = 0.0f, // 原值 kp=20.0f，ki=0.0f，kd=0.0f
         .integral_limit = 0.0f,
         .output_limit = DM8009P_V_MAX,
         .derivative_filter_alpha = 0.5f,
@@ -257,7 +258,7 @@ static const dm8009p_pid_config_t dm_8009p_rb_pid_config = {
         .variable_integration_threshold = 0.0f,
     },
     .velocity_pid = {
-        .kp = 0.10f, .ki = 0.0f, .kd = 0.0f,
+        .kp = 0.0f, .ki = 0.0f, .kd = 0.0f, // 原值 kp=0.10f，ki=0.0f，kd=0.0f
         .integral_limit = 1.0f,
         .output_limit = DM8009P_TORQUE_LIMIT_NM,
         .derivative_filter_alpha = 0.5f,

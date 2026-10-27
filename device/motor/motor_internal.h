@@ -163,6 +163,7 @@ typedef struct {
     uint32_t last_update_tick;
     uint8_t control_slot;
     float position_continuous_rad;
+    float target_torque_nm;             // 电机侧目标力矩，Nm
 } m3508_data_t;
 
 typedef struct {
@@ -256,6 +257,7 @@ typedef struct {
     uint32_t last_update_tick;
     uint32_t last_clear_cmd_tick;
     uint32_t last_enable_cmd_tick;
+    float target_torque_nm;             // MIT 协议目标力矩，Nm
 } dm8009p_data_t;
 
 #define MOTOR_DRIVER_DECLARATIONS(prefix) \

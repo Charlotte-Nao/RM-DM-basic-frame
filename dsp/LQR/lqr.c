@@ -36,10 +36,6 @@ void lqr_calculate(void)
     struct motor_device *rb_motor = motor_get_device("DM_8009P_RB");
     m3508_data_t *wheel_l_data = wheel_l->motor_data;
     m3508_data_t *wheel_r_data = wheel_r->motor_data;
-    dm8009p_data_t *lf_data = lf_motor->motor_data;
-    dm8009p_data_t *lb_data = lb_motor->motor_data;
-    dm8009p_data_t *rf_data = rf_motor->motor_data;
-    dm8009p_data_t *rb_data = rb_motor->motor_data;
 
     T_w_l = T_p_l = T_w_r = T_p_r = 0.0f;
     tao_lf = tao_lb = tao_rf = tao_rb = 0.0f;
@@ -129,11 +125,12 @@ void lqr_calculate(void)
     }
     else
     {
-        lf_data->output_torque_nm = tao_lf;
-        lb_data->output_torque_nm = tao_lb;
-        rf_data->output_torque_nm = tao_rf;
-        rb_data->output_torque_nm = tao_rb;
-        wheel_l_data->output_current_code = current_l;
-        wheel_r_data->output_current_code = current_r;
+        lf_motor->set_target(lf_motor, 4, 0.0f, 0.0f, 0.0f, tao_lf);
+        lb_motor->set_target(lb_motor, 4, 0.0f, 0.0f, 0.0f, tao_lb);
+        rf_motor->set_target(rf_motor, 4, 0.0f, 0.0f, 0.0f, tao_rf);
+        rb_motor->set_target(rb_motor, 4, 0.0f, 0.0f, 0.0f, tao_rb);
+        // 轮端力矩转为电机侧力矩，电流换算及最终限幅由驱动完成。
+        wheel_l->set_target(wheel_l, 4, 0.0f, 0.0f, 0.0f, -T_w_l / wheel_transmission);
+        wheel_r->set_target(wheel_r, 4, 0.0f, 0.0f, 0.0f, T_w_r / wheel_transmission);
     }
 }

@@ -635,6 +635,7 @@ void m3508_enable(struct motor_device *motor)
     data->trace.active = 0U;
     pid_reset(&data->position_pid);
     pid_reset(&data->velocity_pid);
+    data->target_torque_nm = 0.0f;
     data->last_update_tick = 0U;
     data->enabled = 1U;
 }
@@ -653,6 +654,7 @@ void m3508_disable(struct motor_device *motor)
     data->trace.active = 0U;
     pid_reset(&data->position_pid);
     pid_reset(&data->velocity_pid);
+    data->target_torque_nm = 0.0f;
     data->last_update_tick = 0U;
     m3508_send_ctrl_cmd(motor);
 }
@@ -675,6 +677,7 @@ void m3508_update(struct motor_device *motor)
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
     if (data->enabled == 0U || data->error != 0U || motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_MS) {
+        data->target_torque_nm = 0.0f;
         data->output_current_code = 0.0f;
         data->target_position_rad = data->position_rad;
         data->target_velocity_rpm = 0.0f;
@@ -700,7 +703,7 @@ void m3508_update(struct motor_device *motor)
     acc_torque = data->target_acceleration_rad_s2 * data->rotational_inertia_kg_m2;
     grativity_torque = 0.0f;
     friction_torque = data->friction_torque;
-    all_torque = acc_torque + grativity_torque + friction_torque;
+    all_torque = acc_torque + grativity_torque + friction_torque + data->target_torque_nm;
     ff_current = all_torque / data->K_t_Nm_A;
     output_current_code += ff_current * M3508_OUTPUT_LIMIT / M3508_MAX_TORQUE_CURRENT_A;
     data->output_current_code = clamp_float(output_current_code, -M3508_OUTPUT_LIMIT, M3508_OUTPUT_LIMIT);
@@ -710,7 +713,7 @@ void m3508_update(struct motor_device *motor)
 static void m3508_trace_set_target(const struct motor_device *motor,
                                    float target_position_rad,
                                    float target_velocity_rpm,
-                                   float target_acceleration_rad_s2)
+                                   float target_acceleration_rad_s2, float target_torque_nm)
 {
     m3508_data_t *data;
     if (motor == NULL || motor->motor_data == NULL) { return; }
@@ -718,6 +721,7 @@ static void m3508_trace_set_target(const struct motor_device *motor,
     data->target_position_rad = target_position_rad;
     data->target_velocity_rpm = target_velocity_rpm;
     data->target_acceleration_rad_s2 = target_acceleration_rad_s2;
+    data->target_torque_nm = target_torque_nm;
 }
 
 // 得到轨迹需要的时间
@@ -760,11 +764,11 @@ void m3508_set_trace(const struct motor_device *motor,
     data->trace.start_tick = HAL_GetTick();
     if (delta_position_rad > - TWO_PI / M3508_ENCODER && delta_position_rad < TWO_PI / M3508_ENCODER) {
         data->trace.active = 0U;
-        m3508_trace_set_target(motor, data->trace.end_position_rad, 0.0f, 0.0f);
+        m3508_trace_set_target(motor, data->trace.end_position_rad, 0.0f, 0.0f, 0.0f);
         return;
     }
     data->trace.active = 1U;
-    m3508_trace_set_target(motor, data->trace.start_position_rad, 0.0f, 0.0f);
+    m3508_trace_set_target(motor, data->trace.start_position_rad, 0.0f, 0.0f, 0.0f);
 }
 
 // 依据strace进度更新strace
@@ -790,6 +794,7 @@ void m3508_trace_update(struct motor_device *motor)
         data->target_position_rad = data->position_rad;
         data->target_velocity_rpm = 0.0f;
         data->target_acceleration_rad_s2 = 0.0f;
+        data->target_torque_nm = 0.0f;
         return;
     }
     elapsed_s = (float)(HAL_GetTick() - trace->start_tick) * 0.001f;
@@ -798,7 +803,7 @@ void m3508_trace_update(struct motor_device *motor)
         trace->velocity_ref_rad_s = 0.0f;
         trace->acceleration_ref_rad_s2 = 0.0f;
         trace->active = 0U;
-        m3508_trace_set_target(motor, trace->end_position_rad, 0.0f, 0.0f);
+        m3508_trace_set_target(motor, trace->end_position_rad, 0.0f, 0.0f, 0.0f);
         return;
     }
     normalized_time = clamp_float(elapsed_s / trace->duration_s, 0.0f, 1.0f);
@@ -812,16 +817,17 @@ void m3508_trace_update(struct motor_device *motor)
     trace->position_ref_rad = trace->start_position_rad + trace->delta_position_rad * position_scale;
     trace->velocity_ref_rad_s = trace->delta_position_rad / trace->duration_s * velocity_scale;
     trace->acceleration_ref_rad_s2 = trace->delta_position_rad / (trace->duration_s * trace->duration_s) * acceleration_scale;
-    m3508_trace_set_target(motor, trace->position_ref_rad, trace->velocity_ref_rad_s * RAD_S_TO_RPM, trace->acceleration_ref_rad_s2);
+    m3508_trace_set_target(motor, trace->position_ref_rad, trace->velocity_ref_rad_s * RAD_S_TO_RPM, trace->acceleration_ref_rad_s2, 0.0f);
 }
 
-// 设置目标位置，参数顺序为目标位置，速度前馈，加速度前馈
+// 参数顺序为目标位置，速度前馈，加速度前馈，目标力矩；未传目标力矩时为0
 void m3508_set_target(const struct motor_device *motor, int para_num, ...)
 {
     m3508_data_t *data;
     float target_position_rad;
     float target_velocity_rpm;
     float target_acceleration_rad_s2;
+    float target_torque_nm = 0.0f;
     va_list arguments;
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
@@ -839,9 +845,10 @@ void m3508_set_target(const struct motor_device *motor, int para_num, ...)
         target_acceleration_rad_s2 = 0.0f;
     }
     if (para_num >= 3) { target_acceleration_rad_s2 = (float)va_arg(arguments, double); }
+    if (para_num >= 4) { target_torque_nm = (float)va_arg(arguments, double); }
     va_end(arguments);
     data->trace.active = 0U;
-    m3508_trace_set_target(motor, target_position_rad, target_velocity_rpm, target_acceleration_rad_s2);
+    m3508_trace_set_target(motor, target_position_rad, target_velocity_rpm, target_acceleration_rad_s2, target_torque_nm);
 }
 
 // 获取电机的某个状态值，存入value中
@@ -2004,6 +2011,7 @@ void dm8009p_enable(struct motor_device *motor)
     data->trace.active = 0U;
     pid_reset(&data->position_pid);
     pid_reset(&data->velocity_pid);
+    data->target_torque_nm = 0.0f;
     data->last_update_tick = 0U;
     dm8009p_send_special(motor, 0xFBU);
     dm8009p_send_special(motor, 0xFCU);
@@ -2026,6 +2034,7 @@ void dm8009p_disable(struct motor_device *motor)
     data->trace.active = 0U;
     pid_reset(&data->position_pid);
     pid_reset(&data->velocity_pid);
+    data->target_torque_nm = 0.0f;
     data->last_update_tick = 0U;
     dm8009p_send_special(motor, 0xFDU);
 }
@@ -2048,6 +2057,7 @@ void dm8009p_update(struct motor_device *motor)
     if (data->enable_requested == 0U) { return; }
     if (motor->last_rx_tick == 0U || (HAL_GetTick() - motor->last_rx_tick) > MOTOR_OFFLINE_MS) {
         data->enabled = 0U;
+        data->target_torque_nm = 0.0f;
         data->output_torque_nm = 0.0f;
         data->trace.active = 0U;
         pid_reset(&data->position_pid);
@@ -2061,6 +2071,7 @@ void dm8009p_update(struct motor_device *motor)
         data->target_position_rad = data->position_rad;
         data->target_velocity_rad_s = 0.0f;
         data->target_acceleration_rad_s2 = 0.0f;
+        data->target_torque_nm = 0.0f;
         data->output_torque_nm = 0.0f;
         pid_reset(&data->position_pid);
         pid_reset(&data->velocity_pid);
@@ -2069,12 +2080,14 @@ void dm8009p_update(struct motor_device *motor)
         return;
     }
     if (data->error >= 0x8U && data->error <= 0xEU) {
+        data->target_torque_nm = 0.0f;
         data->output_torque_nm = 0.0f;
         data->trace.active = 0U;
         if ((uint32_t)(now - data->last_clear_cmd_tick) >= 50U) { dm8009p_send_special(motor, 0xFBU); data->last_clear_cmd_tick = now; }
         return;
     }
     if (data->error != 0x1U) {
+        data->target_torque_nm = 0.0f;
         data->output_torque_nm = 0.0f;
         data->trace.active = 0U;
         if ((uint32_t)(now - data->last_enable_cmd_tick) >= 20U) { dm8009p_send_special(motor, 0xFCU); data->last_enable_cmd_tick = now; }
@@ -2091,13 +2104,13 @@ void dm8009p_update(struct motor_device *motor)
     acc_torque_nm = data->target_acceleration_rad_s2 * data->rotational_inertia_kg_m2;
     gravity_torque_nm = 0.0f;
     friction_torque_nm = data->friction_torque;
-    feedforward_torque_nm = acc_torque_nm + gravity_torque_nm + friction_torque_nm;
+    feedforward_torque_nm = acc_torque_nm + gravity_torque_nm + friction_torque_nm + data->target_torque_nm;
     output_torque_nm += feedforward_torque_nm;
-    // data->output_torque_nm = clamp_float(output_torque_nm, -DM8009P_TORQUE_LIMIT_NM, DM8009P_TORQUE_LIMIT_NM);
+    data->output_torque_nm = clamp_float(output_torque_nm, -DM8009P_TORQUE_LIMIT_NM, DM8009P_TORQUE_LIMIT_NM);
     dm8009p_send_ctrl_cmd(motor);
 }
 
-static void dm8009p_trace_set_target(const struct motor_device *motor, float target_position_rad, float target_velocity_rad_s, float target_acceleration_rad_s2)
+static void dm8009p_trace_set_target(const struct motor_device *motor, float target_position_rad, float target_velocity_rad_s, float target_acceleration_rad_s2, float target_torque_nm)
 {
     dm8009p_data_t *data;
     if (motor == NULL || motor->motor_data == NULL) { return; }
@@ -2105,6 +2118,7 @@ static void dm8009p_trace_set_target(const struct motor_device *motor, float tar
     data->target_position_rad = target_position_rad;
     data->target_velocity_rad_s = clamp_float(target_velocity_rad_s, -DM8009P_V_MAX, DM8009P_V_MAX);
     data->target_acceleration_rad_s2 = target_acceleration_rad_s2;
+    data->target_torque_nm = target_torque_nm;
 }
 
 static float dm8009p_trace_resolve_duration(float delta_position_rad, float requested_duration_s)
@@ -2139,11 +2153,11 @@ void dm8009p_set_trace(const struct motor_device *motor, float target_position_r
     position_epsilon_rad = 2.0f * data->p_max / 65535.0f;
     if (delta_position_rad > -position_epsilon_rad && delta_position_rad < position_epsilon_rad) {
         data->trace.active = 0U;
-        dm8009p_trace_set_target(motor, data->trace.end_position_rad, 0.0f, 0.0f);
+        dm8009p_trace_set_target(motor, data->trace.end_position_rad, 0.0f, 0.0f, 0.0f);
         return;
     }
     data->trace.active = 1U;
-    dm8009p_trace_set_target(motor, data->trace.start_position_rad, 0.0f, 0.0f);
+    dm8009p_trace_set_target(motor, data->trace.start_position_rad, 0.0f, 0.0f, 0.0f);
 }
 
 void dm8009p_trace_update(struct motor_device *motor)
@@ -2165,7 +2179,7 @@ void dm8009p_trace_update(struct motor_device *motor)
     if (trace->active == 0U) { return; }
     if (data->enabled == 0U || !motor_is_online(motor)) {
         trace->active = 0U;
-        dm8009p_trace_set_target(motor, data->position_rad, 0.0f, 0.0f);
+        dm8009p_trace_set_target(motor, data->position_rad, 0.0f, 0.0f, 0.0f);
         return;
     }
     elapsed_s = (float)(HAL_GetTick() - trace->start_tick) * 0.001f;
@@ -2174,7 +2188,7 @@ void dm8009p_trace_update(struct motor_device *motor)
         trace->velocity_ref_rad_s = 0.0f;
         trace->acceleration_ref_rad_s2 = 0.0f;
         trace->active = 0U;
-        dm8009p_trace_set_target(motor, trace->end_position_rad, 0.0f, 0.0f);
+        dm8009p_trace_set_target(motor, trace->end_position_rad, 0.0f, 0.0f, 0.0f);
         return;
     }
     normalized_time = clamp_float(elapsed_s / trace->duration_s, 0.0f, 1.0f);
@@ -2188,15 +2202,17 @@ void dm8009p_trace_update(struct motor_device *motor)
     trace->position_ref_rad = trace->start_position_rad + trace->delta_position_rad * position_scale;
     trace->velocity_ref_rad_s = trace->delta_position_rad / trace->duration_s * velocity_scale;
     trace->acceleration_ref_rad_s2 = trace->delta_position_rad / (trace->duration_s * trace->duration_s) * acceleration_scale;
-    dm8009p_trace_set_target(motor, trace->position_ref_rad, trace->velocity_ref_rad_s, trace->acceleration_ref_rad_s2);
+    dm8009p_trace_set_target(motor, trace->position_ref_rad, trace->velocity_ref_rad_s, trace->acceleration_ref_rad_s2, 0.0f);
 }
 
+// 参数顺序为目标位置，速度前馈，加速度前馈，目标力矩；未传目标力矩时为0
 void dm8009p_set_target(const struct motor_device *motor, int para_num, ...)
 {
     dm8009p_data_t *data;
     float target_position_rad;
     float target_velocity_rad_s;
     float target_acceleration_rad_s2;
+    float target_torque_nm = 0.0f;
     va_list arguments;
     if (motor == NULL || motor->motor_data == NULL) { return; }
     data = motor->motor_data;
@@ -2207,9 +2223,10 @@ void dm8009p_set_target(const struct motor_device *motor, int para_num, ...)
     if (para_num >= 1) { target_position_rad = (float)va_arg(arguments, double); target_velocity_rad_s = 0.0f; target_acceleration_rad_s2 = 0.0f; }
     if (para_num >= 2) { target_velocity_rad_s = (float)va_arg(arguments, double); target_acceleration_rad_s2 = 0.0f; }
     if (para_num >= 3) { target_acceleration_rad_s2 = (float)va_arg(arguments, double); }
+    if (para_num >= 4) { target_torque_nm = (float)va_arg(arguments, double); }
     va_end(arguments);
     data->trace.active = 0U;
-    dm8009p_trace_set_target(motor, target_position_rad, target_velocity_rad_s, target_acceleration_rad_s2);
+    dm8009p_trace_set_target(motor, target_position_rad, target_velocity_rad_s, target_acceleration_rad_s2, target_torque_nm);
 }
 
 void dm8009p_get_status(const struct motor_device *motor, const char *which, void *value)
