@@ -130,7 +130,7 @@ void lqr_calculate(void)
         rf_motor->set_target(rf_motor, 4, 0.0f, 0.0f, 0.0f, tao_rf);
         rb_motor->set_target(rb_motor, 4, 0.0f, 0.0f, 0.0f, tao_rb);
         // 轮端力矩转为电机侧力矩，电流换算及最终限幅由驱动完成。
-        wheel_l->set_target(wheel_l, 4, 0.0f, 0.0f, 0.0f, -T_w_l / wheel_transmission);
-        wheel_r->set_target(wheel_r, 4, 0.0f, 0.0f, 0.0f, T_w_r / wheel_transmission);
+        wheel_l->set_target(wheel_l, 4, 0.0f, 0.0f, 0.0f, - T_w_l / wheel_transmission);
+        wheel_r->set_target(wheel_r, 4, 0.0f, 0.0f, 0.0f,  T_w_r / wheel_transmission);
     }
 }

@@ -68,22 +68,22 @@ void leg_pd(void)
     F_l = F_l - F_spring_divid_l;
     F_r = F_r - F_spring_divid_r;
 
-    // 下发力矩
-    float tao_lf = global_data.middle_data.Jl[0][0] * F_l / transmission;
-    float tao_lb = global_data.middle_data.Jl[0][1] * F_l / transmission;
-    float tao_rf = -global_data.middle_data.Jr[0][0] * F_r / transmission;
-    float tao_rb = -global_data.middle_data.Jr[0][1] * F_r / transmission;
-
-
-
-    struct motor_device *lf_motor = motor_get_device("DM8009P_LF");
-    struct motor_device *lb_motor = motor_get_device("DM_8009P_LB");
-    struct motor_device *rf_motor = motor_get_device("DM_8009P_RF");
-    struct motor_device *rb_motor = motor_get_device("DM_8009P_RB");
-
-    lf_motor->set_target(lf_motor, 4, 0.0f, 0.0f, 0.0f, tao_lf);
-    lb_motor->set_target(lb_motor, 4, 0.0f, 0.0f, 0.0f, tao_lb);
-    rf_motor->set_target(rf_motor, 4, 0.0f, 0.0f, 0.0f, tao_rf);
-    rb_motor->set_target(rb_motor, 4, 0.0f, 0.0f, 0.0f, tao_rb);
+    // // 下发力矩
+    // float tao_lf = global_data.middle_data.Jl[0][0] * F_l / transmission;
+    // float tao_lb = global_data.middle_data.Jl[0][1] * F_l / transmission;
+    // float tao_rf = -global_data.middle_data.Jr[0][0] * F_r / transmission;
+    // float tao_rb = -global_data.middle_data.Jr[0][1] * F_r / transmission;
+    //
+    //
+    //
+    // struct motor_device *lf_motor = motor_get_device("DM8009P_LF");
+    // struct motor_device *lb_motor = motor_get_device("DM_8009P_LB");
+    // struct motor_device *rf_motor = motor_get_device("DM_8009P_RF");
+    // struct motor_device *rb_motor = motor_get_device("DM_8009P_RB");
+    //
+    // lf_motor->set_target(lf_motor, 4, 0.0f, 0.0f, 0.0f, tao_lf);
+    // lb_motor->set_target(lb_motor, 4, 0.0f, 0.0f, 0.0f, tao_lb);
+    // rf_motor->set_target(rf_motor, 4, 0.0f, 0.0f, 0.0f, tao_rf);
+    // rb_motor->set_target(rb_motor, 4, 0.0f, 0.0f, 0.0f, tao_rb);
 
 }

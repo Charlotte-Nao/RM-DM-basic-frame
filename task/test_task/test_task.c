@@ -28,8 +28,8 @@ void test_task(void)
         mode_control();
         vmc_calculate();
         leg_pd();
-        // state_update();
-        // lqr_calculate();
+        state_update();
+        lqr_calculate();
         osDelay(1);
     }
 }
