@@ -75,6 +75,8 @@ typedef struct
     remote_data_t remote_data;
     middle_data_t middle_data;
     state_data_t state_data;
+    uint8_t mode;
+    uint8_t last_mode;
 } global_data_t;
 
 extern volatile global_data_t global_data;
