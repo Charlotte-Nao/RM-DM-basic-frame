@@ -21,6 +21,13 @@
 #define UART_DEVICE_ERR_UNSUPPORTED (-3)
 #define UART_DEVICE_ERR_HAL         (-4)
 
+volatile uint32_t g_uart5_rx_event_count = 0U;
+volatile uint16_t g_uart5_last_rx_length = 0U;
+volatile uint32_t g_uart5_error_count = 0U;
+volatile uint32_t g_uart5_last_error = 0U;
+volatile uint32_t g_uart5_last_dma_error = 0U;
+volatile int32_t g_uart5_last_start_status = -1;
+
 enum uart_transfer_mode {
     UART_TRANSFER_IT,
     UART_TRANSFER_DMA,
@@ -186,13 +193,14 @@ static int uart_start_receive(struct uart_device *device)
     port = device_data->port;
     handle = port->handle;
 
-
-    if (handle->RxState != HAL_UART_STATE_READY) {
-        if (HAL_UART_AbortReceive(handle) != HAL_OK) {
-            return UART_DEVICE_ERR_HAL;
+    // 即使 RxState 为 READY，也清除上电期间残留的错误标志和接收数据。
+    status = HAL_UART_AbortReceive(handle);
+    if (status != HAL_OK) {
+        if (handle == &huart5) {
+            g_uart5_last_start_status = (int32_t)status;
         }
+        return UART_DEVICE_ERR_HAL;
     }
-
 
     if (port->half_duplex) {
         if (HAL_HalfDuplex_EnableReceiver(handle) != HAL_OK) {
@@ -220,6 +228,10 @@ static int uart_start_receive(struct uart_device *device)
         if (status == HAL_OK && handle->hdmarx != NULL) {
             __HAL_DMA_DISABLE_IT(handle->hdmarx, DMA_IT_HT);
         }
+    }
+
+    if (handle == &huart5) {
+        g_uart5_last_start_status = (int32_t)status;
     }
 
     return (status == HAL_OK)
@@ -472,6 +484,12 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *handle, uint16_t position)
 
     device_data = port->rx_owner->priv_data;
     if (device_data->transfer_mode == UART_TRANSFER_DMA) {
+        if (handle == &huart5) {
+            ++g_uart5_rx_event_count;
+            g_uart5_last_rx_length = (position >= port->dma_last_position) ?
+                (uint32_t)position - port->dma_last_position :
+                UART_DMA_RX_BUFFER_SIZE - port->dma_last_position + position;
+        }
         uart_dma_deliver(port, position);
     }
 }
@@ -485,6 +503,12 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *handle)
     if (port == NULL || port->rx_owner == NULL)
     {
         return;
+    }
+
+    if (handle == &huart5) {
+        ++g_uart5_error_count;
+        g_uart5_last_error = handle->ErrorCode;
+        g_uart5_last_dma_error = (handle->hdmarx != NULL) ? handle->hdmarx->ErrorCode : 0U;
     }
 
     (void)uart_start_receive(port->rx_owner);

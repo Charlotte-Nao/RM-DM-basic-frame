@@ -33,6 +33,14 @@ struct uart_device {
 
 struct uart_device *uart_get_device(const char *name);
 
+/* UART5 接收诊断；start_status 为 -1 表示未启动，否则为 HAL 返回值。 */
+extern volatile uint32_t g_uart5_rx_event_count;
+extern volatile uint16_t g_uart5_last_rx_length;
+extern volatile uint32_t g_uart5_error_count;
+extern volatile uint32_t g_uart5_last_error;
+extern volatile uint32_t g_uart5_last_dma_error;
+extern volatile int32_t g_uart5_last_start_status;
+
 #ifdef __cplusplus
 }
 #endif
