@@ -8,6 +8,11 @@
 #include "cmsis_os2.h"
 #include <math.h>
 
+/**
+ * 本函数用于状态空间矩阵的更新
+ * 读取IMU相关数据以及腿长数据，更新状态空间矩阵
+ * 输入为
+ **/
 float wheel_radius = 0.06f;                  // 轮毂半径
 float wheel_transmission = 268.0f / 17.0f;  // 减速比
 

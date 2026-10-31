@@ -3,10 +3,17 @@
 //
 
 #include "leg_length.h"
-#include "../VMC/vmc.h"
+#include "../LinkageSolution/linkage_solution.h"
 #include "../math.h"
 #include "../../device/motor/motor_internal.h"
 #include <math.h>
+
+/**
+ * 本函数进行腿长pd控制
+ * 功能为进行腿长pd控制与气弹簧解算，腿长误差经过pd解算后得到F，与气弹簧力减去得到实际F
+ * 输入VMC解算得到的实际腿长
+ * 输出VMC控制量F
+ **/
 
 float F_l, F_r;
 float F_spring_divid_l, F_spring_divid_r;
@@ -48,7 +55,7 @@ void leg_pd(void)
     F_spring_divid_l = 0.0f;
     F_spring_divid_r = 0.0f;
 
-    // PDF 中的夹角是大小腿内角，不是腿摆角 theta；留数值容差避开退化端点。
+    // 留数值容差避开退化端点。
     if (length_l > 0.0f && spring_cos_l > -0.999999f && spring_cos_l < 0.999999f)
     {
         float spring_angle_l = acosf(spring_cos_l);
@@ -68,12 +75,13 @@ void leg_pd(void)
     F_l = F_l - F_spring_divid_l;
     F_r = F_r - F_spring_divid_r;
 
-    // // 下发力矩
+    // 下发力矩，测试使用
+    // jacobian 为F到phi的映射，phi到电机映射l为-，r为+。电机本身自带负转换，因此最终F映射至电机，l为正，r为负
+
     // float tao_lf = global_data.middle_data.Jl[0][0] * F_l / transmission;
     // float tao_lb = global_data.middle_data.Jl[0][1] * F_l / transmission;
     // float tao_rf = -global_data.middle_data.Jr[0][0] * F_r / transmission;
     // float tao_rb = -global_data.middle_data.Jr[0][1] * F_r / transmission;
-    //
     //
     //
     // struct motor_device *lf_motor = motor_get_device("DM8009P_LF");

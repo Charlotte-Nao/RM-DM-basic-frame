@@ -95,8 +95,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         bus/can/can_all.h
         protocol/remote.c
         protocol/remote.h
-        dsp/VMC/vmc.c
-        dsp/VMC/vmc.h
+        dsp/LinkageSolution/linkage_solution.c
+        dsp/LinkageSolution/linkage_solution.h
         dsp/LegLength/leg_length.c
         dsp/LegLength/leg_length.h
         dsp/State/state.c

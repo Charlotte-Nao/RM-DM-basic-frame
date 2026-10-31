@@ -15,7 +15,7 @@
 #include "../../bsp/LED/LED.h"
 #include "../../bsp/pwm/pwm.h"
 #include "../../bsp/usb/usb.h"
-#include "../../dsp/VMC/vmc.h"
+#include "../../dsp/LinkageSolution/linkage_solution.h"
 #include "../../dsp/LegLength/leg_length.h"
 #include "../../dsp/State/state.h"
 #include "../../dsp/LQR/lqr.h"

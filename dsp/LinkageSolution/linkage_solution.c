@@ -2,10 +2,22 @@
 // Created by ASUS on 2026/10/14.
 //
 
-#include "vmc.h"
+#include "linkage_solution.h"
 #include "../../dsp/math.h"
 #include <math.h>
 
+
+/** 本函数进行五连杆解算
+ * 功能为进行五连杆解算并得到雅可比矩阵进行映射
+ * 输入电机反馈角度pos，转速vel
+ * 输出单腿侧相关参数
+ * 坐标系方面：
+ * 8009P反馈角度顺时针为负
+ * pos转化后顺时针为正
+ * phi1/4 从右侧看，以水平线为基轴，顺时针为正， 左侧相反
+ * phi1/4 以为对应的l/r的轴腿坐标系下的正确角度
+ * Jacobian 为L,phi0与phi1,4相关映射，未转化至电机
+**/
 
 // 安装零偏，单位 rad
 // l_phi1 = 303.1675625deg , l_phi4 = 225.5121875deg, r_phi1 = -86.1044375fdeg, r_phi4 = -133.3859375fdeg 转化为电机零偏
@@ -49,7 +61,8 @@ void vmc_calculate(void)
     rf_motor->get_status(rf_motor, "VEL", &rf_vel);
     rb_motor->get_status(rb_motor, "VEL", &rb_vel);
 
-    // 顺时针为正，车腿前向摆动，角度增加
+    // 建模规定电机顺时针转动为正，车腿前向摆动，角度增加
+    // 电机本身角度逆时针为正，角度本身转换
     lf_pos = - lf_pos;
     lb_pos = - lb_pos;
     rf_pos = - rf_pos;
@@ -64,7 +77,8 @@ void vmc_calculate(void)
     rf_pos = rf_pos - rf_offset;
     rb_pos = rb_pos - rb_offset;
 
-    // 前杆为 phi4，由后电机b控制、前关节为 phi1，由后电机f控制。
+    // 从右侧看，前杆为 phi4，由后电机b控制、后杆为 phi1，由前电机f控制。
+    // 即此处得到的l/r的phi1/0已转化为建模正向坐标系，并完成角度传动比转换
     float l_phi1 = - lf_pos / transmission;
     float l_phi4 = - lb_pos / transmission;
     float r_phi1 = rf_pos / transmission;
@@ -87,6 +101,7 @@ void vmc_calculate(void)
         l1 * l1 * sinf(r_beta) * cosf(r_beta) / sqrtf(l2 * l2 - l1 * l1 * sinf(r_beta) * sinf(r_beta)));
 
     // 行对应 L、phi0/theta，列对应模型角 phi1、phi4。
+    // 此处雅可比映射为建模模拟角，非电机实际角
     Jl[0][0] = -k_l;
     Jl[0][1] = k_l;
     Jl[1][0] = 0.5f;

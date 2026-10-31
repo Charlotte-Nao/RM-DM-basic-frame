@@ -5,12 +5,16 @@
 #include "lqr.h"
 #include "../State/state.h"
 #include "../LegLength/leg_length.h"
-#include "../VMC/vmc.h"
+#include "../LinkageSolution/linkage_solution.h"
 #include "../../device/motor/motor_internal.h"
 #include "../../device/motor/motor_instance.h"
 #include "cmsis_os2.h"
 #include <math.h>
 
+/*
+ * 本函数进行lqr相关控制
+ *
+ */
 float K_l[2][6], K_r[2][6];
 float T_w_l, T_p_l, T_w_r, T_p_r;
 float tao_lf, tao_lb, tao_rf, tao_rb;
@@ -125,12 +129,12 @@ void lqr_calculate(void)
     }
     else
     {
-        lf_motor->set_target(lf_motor, 4, 0.0f, 0.0f, 0.0f, tao_lf);
-        lb_motor->set_target(lb_motor, 4, 0.0f, 0.0f, 0.0f, tao_lb);
-        rf_motor->set_target(rf_motor, 4, 0.0f, 0.0f, 0.0f, tao_rf);
-        rb_motor->set_target(rb_motor, 4, 0.0f, 0.0f, 0.0f, tao_rb);
-        // 轮端力矩转为电机侧力矩，电流换算及最终限幅由驱动完成。
-        wheel_l->set_target(wheel_l, 4, 0.0f, 0.0f, 0.0f, - T_w_l / wheel_transmission);
-        wheel_r->set_target(wheel_r, 4, 0.0f, 0.0f, 0.0f,  T_w_r / wheel_transmission);
+        // lf_motor->set_target(lf_motor, 4, 0.0f, 0.0f, 0.0f, tao_lf);
+        // lb_motor->set_target(lb_motor, 4, 0.0f, 0.0f, 0.0f, tao_lb);
+        // rf_motor->set_target(rf_motor, 4, 0.0f, 0.0f, 0.0f, tao_rf);
+        // rb_motor->set_target(rb_motor, 4, 0.0f, 0.0f, 0.0f, tao_rb);
+        // // 轮端力矩转为电机侧力矩，电流换算及最终限幅由驱动完成。
+        // wheel_l->set_target(wheel_l, 4, 0.0f, 0.0f, 0.0f, - T_w_l / wheel_transmission);
+        // wheel_r->set_target(wheel_r, 4, 0.0f, 0.0f, 0.0f,  T_w_r / wheel_transmission);
     }
 }
