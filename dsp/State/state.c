@@ -11,7 +11,8 @@
 /**
  * 本函数用于状态空间矩阵的更新
  * 读取IMU相关数据以及腿长数据，更新状态空间矩阵
- * 输入为
+ * 输入为IMU数据与五连杆解算得到角度phi0
+ * 输出直接更新全局变量状态空间矩阵
  **/
 float wheel_radius = 0.06f;                  // 轮毂半径
 float wheel_transmission = 268.0f / 17.0f;  // 减速比
@@ -30,14 +31,9 @@ void state_update(void)
 
     struct motor_device *wheel_l = motor_get_device("M3508_L");
     struct motor_device *wheel_r = motor_get_device("M3508_R");
-    // if (!global_data.imu_data.imu_ready || !motor_is_online(wheel_l) || !motor_is_online(wheel_r))
-    // {
-    //     return;
-    // }
 
     //状态矩阵更新
     // phi, phi_dot更新，直接读取BMI088数据
-    // 安装结果显示，建模对应 0， 20deg 对应imu数据分别为180deg，160deg， 因而需要转化
     float phi = remainderf(PI - global_data.imu_data.imu_pitch_rad, TWO_PI); // 限幅到-pi 至pi
     float phi_dot = -global_data.imu_data.imu_pitch_dot_rad_s;
 
@@ -57,7 +53,7 @@ void state_update(void)
     wheel_r->get_status(wheel_r, "VEL", &rpm_r);
 
     // x,x_dot更新
-    // 建模x正向移动，左轮反馈为负、右为正；先转轮端，再按 PDF 加上定子转动修正。
+    // 建模x正向移动，左轮反馈为负、右为正，并加上theta量修正
     float omega_l = -rpm_l * RPM_TO_RAD_S / wheel_transmission + theta_l_dot;
     float omega_r = rpm_r * RPM_TO_RAD_S / wheel_transmission + theta_r_dot;
     float x_dot = wheel_radius * (omega_l + omega_r) / 2.0f;

@@ -20,11 +20,11 @@
 **/
 
 // 安装零偏，单位 rad
-// l_phi1 = 303.1675625deg , l_phi4 = 225.5121875deg, r_phi1 = -86.1044375fdeg, r_phi4 = -133.3859375fdeg 转化为电机零偏
-float lf_offset = 303.1675625f * DEG_TO_RAD;
-float lb_offset = 225.5121875f * DEG_TO_RAD;
-float rf_offset = -133.3859375f * DEG_TO_RAD;
-float rb_offset = -86.1044375f * DEG_TO_RAD;
+// 按初态 phi1 = 117.15deg、phi4 = 66.75deg 标定。
+float lf_offset = 241.1800625f * DEG_TO_RAD;
+float lb_offset = 176.2546875f * DEG_TO_RAD;
+float rf_offset = -21.1909375f * DEG_TO_RAD;
+float rb_offset = 22.9674375f * DEG_TO_RAD;
 
 // 传动比
 float transmission = 1.1875f;
@@ -77,7 +77,8 @@ void vmc_calculate(void)
     rf_pos = rf_pos - rf_offset;
     rb_pos = rb_pos - rb_offset;
 
-    // 从右侧看，前杆为 phi4，由后电机b控制、后杆为 phi1，由前电机f控制。
+
+    // 从右侧看，前杆为 phi4，由后电机b控制、初态66.75° 后杆为 phi1，由前电机f控制，初态117.15°。
     // 即此处得到的l/r的phi1/0已转化为建模正向坐标系，并完成角度传动比转换
     float l_phi1 = - lf_pos / transmission;
     float l_phi4 = - lb_pos / transmission;

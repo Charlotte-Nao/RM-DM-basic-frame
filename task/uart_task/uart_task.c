@@ -11,8 +11,8 @@
 #include "../../bsp/uart/uart.h"
 #include "../../bus/uart/uart_all.h"
 #include"../../application/global_data.h"
-#include "../../dsp/LegLength/leg_length.h"
 #include "../../dsp/math.h"
+#include "../../device/motor/motor_internal.h"
 
 
 
@@ -31,21 +31,32 @@ void uart_task(void)
     uart10->uart_recv_callback = uart10_recv_callback;
     uart5->uart_recv_callback = uart5_recv_callback;
 
+    struct motor_device *lf_motor = motor_get_device("DM8009P_LF");
+    struct motor_device *lb_motor = motor_get_device("DM_8009P_LB");
+    struct motor_device *rf_motor = motor_get_device("DM_8009P_RF");
+    struct motor_device *rb_motor = motor_get_device("DM_8009P_RB");
+    dm8009p_data_t *lf_data = lf_motor->motor_data;
+    dm8009p_data_t *lb_data = lb_motor->motor_data;
+    dm8009p_data_t *rf_data = rf_motor->motor_data;
+    dm8009p_data_t *rb_data = rb_motor->motor_data;
+
     osDelay(2000);
+    uint32_t next_wake_tick = osKernelGetTickCount();
+    uint32_t period_tick = osKernelGetTickFreq() / 10U;
 
     for (;;)
     {
-        float target_l_mm = target_length_l * 1000.0f;
-        float target_r_mm = target_length_r * 1000.0f;
-        float length_l_mm = global_data.middle_data.L_l * 1000.0f;
-        float length_r_mm = global_data.middle_data.L_r * 1000.0f;
-
         uart1->uart_printf(uart1,
-            "LEFT target_mm=%.1f actual_mm=%.1f error_mm=%.1f \r\n"
-            "RIGHT target_mm=%.1f actual_mm=%.1f error_mm=%.1f \r\n",
-            target_l_mm, length_l_mm, target_l_mm - length_l_mm,
-            target_r_mm, length_r_mm, target_r_mm - length_r_mm);
-        osDelay(500U);
+            "TORQUE_Nm LF=%.3f "
+            "LB=%.3f "
+            "RF=%.3f "
+            "RB=%.3f\r\n",
+            lf_data->output_torque_nm,
+            lb_data->output_torque_nm,
+            rf_data->output_torque_nm,
+            rb_data->output_torque_nm);
+
+            osDelay(10);
 
 
 
