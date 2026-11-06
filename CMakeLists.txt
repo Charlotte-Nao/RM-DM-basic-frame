@@ -109,6 +109,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         dsp/ComprensiveControl/comprensive_control.h
         debug_test/uart_printf/uart_printf.c
         debug_test/uart_printf/uart_printf.h
+        dsp/TraceTracking/trace_tracking.c
+        dsp/TraceTracking/trace_tracking.h
 )
 
 # Add STM32CubeMX generated sources

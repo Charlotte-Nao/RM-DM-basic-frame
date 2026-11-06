@@ -20,6 +20,7 @@
 #include "../../dsp/State/state.h"
 #include "../../dsp/LQR/lqr.h"
 #include "../../dsp/ComprensiveControl/comprensive_control.h"
+#include "../../dsp/TraceTracking/trace_tracking.h"
 
 void test_task(void)
 {
@@ -30,7 +31,8 @@ void test_task(void)
         vmc_calculate();
         leg_pd();
         state_update();
-        lqr_calculate();
+        // lqr_calculate();
+        trace_tracking_calculate();
         equalize_phi0();
         torque_send();
 

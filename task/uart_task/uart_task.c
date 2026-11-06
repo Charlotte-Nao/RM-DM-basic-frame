@@ -33,10 +33,10 @@ void uart_task(void)
 
     for (;;)
     {
-        // DM8009P_offset_test();
+        DM8009P_offset_test();
+        // lqr_test();
         // length_test();
         // state_test();
-        lqr_test();
 
         osDelay(100U);
 

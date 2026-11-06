@@ -8,6 +8,16 @@
 #include "../State/state.h"
 #include "../LinkageSolution/linkage_solution.h"
 
+float steering_scale = 50.0f;
+
+void steering_control(void)
+{
+    float torque = global_data.remote_data.rc.ch2 / 660.0f * 4.0f * steering_scale;
+
+    global_data.control_data.T_w_l -= torque / 2.0f;
+    global_data.control_data.T_w_r += torque / 2.0f;
+}
+
 void equalize_phi0(void)
 {
     const float kp = 20.0f;
@@ -51,3 +61,4 @@ void torque_send(void)
     wheel_l->set_target(wheel_l, 4, 0.0f, 0.0f, 0.0f, -global_data.control_data.T_w_l / wheel_transmission);
     wheel_r->set_target(wheel_r, 4, 0.0f, 0.0f, 0.0f, global_data.control_data.T_w_r / wheel_transmission);
 }
+
