@@ -23,7 +23,7 @@
 // 按初态 phi1 = 117.15deg、phi4 = 66.75deg 标定。
 float lf_offset = 111.805325f * DEG_TO_RAD;
 float lb_offset = 76.566325f * DEG_TO_RAD;
-float rf_offset =  (38.701475f + 360 * (0)) * DEG_TO_RAD;
+float rf_offset =  (38.701475f + 360 * (- 0)) * DEG_TO_RAD;
 float rb_offset =  80.126075f  * DEG_TO_RAD;
 
 // 传动比

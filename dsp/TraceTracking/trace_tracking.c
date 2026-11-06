@@ -10,6 +10,9 @@
  * 本函数进行遥控器速度跟踪，使用原 K 对六状态误差进行反馈
  * 输出轮力矩与髋力矩，不在此处下发电机控制
  */
+
+float speed = 1.0f;
+
 void trace_tracking_calculate(void)
 {
     static uint32_t last_tick = 0U;
@@ -29,7 +32,7 @@ void trace_tracking_calculate(void)
     last_tick = now_tick;
 
     // ch1 的 -660~660 映射到 -1.5~1.5 m/s，正值对应模型前进方向。
-    float target_x_dot = global_data.remote_data.rc.ch1 * 1.5f / 660.0f;
+    float target_x_dot = global_data.remote_data.rc.ch1 * speed / 660.0f;
     target_x = target_x + target_x_dot * dt;
 
     // target_x = 0;

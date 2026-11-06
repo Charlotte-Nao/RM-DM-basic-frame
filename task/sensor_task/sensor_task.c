@@ -107,6 +107,9 @@ void sensor_task(void)
         // 当前 pitch 对应传感器 roll 通道；纵向平面运动时角速度对应 gyro X。
         global_data.imu_data.imu_pitch_dot_rad_s = gyro[0] - gyro_bias[0];
         global_data.imu_data.imu_yaw_rad = yaw;
+        // 用原始欧拉 roll、pitch 求偏航角速度，与 yaw 的定义保持一致。
+        global_data.imu_data.imu_yaw_dot_rad_s =
+            ((gyro[1] - gyro_bias[1]) * sinf(roll) + (gyro[2] - gyro_bias[2]) * cosf(roll)) / cosf(pitch);
         global_data.imu_data.imu_update_tick = osKernelGetTickCount();
         global_data.imu_data.imu_ready = 1U;
 

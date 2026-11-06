@@ -8,14 +8,14 @@
 #include "../State/state.h"
 #include "../LinkageSolution/linkage_solution.h"
 
-float steering_scale = 50.0f;
+float steering_scale = 0.2f;
 
 void steering_control(void)
 {
-    float torque = global_data.remote_data.rc.ch2 / 660.0f * 4.0f * steering_scale;
+    float torque = global_data.remote_data.rc.ch0 / 660.0f * 4.0f * steering_scale;
 
-    global_data.control_data.T_w_l -= torque / 2.0f;
-    global_data.control_data.T_w_r += torque / 2.0f;
+    global_data.control_data.T_w_l += torque / 2.0f;
+    global_data.control_data.T_w_r -= torque / 2.0f;
 }
 
 void equalize_phi0(void)
