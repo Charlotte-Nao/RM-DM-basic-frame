@@ -107,6 +107,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         application/mode/mode_control.h
         dsp/ComprensiveControl/comprensive_control.c
         dsp/ComprensiveControl/comprensive_control.h
+        debug_test/uart_printf/uart_printf.c
+        debug_test/uart_printf/uart_printf.h
 )
 
 # Add STM32CubeMX generated sources

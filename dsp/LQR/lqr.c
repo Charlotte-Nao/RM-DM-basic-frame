@@ -112,6 +112,8 @@ void lqr_calculate(void)
     global_data.control_data.tao_rb = tao_rb;
     global_data.control_data.T_w_l = T_w_l;
     global_data.control_data.T_w_r = T_w_r;
+    global_data.control_data.T_p_l = T_p_l;
+    global_data.control_data.T_p_r = T_p_r;
 
     //     // 左轮反转为建模正方向： 电流码 +/-16384 对应当前驱动的 +/-20 A
     //     current_l = -T_w_l / (wheel_transmission * wheel_l_data->K_t_Nm_A) * M3508_OUTPUT_LIMIT / M3508_MAX_TORQUE_CURRENT_A;

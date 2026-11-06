@@ -21,10 +21,10 @@
 
 // 安装零偏，单位 rad
 // 按初态 phi1 = 117.15deg、phi4 = 66.75deg 标定。
-float lf_offset = 178.643925f * DEG_TO_RAD;
-float lb_offset = 143.229925f * DEG_TO_RAD;
-float rf_offset = -21.1909375f * DEG_TO_RAD;
-float rb_offset = 22.9674375f * DEG_TO_RAD;
+float lf_offset = 107.062425f * DEG_TO_RAD;
+float lb_offset = 70.555625f * DEG_TO_RAD;
+float rf_offset = 28.516175f * DEG_TO_RAD;
+float rb_offset = 73.131875f  * DEG_TO_RAD;
 
 // 传动比
 float transmission = 1.1875f;

@@ -18,7 +18,7 @@
 float F_spring_divid_l, F_spring_divid_r;
 float target_length_l, target_length_r;
 
-float kp = 2000.0f;
+float kp = 1000.0f;
 float kd = 200.0f;
 float F_spring = 400.0f;
 float F_feedback_half = 50.0f; // 半车质量
@@ -43,8 +43,8 @@ void leg_pd(void)
     F_r = kp * error_r - kd * global_data.middle_data.L_r_dot;
 
     // 重力前馈
-    // F_l = F_l + F_feedback_half;
-    // F_r = F_r + F_feedback_half;
+    F_l = F_l + F_feedback_half;
+    F_r = F_r + F_feedback_half;
 
     // 气弹簧解算，在长腿长段正常，短腿长段结算偏差较大
     const float q1 = 0.21f;
@@ -86,20 +86,20 @@ void leg_pd(void)
     // // 下发力矩，测试使用
     // // jacobian 为F到phi的映射，phi到电机映射l为-，r为+。电机本身自带负转换，因此最终F映射至电机，l为正，r为负
     //
-    float tao_lf = global_data.middle_data.Jl[0][0] * F_l / transmission;
-    float tao_lb = global_data.middle_data.Jl[0][1] * F_l / transmission;
-    float tao_rf = -global_data.middle_data.Jr[0][0] * F_r / transmission;
-    float tao_rb = -global_data.middle_data.Jr[0][1] * F_r / transmission;
-
-
-    struct motor_device *lf_motor = motor_get_device("DM8009P_LF");
-    struct motor_device *lb_motor = motor_get_device("DM_8009P_LB");
-    struct motor_device *rf_motor = motor_get_device("DM_8009P_RF");
-    struct motor_device *rb_motor = motor_get_device("DM_8009P_RB");
-
-    lf_motor->set_target(lf_motor, 4, 0.0f, 0.0f, 0.0f, tao_lf);
-    lb_motor->set_target(lb_motor, 4, 0.0f, 0.0f, 0.0f, tao_lb);
-    rf_motor->set_target(rf_motor, 4, 0.0f, 0.0f, 0.0f, tao_rf);
-    rb_motor->set_target(rb_motor, 4, 0.0f, 0.0f, 0.0f, tao_rb);
+    // float tao_lf = global_data.middle_data.Jl[0][0] * F_l / transmission;
+    // float tao_lb = global_data.middle_data.Jl[0][1] * F_l / transmission;
+    // float tao_rf = -global_data.middle_data.Jr[0][0] * F_r / transmission;
+    // float tao_rb = -global_data.middle_data.Jr[0][1] * F_r / transmission;
+    //
+    //
+    // struct motor_device *lf_motor = motor_get_device("DM8009P_LF");
+    // struct motor_device *lb_motor = motor_get_device("DM_8009P_LB");
+    // struct motor_device *rf_motor = motor_get_device("DM_8009P_RF");
+    // struct motor_device *rb_motor = motor_get_device("DM_8009P_RB");
+    //
+    // lf_motor->set_target(lf_motor, 4, 0.0f, 0.0f, 0.0f, tao_lf);
+    // lb_motor->set_target(lb_motor, 4, 0.0f, 0.0f, 0.0f, tao_lb);
+    // rf_motor->set_target(rf_motor, 4, 0.0f, 0.0f, 0.0f, tao_rf);
+    // rb_motor->set_target(rb_motor, 4, 0.0f, 0.0f, 0.0f, tao_rb);
 
 }

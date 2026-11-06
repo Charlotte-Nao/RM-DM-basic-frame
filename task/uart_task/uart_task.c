@@ -10,9 +10,7 @@
 
 #include "../../bsp/uart/uart.h"
 #include "../../bus/uart/uart_all.h"
-#include"../../application/global_data.h"
-#include "../../device/motor/motor.h"
-#include "../../dsp/math.h"
+#include "../../debug_test/uart_printf/uart_printf.h"
 
 
 
@@ -31,26 +29,14 @@ void uart_task(void)
     uart10->uart_recv_callback = uart10_recv_callback;
     uart5->uart_recv_callback = uart5_recv_callback;
 
-    struct motor_device *lf_motor = motor_get_device("DM8009P_LF");
-    struct motor_device *lb_motor = motor_get_device("DM_8009P_LB");
-
-    osDelay(2000);
+    osDelay(1000);
 
     for (;;)
     {
-        float lf_raw_pos = 0.0f;
-        float lb_raw_pos = 0.0f;
-        lf_motor->get_status(lf_motor, "POS", &lf_raw_pos);
-        lb_motor->get_status(lb_motor, "POS", &lb_raw_pos);
-
-        uart1->uart_printf(uart1,
-            "LF_raw_rad=%.6f LF_raw_deg=%.4f LB_raw_rad=%.6f LB_raw_deg=%.4f\r\n"
-            "LEFT phi1_deg=%.4f phi4_deg=%.4f L_mm=%.1f phi0_deg=%.4f\r\n",
-            lf_raw_pos, lf_raw_pos * RAD_TO_DEG, lb_raw_pos, lb_raw_pos * RAD_TO_DEG,
-            global_data.middle_data.l_phi1 * RAD_TO_DEG,
-            global_data.middle_data.l_phi4 * RAD_TO_DEG,
-            global_data.middle_data.L_l * 1000.0f,
-            global_data.middle_data.l_phi0 * RAD_TO_DEG);
+        // DM8009P_offset_test();
+        // length_test();
+        // state_test();
+        lqr_test();
 
         osDelay(100U);
 
