@@ -31,6 +31,7 @@ void test_task(void)
         leg_pd();
         state_update();
         lqr_calculate();
+        equalize_phi0();
         torque_send();
 
         osDelay(1);

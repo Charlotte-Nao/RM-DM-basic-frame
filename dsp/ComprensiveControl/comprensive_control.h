@@ -6,5 +6,6 @@
 #define DM_COMPRENSIVE_CONTROL_H
 
 void torque_send(void);
+void equalize_phi0(void);
 
 #endif //DM_COMPRENSIVE_CONTROL_H

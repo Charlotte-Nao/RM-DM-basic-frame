@@ -20,10 +20,10 @@ float K_l[2][6], K_r[2][6];
 
 void lqr_calculate(void)
 {
-    float F_l = global_data.control_data.F_l;
-    float F_r = global_data.control_data.F_r;
+    // float F_l = global_data.control_data.F_l;
+    // float F_r = global_data.control_data.F_r;
     float T_w_l, T_p_l, T_w_r, T_p_r;
-    float tao_lf, tao_lb, tao_rf, tao_rb;
+    // float tao_lf, tao_lb, tao_rf, tao_rb;
     float length[2] = {global_data.middle_data.L_l, global_data.middle_data.L_r};
     float state[6] = {
         global_data.state_data.theta_rad,
@@ -44,7 +44,7 @@ void lqr_calculate(void)
     // m3508_data_t *wheel_r_data = wheel_r->motor_data;
 
     T_w_l = T_p_l = T_w_r = T_p_r = 0.0f;
-    tao_lf = tao_lb = tao_rf = tao_rb = 0.0f;
+    // tao_lf = tao_lb = tao_rf = tao_rb = 0.0f;
     // current_l = current_r = 0.0f;
     for (int row = 0; row < 2; row ++ )
     {
@@ -100,16 +100,16 @@ void lqr_calculate(void)
             }
         }
 
-        // J 的转置将各腿 [F,Tp] 转成模型关节力矩
-        tao_lf = (global_data.middle_data.Jl[0][0] * F_l + global_data.middle_data.Jl[1][0] * T_p_l) / transmission;
-        tao_lb = (global_data.middle_data.Jl[0][1] * F_l + global_data.middle_data.Jl[1][1] * T_p_l) / transmission;
-        tao_rf = -(global_data.middle_data.Jr[0][0] * F_r + global_data.middle_data.Jr[1][0] * T_p_r) / transmission;
-        tao_rb = -(global_data.middle_data.Jr[0][1] * F_r + global_data.middle_data.Jr[1][1] * T_p_r) / transmission;
-
-    global_data.control_data.tao_lf = tao_lf;
-    global_data.control_data.tao_lb = tao_lb;
-    global_data.control_data.tao_rf = tao_rf;
-    global_data.control_data.tao_rb = tao_rb;
+    //     // J 的转置将各腿 [F,Tp] 转成模型关节力矩
+    //     tao_lf = (global_data.middle_data.Jl[0][0] * F_l + global_data.middle_data.Jl[1][0] * T_p_l) / transmission;
+    //     tao_lb = (global_data.middle_data.Jl[0][1] * F_l + global_data.middle_data.Jl[1][1] * T_p_l) / transmission;
+    //     tao_rf = -(global_data.middle_data.Jr[0][0] * F_r + global_data.middle_data.Jr[1][0] * T_p_r) / transmission;
+    //     tao_rb = -(global_data.middle_data.Jr[0][1] * F_r + global_data.middle_data.Jr[1][1] * T_p_r) / transmission;
+    //
+    // global_data.control_data.tao_lf = tao_lf;
+    // global_data.control_data.tao_lb = tao_lb;
+    // global_data.control_data.tao_rf = tao_rf;
+    // global_data.control_data.tao_rb = tao_rb;
     global_data.control_data.T_w_l = T_w_l;
     global_data.control_data.T_w_r = T_w_r;
     global_data.control_data.T_p_l = T_p_l;
