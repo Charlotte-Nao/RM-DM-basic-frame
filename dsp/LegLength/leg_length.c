@@ -15,16 +15,18 @@
  * 输出VMC控制量F
  **/
 
-float F_l, F_r;
 float F_spring_divid_l, F_spring_divid_r;
 float target_length_l, target_length_r;
 
 float kp = 2000.0f;
 float kd = 200.0f;
 float F_spring = 400.0f;
+float F_feedback_half = 50.0f; // 半车质量
 
 void leg_pd(void)
 {
+    float F_l, F_r;
+
     // 遥控器控制腿长，用于测试
     // ch1 对应左腿，ch3 对应右腿；-660~660 映射到 0.15~0.35 m。
     // target_length_l = 0.15f + (global_data.remote_data.rc.ch1 + 660.0f) * (0.35f - 0.15f) / 1320.0f;
@@ -34,14 +36,15 @@ void leg_pd(void)
     target_length_l = 0.18f;
     target_length_r = 0.18f;
 
-
-
     float error_l = target_length_l - global_data.middle_data.L_l;
     float error_r = target_length_r - global_data.middle_data.L_r;
 
     F_l = kp * error_l - kd * global_data.middle_data.L_l_dot;
     F_r = kp * error_r - kd * global_data.middle_data.L_r_dot;
 
+    // 重力前馈
+    // F_l = F_l + F_feedback_half;
+    // F_r = F_r + F_feedback_half;
 
     // 气弹簧解算，在长腿长段正常，短腿长段结算偏差较大
     const float q1 = 0.21f;
@@ -77,9 +80,12 @@ void leg_pd(void)
     F_l = F_l - F_spring_divid_l;
     F_r = F_r - F_spring_divid_r;
 
-    // 下发力矩，测试使用
-    // jacobian 为F到phi的映射，phi到电机映射l为-，r为+。电机本身自带负转换，因此最终F映射至电机，l为正，r为负
+    global_data.control_data.F_l = F_l;
+    global_data.control_data.F_r = F_r;
 
+    // // 下发力矩，测试使用
+    // // jacobian 为F到phi的映射，phi到电机映射l为-，r为+。电机本身自带负转换，因此最终F映射至电机，l为正，r为负
+    //
     float tao_lf = global_data.middle_data.Jl[0][0] * F_l / transmission;
     float tao_lb = global_data.middle_data.Jl[0][1] * F_l / transmission;
     float tao_rf = -global_data.middle_data.Jr[0][0] * F_r / transmission;

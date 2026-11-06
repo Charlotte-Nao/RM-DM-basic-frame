@@ -16,12 +16,14 @@
  *
  */
 float K_l[2][6], K_r[2][6];
-float T_w_l, T_p_l, T_w_r, T_p_r;
-float tao_lf, tao_lb, tao_rf, tao_rb;
-float current_l, current_r;
+// float current_l, current_r;
 
 void lqr_calculate(void)
 {
+    float F_l = global_data.control_data.F_l;
+    float F_r = global_data.control_data.F_r;
+    float T_w_l, T_p_l, T_w_r, T_p_r;
+    float tao_lf, tao_lb, tao_rf, tao_rb;
     float length[2] = {global_data.middle_data.L_l, global_data.middle_data.L_r};
     float state[6] = {
         global_data.state_data.theta_rad,
@@ -32,18 +34,18 @@ void lqr_calculate(void)
         global_data.state_data.phi_dot_rad_s
     };
 
-    struct motor_device *wheel_l = motor_get_device("M3508_L");
-    struct motor_device *wheel_r = motor_get_device("M3508_R");
-    struct motor_device *lf_motor = motor_get_device("DM8009P_LF");
-    struct motor_device *lb_motor = motor_get_device("DM_8009P_LB");
-    struct motor_device *rf_motor = motor_get_device("DM_8009P_RF");
-    struct motor_device *rb_motor = motor_get_device("DM_8009P_RB");
-    m3508_data_t *wheel_l_data = wheel_l->motor_data;
-    m3508_data_t *wheel_r_data = wheel_r->motor_data;
+    // struct motor_device *wheel_l = motor_get_device("M3508_L");
+    // struct motor_device *wheel_r = motor_get_device("M3508_R");
+    // struct motor_device *lf_motor = motor_get_device("DM8009P_LF");
+    // struct motor_device *lb_motor = motor_get_device("DM_8009P_LB");
+    // struct motor_device *rf_motor = motor_get_device("DM_8009P_RF");
+    // struct motor_device *rb_motor = motor_get_device("DM_8009P_RB");
+    // m3508_data_t *wheel_l_data = wheel_l->motor_data;
+    // m3508_data_t *wheel_r_data = wheel_r->motor_data;
 
     T_w_l = T_p_l = T_w_r = T_p_r = 0.0f;
     tao_lf = tao_lb = tao_rf = tao_rb = 0.0f;
-    current_l = current_r = 0.0f;
+    // current_l = current_r = 0.0f;
     for (int row = 0; row < 2; row ++ )
     {
         for (int col = 0; col < 6; col ++)
@@ -104,37 +106,44 @@ void lqr_calculate(void)
         tao_rf = -(global_data.middle_data.Jr[0][0] * F_r + global_data.middle_data.Jr[1][0] * T_p_r) / transmission;
         tao_rb = -(global_data.middle_data.Jr[0][1] * F_r + global_data.middle_data.Jr[1][1] * T_p_r) / transmission;
 
-        // 左轮反转为建模正方向： 电流码 +/-16384 对应当前驱动的 +/-20 A
-        current_l = -T_w_l / (wheel_transmission * wheel_l_data->K_t_Nm_A) * M3508_OUTPUT_LIMIT / M3508_MAX_TORQUE_CURRENT_A;
-        current_r = T_w_r / (wheel_transmission * wheel_r_data->K_t_Nm_A) * M3508_OUTPUT_LIMIT / M3508_MAX_TORQUE_CURRENT_A;
+    global_data.control_data.tao_lf = tao_lf;
+    global_data.control_data.tao_lb = tao_lb;
+    global_data.control_data.tao_rf = tao_rf;
+    global_data.control_data.tao_rb = tao_rb;
+    global_data.control_data.T_w_l = T_w_l;
+    global_data.control_data.T_w_r = T_w_r;
 
-        tao_lf = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_lf));
-        tao_lb = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_lb));
-        tao_rf = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_rf));
-        tao_rb = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_rb));
-        current_l = fminf(M3508_OUTPUT_LIMIT, fmaxf(-M3508_OUTPUT_LIMIT, current_l));
-        current_r = fminf(M3508_OUTPUT_LIMIT, fmaxf(-M3508_OUTPUT_LIMIT, current_r));
-
-    // 急停啊
-    if (global_data.remote_data.rc.s1 == 2U)
-    {
-        for (uint32_t i = 0U; i < Motor_Get_Count(); ++i)
-        {
-            struct motor_device *motor = motor_instance_get(i);
-            if (motor != NULL && motor->send_disable_cmd != NULL)
-            {
-                motor->send_disable_cmd(motor);
-            }
-        }
-    }
-    else
-    {
-        // lf_motor->set_target(lf_motor, 4, 0.0f, 0.0f, 0.0f, tao_lf);
-        // lb_motor->set_target(lb_motor, 4, 0.0f, 0.0f, 0.0f, tao_lb);
-        // rf_motor->set_target(rf_motor, 4, 0.0f, 0.0f, 0.0f, tao_rf);
-        // rb_motor->set_target(rb_motor, 4, 0.0f, 0.0f, 0.0f, tao_rb);
-        // // 轮端力矩转为电机侧力矩，电流换算及最终限幅由驱动完成。
-        // wheel_l->set_target(wheel_l, 4, 0.0f, 0.0f, 0.0f, - T_w_l / wheel_transmission);
-        // wheel_r->set_target(wheel_r, 4, 0.0f, 0.0f, 0.0f,  T_w_r / wheel_transmission);
-    }
+    //     // 左轮反转为建模正方向： 电流码 +/-16384 对应当前驱动的 +/-20 A
+    //     current_l = -T_w_l / (wheel_transmission * wheel_l_data->K_t_Nm_A) * M3508_OUTPUT_LIMIT / M3508_MAX_TORQUE_CURRENT_A;
+    //     current_r = T_w_r / (wheel_transmission * wheel_r_data->K_t_Nm_A) * M3508_OUTPUT_LIMIT / M3508_MAX_TORQUE_CURRENT_A;
+    //
+    //     tao_lf = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_lf));
+    //     tao_lb = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_lb));
+    //     tao_rf = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_rf));
+    //     tao_rb = fminf(DM8009P_TORQUE_LIMIT_NM, fmaxf(-DM8009P_TORQUE_LIMIT_NM, tao_rb));
+    //     current_l = fminf(M3508_OUTPUT_LIMIT, fmaxf(-M3508_OUTPUT_LIMIT, current_l));
+    //     current_r = fminf(M3508_OUTPUT_LIMIT, fmaxf(-M3508_OUTPUT_LIMIT, current_r));
+    //
+    // // 急停啊
+    // if (global_data.remote_data.rc.s1 == 2U)
+    // {
+    //     for (uint32_t i = 0U; i < Motor_Get_Count(); ++i)
+    //     {
+    //         struct motor_device *motor = motor_instance_get(i);
+    //         if (motor != NULL && motor->send_disable_cmd != NULL)
+    //         {
+    //             motor->send_disable_cmd(motor);
+    //         }
+    //     }
+    // }
+    // else
+    // {
+    //     // lf_motor->set_target(lf_motor, 4, 0.0f, 0.0f, 0.0f, tao_lf);
+    //     // lb_motor->set_target(lb_motor, 4, 0.0f, 0.0f, 0.0f, tao_lb);
+    //     // rf_motor->set_target(rf_motor, 4, 0.0f, 0.0f, 0.0f, tao_rf);
+    //     // rb_motor->set_target(rb_motor, 4, 0.0f, 0.0f, 0.0f, tao_rb);
+    //     // // 轮端力矩转为电机侧力矩，电流换算及最终限幅由驱动完成。
+    //     // wheel_l->set_target(wheel_l, 4, 0.0f, 0.0f, 0.0f, - T_w_l / wheel_transmission);
+    //     // wheel_r->set_target(wheel_r, 4, 0.0f, 0.0f, 0.0f,  T_w_r / wheel_transmission);
+    // }
 }

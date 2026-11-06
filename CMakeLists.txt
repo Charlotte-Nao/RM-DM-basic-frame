@@ -105,6 +105,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         dsp/LQR/lqr.h
         application/mode/mode_control.c
         application/mode/mode_control.h
+        dsp/ComprensiveControl/comprensive_control.c
+        dsp/ComprensiveControl/comprensive_control.h
 )
 
 # Add STM32CubeMX generated sources

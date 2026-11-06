@@ -71,10 +71,23 @@ typedef struct {
 
 typedef struct
 {
+    volatile float tao_lf;
+    volatile float tao_rf;
+    volatile float tao_lb;
+    volatile float tao_rb;
+    volatile float F_l;
+    volatile float F_r;
+    volatile float T_w_l;
+    volatile float T_w_r;
+} control_data_t;
+
+typedef struct
+{
     imu_data_t imu_data;
     remote_data_t remote_data;
     middle_data_t middle_data;
     state_data_t state_data;
+    control_data_t control_data;
     uint8_t mode;
     uint8_t last_mode;
 } global_data_t;

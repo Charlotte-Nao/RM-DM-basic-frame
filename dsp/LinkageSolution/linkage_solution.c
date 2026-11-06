@@ -21,8 +21,8 @@
 
 // 安装零偏，单位 rad
 // 按初态 phi1 = 117.15deg、phi4 = 66.75deg 标定。
-float lf_offset = 241.1800625f * DEG_TO_RAD;
-float lb_offset = 176.2546875f * DEG_TO_RAD;
+float lf_offset = 178.643925f * DEG_TO_RAD;
+float lb_offset = 143.229925f * DEG_TO_RAD;
 float rf_offset = -21.1909375f * DEG_TO_RAD;
 float rb_offset = 22.9674375f * DEG_TO_RAD;
 

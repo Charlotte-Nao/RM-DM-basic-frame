@@ -19,6 +19,7 @@
 #include "../../dsp/LegLength/leg_length.h"
 #include "../../dsp/State/state.h"
 #include "../../dsp/LQR/lqr.h"
+#include "../../dsp/ComprensiveControl/comprensive_control.h"
 
 void test_task(void)
 {
@@ -28,8 +29,10 @@ void test_task(void)
         mode_control();
         vmc_calculate();
         leg_pd();
-        state_update();
-        lqr_calculate();
+        // state_update();
+        // lqr_calculate();
+        // torque_send();
+
         osDelay(1);
     }
 }
