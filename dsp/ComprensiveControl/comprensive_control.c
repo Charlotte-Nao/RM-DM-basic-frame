@@ -8,7 +8,7 @@
 #include "../State/state.h"
 #include "../LinkageSolution/linkage_solution.h"
 
-float steering_scale = 0.2f;
+float steering_scale = 0.25f;
 
 void steering_control(void)
 {

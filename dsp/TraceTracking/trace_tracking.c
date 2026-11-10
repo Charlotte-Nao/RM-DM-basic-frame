@@ -11,7 +11,7 @@
  * 输出轮力矩与髋力矩，不在此处下发电机控制
  */
 
-float speed = 1.0f;
+float speed = 1.2f;
 
 void trace_tracking_calculate(void)
 {
