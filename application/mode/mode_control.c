@@ -7,19 +7,25 @@
 #include "../../device/motor/motor.h"
 #include "../../device/motor/motor_instance.h"
 #include "../../../bsp/LED/LED.h"
+#include "../../dsp/big_jump/big_jump.h"
 
 void mode_switch(void)
 {
-    if (global_data.remote_data.rc.s1 == 2U)
+    if (global_data.remote_data.rc.s1 == 1U)
     {
         global_data.mode = 0U;  // 保护模式，全部失能
         LED_RED_SET();
     }
-    else if (global_data.remote_data.rc.s1 == 1U)
+    else if (global_data.remote_data.rc.s1 == 2U)
     {
         global_data.mode = 1U;  // 正常模式，全部使能
         LED_SKY_SET();
     }
+    else if (global_data.remote_data.rc.s1 == 3U)
+    {
+        global_data.mode = 2U;  // 进入大跳模式！
+    }
+
      if (global_data.remote_data.rc.s2 == 1U)
     {
         global_data.mode = 3U;  // 底盘继电器强制断电
@@ -38,6 +44,9 @@ void mode_control(void)
         break;
     case 1U:
         send_all_enable();
+        break;
+    case 2U:
+        start_jump();
         break;
     case 3U:
         chassis_disable();
@@ -134,4 +143,8 @@ void send_all_enable(void)
 void chassis_disable(void)
 {
     HAL_GPIO_WritePin(POWER_OUT2_EN_GPIO_Port, POWER_OUT2_EN_Pin, GPIO_PIN_RESET);
+}
+void start_jump(void)
+{
+
 }

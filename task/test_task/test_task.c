@@ -15,6 +15,7 @@
 #include "../../bsp/LED/LED.h"
 #include "../../bsp/pwm/pwm.h"
 #include "../../bsp/usb/usb.h"
+#include "../../dsp/big_jump/big_jump.h"
 #include "../../dsp/LinkageSolution/linkage_solution.h"
 #include "../../dsp/LegLength/leg_length.h"
 #include "../../dsp/State/state.h"
@@ -35,6 +36,7 @@ void test_task(void)
         trace_tracking_calculate();
         equalize_phi0();
         steering_control();
+        big_jump();
         torque_send();
 
         osDelay(1);

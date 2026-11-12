@@ -82,6 +82,8 @@ typedef struct
     volatile float T_w_r;
     volatile float T_p_l;
     volatile float T_p_r;
+    volatile float L_l;
+    volatile float L_r;
 } control_data_t;
 
 typedef struct

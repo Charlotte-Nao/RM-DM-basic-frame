@@ -10,5 +10,6 @@ void mode_control(void);
 void send_all_disable(void);
 void send_all_enable(void);
 void chassis_disable(void);
+void start_jump(void);
 
 #endif //DM_MODE_CONTROL_H

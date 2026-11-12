@@ -111,6 +111,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         debug_test/uart_printf/uart_printf.h
         dsp/TraceTracking/trace_tracking.c
         dsp/TraceTracking/trace_tracking.h
+        dsp/big_jump/big_jump.c
+        dsp/big_jump/big_jump.h
 )
 
 # Add STM32CubeMX generated sources
