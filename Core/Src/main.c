@@ -137,7 +137,7 @@ int main(void)
   Motor_System_PowerOn_Init();
   LED_YELLOW_SET();
   pwm_power_enable();
-  HAL_GPIO_WritePin(POWER_OUT2_EN_GPIO_Port, POWER_OUT2_EN_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(POWER_OUT2_EN_GPIO_Port, POWER_OUT1_EN_Pin, GPIO_PIN_SET);
 
 
   /* USER CODE END 2 */

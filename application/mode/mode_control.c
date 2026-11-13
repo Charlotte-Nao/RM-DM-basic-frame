@@ -75,7 +75,7 @@ void send_all_enable(void)
     if (global_data.mode == 1U && global_data.last_mode != 1U)
     {
         // 底盘上电
-        HAL_GPIO_WritePin(POWER_OUT2_EN_GPIO_Port, POWER_OUT2_EN_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(POWER_OUT2_EN_GPIO_Port, POWER_OUT1_EN_Pin, GPIO_PIN_SET);
         // M3508_L使能
         {
             struct motor_device *m3508_l = motor_get_device("M3508_L");
@@ -142,7 +142,7 @@ void send_all_enable(void)
 }
 void chassis_disable(void)
 {
-    HAL_GPIO_WritePin(POWER_OUT2_EN_GPIO_Port, POWER_OUT2_EN_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(POWER_OUT2_EN_GPIO_Port, POWER_OUT1_EN_Pin, GPIO_PIN_RESET);
 }
 void start_jump(void)
 {

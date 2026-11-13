@@ -29,8 +29,8 @@ void leg_pd(void)
 
     // 遥控器控制腿长，用于测试
     // ch1 对应左腿，ch3 对应右腿；-660~660 映射到 0.18~0.35 m。
-    // global_data.control_data.L_l = 0.18f + (global_data.remote_data.rc.ch2 + 660.0f) * (0.35f - 0.18f) / 1320.0f;
-    // global_data.control_data.L_r = 0.18f + (global_data.remote_data.rc.ch2 + 660.0f) * (0.35f - 0.18f) / 1320.0f;
+    global_data.control_data.L_l = 0.18f + (global_data.remote_data.rc.ch2 + 660.0f) * (0.35f - 0.18f) / 1320.0f;
+    global_data.control_data.L_r = 0.18f + (global_data.remote_data.rc.ch2 + 660.0f) * (0.35f - 0.18f) / 1320.0f;
 
     if (global_data.control_data.L_l == 0.0f || global_data.control_data.L_r == 0.0f)
     {
