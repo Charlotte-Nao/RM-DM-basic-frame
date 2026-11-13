@@ -17,7 +17,10 @@ void steering_control(void)
     global_data.control_data.T_w_l += torque / 2.0f;
     global_data.control_data.T_w_r -= torque / 2.0f;
 }
+void equalize_roll(void)
+{
 
+}
 void equalize_phi0(void)
 {
     const float kp = 20.0f;

@@ -84,11 +84,15 @@ void length_test(void)
 
     // 扭矩为驱动输出指令，不是电机反馈力矩。
     uart1->uart_printf(uart1,
-        "L_l=%.1f LF=%.3f LB=%.3f\r\n"
-        "RIGHT L_r=%.1f RF=%.3f RB=%.3f\r\n",
+        "L_l=%.1f L_l_target=%.3f F_l=%.3f LF=%.3f LB=%.3f\r\n"
+        "RIGHT L_r=%.1f L_r_target=%.3f F_r=%.3f RF=%.3f RB=%.3f\r\n",
         global_data.middle_data.L_l * 1000.0f,
+        global_data.control_data.L_l * 1000.0f,
+        global_data.control_data.F_l,
         lf_data->output_torque_nm, lb_data->output_torque_nm,
         global_data.middle_data.L_r * 1000.0f,
+        global_data.control_data.L_r * 1000.0f,
+        global_data.control_data.F_r,
         rf_data->output_torque_nm, rb_data->output_torque_nm);
 }
 

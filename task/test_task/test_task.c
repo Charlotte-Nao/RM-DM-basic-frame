@@ -35,6 +35,7 @@ void test_task(void)
         // lqr_calculate();
         trace_tracking_calculate();
         equalize_phi0();
+        equalize_roll();
         steering_control();
         big_jump();
         torque_send();
