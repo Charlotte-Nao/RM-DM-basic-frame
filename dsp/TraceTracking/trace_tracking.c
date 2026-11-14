@@ -44,6 +44,7 @@ void trace_tracking_calculate(void)
         global_data.state_data.theta_rad,
         global_data.state_data.theta_dot_rad_s,
         global_data.state_data.x_m - target_x,
+        // 0,
         global_data.state_data.x_dot_m_s - target_x_dot,
         global_data.state_data.phi_rad,
         global_data.state_data.phi_dot_rad_s
