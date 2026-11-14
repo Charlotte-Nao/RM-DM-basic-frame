@@ -33,12 +33,12 @@ void test_task(void)
         leg_pd();
         state_update();
         // lqr_calculate();
-        trace_tracking_calculate();
+        // trace_tracking_calculate();
         equalize_phi0();
         equalize_roll();
         steering_control();
         big_jump();
-        torque_send();
+        // torque_send ();
 
         osDelay(1);
     }

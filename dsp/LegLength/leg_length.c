@@ -21,14 +21,15 @@ float target_length_l, target_length_r;
 float kp = 1000.0f;
 float kd = 200.0f;
 float F_spring = 400.0f;
-float F_feedback_half = 50.0f; // 半车质量
+// float F_feedback_half = 50.0f; // 半车质量
+float F_feedback_half = 0.0f; // 半车质量
 
 void leg_pd(void)
 {
     float F_l, F_r;
 
     // 遥控器控制腿长，用于测试
-    // ch1 对应左腿，ch3 对应右腿；-660~660 映射到 0.18~0.35 m。
+    // ch1 对应左腿，ch3 对应右腿；-660~660 映射到 0.18~0.35 m,中位 265mm
     global_data.control_data.L_l = 0.18f + (global_data.remote_data.rc.ch2 + 660.0f) * (0.35f - 0.18f) / 1320.0f;
     global_data.control_data.L_r = 0.18f + (global_data.remote_data.rc.ch2 + 660.0f) * (0.35f - 0.18f) / 1320.0f;
 
