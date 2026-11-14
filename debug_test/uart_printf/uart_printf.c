@@ -63,6 +63,13 @@ void lqr_test(void)
         global_data.middle_data.r_phi0 * RAD_TO_DEG,
         global_data.control_data.F_r,
         global_data.control_data.T_p_r);
+
+    osDelay(20U);
+
+    uart1->uart_printf(uart1,
+    "IL_fb=%.3f IR_fb=%.3f RPM_l=%d RPM_r=%d\r\n",
+    wheel_l_data->torque_current, wheel_r_data->torque_current,
+    (int)wheel_l_data->speed_rpm, (int)wheel_r_data->speed_rpm);
 }
 
 void length_test(void)
@@ -82,18 +89,20 @@ void length_test(void)
     dm8009p_data_t *rf_data = rf_motor->motor_data;
     dm8009p_data_t *rb_data = rb_motor->motor_data;
 
-    // 扭矩为驱动输出指令，不是电机反馈力矩。
+    // LF/LB/RF/RB 为驱动输出指令，*_fb 为电机反馈力矩，单位 Nm。
     uart1->uart_printf(uart1,
-        "L_l=%.1f L_l_target=%.3f F_l=%.3f LF=%.3f LB=%.3f\r\n"
-        "RIGHT L_r=%.1f L_r_target=%.3f F_r=%.3f RF=%.3f RB=%.3f\r\n",
+        "L_l=%.1f L_l_target=%.3f F_l=%.3f LF=%.3f LB=%.3f LF_fb=%.3f LB_fb=%.3f\r\n"
+        "RIGHT L_r=%.1f L_r_target=%.3f F_r=%.3f RF=%.3f RB=%.3f RF_fb=%.3f RB_fb=%.3f\r\n",
         global_data.middle_data.L_l * 1000.0f,
         global_data.control_data.L_l * 1000.0f,
         global_data.control_data.F_l,
         lf_data->output_torque_nm, lb_data->output_torque_nm,
+        lf_data->torque_nm, lb_data->torque_nm,
         global_data.middle_data.L_r * 1000.0f,
         global_data.control_data.L_r * 1000.0f,
         global_data.control_data.F_r,
-        rf_data->output_torque_nm, rb_data->output_torque_nm);
+        rf_data->output_torque_nm, rb_data->output_torque_nm,
+        rf_data->torque_nm, rb_data->torque_nm);
 }
 
 void state_test(void)

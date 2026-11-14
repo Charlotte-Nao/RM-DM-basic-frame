@@ -19,10 +19,10 @@ float F_spring_divid_l, F_spring_divid_r;
 float target_length_l, target_length_r;
 
 float kp = 1000.0f;
-float kd = 200.0f;
+float kd = 120.0f;
 float F_spring = 400.0f;
-// float F_feedback_half = 50.0f; // 半车质量
-float F_feedback_half = 0.0f; // 半车质量
+float F_feedback_half = 50.0f; // 半车质量
+// float F_feedback_half = 0.0f; // 半车质量
 
 void leg_pd(void)
 {
@@ -44,6 +44,8 @@ void leg_pd(void)
 
     float error_l = target_length_l - global_data.middle_data.L_l;
     float error_r = target_length_r - global_data.middle_data.L_r;
+
+
 
     F_l = kp * error_l - kd * global_data.middle_data.L_l_dot;
     F_r = kp * error_r - kd * global_data.middle_data.L_r_dot;
