@@ -113,6 +113,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         dsp/TraceTracking/trace_tracking.h
         dsp/big_jump/big_jump.c
         dsp/big_jump/big_jump.h
+        dsp/FnSolve/fn_solve.c
+        dsp/FnSolve/fn_solve.h
 )
 
 # Add STM32CubeMX generated sources

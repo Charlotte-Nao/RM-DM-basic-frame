@@ -9,8 +9,41 @@
 #include "../../application/global_data.h"
 #include "../../dsp/math.h"
 #include "../../dsp/State/state.h"
+#include "../../dsp/LegLength/leg_length.h"
 #include <math.h>
+void Fn_test(void)
+{
+    struct uart_device *uart1 = uart_get_device("uart1_dma");
+    struct motor_device *lf_motor = motor_get_device("DM8009P_LF");
+    struct motor_device *lb_motor = motor_get_device("DM_8009P_LB");
+    struct motor_device *rf_motor = motor_get_device("DM_8009P_RF");
+    struct motor_device *rb_motor = motor_get_device("DM_8009P_RB");
+    float torque_lf, torque_lb, torque_rf, torque_rb;
 
+    if (uart1 == NULL || lf_motor == NULL || lb_motor == NULL || rf_motor == NULL || rb_motor == NULL) {
+        return;
+    }
+
+    lf_motor->get_status(lf_motor, "TORQUE", &torque_lf);
+    lb_motor->get_status(lb_motor, "TORQUE", &torque_lb);
+    rf_motor->get_status(rf_motor, "TORQUE", &torque_rf);
+    rb_motor->get_status(rb_motor, "TORQUE", &torque_rb);
+
+    // az为世界系竖直运动加速度，Fn/Fs为N，theta为deg，TAU_fb为电机侧Nm。
+    uart1->uart_printf(uart1,
+        "FN tick=%lu stage=%u az=%.3f Fn_l=%.2f Fn_r=%.2f\r\n"
+        "L_l=%.4f L_r=%.4f theta_l=%.2f theta_r=%.2f Fs_l=%.2f Fs_r=%.2f\r\n"
+        "TAU_fb LF=%.3f LB=%.3f RF=%.3f RB=%.3f\r\n",
+        (unsigned long)osKernelGetTickCount(),
+        (unsigned int)global_data.jump_stage,
+        global_data.imu_data.imu_z_acc_m_s2,
+        global_data.middle_data.Fn_l, global_data.middle_data.Fn_r,
+        global_data.middle_data.L_l, global_data.middle_data.L_r,
+        (global_data.middle_data.l_theta - global_data.state_data.phi_rad) * RAD_TO_DEG,
+        (global_data.middle_data.r_theta - global_data.state_data.phi_rad) * RAD_TO_DEG,
+        F_spring_divid_l, F_spring_divid_r,
+        torque_lf, torque_lb, torque_rf, torque_rb);
+}
 void lqr_test(void)
 {
     struct uart_device *uart1 = uart_get_device("uart1_dma");
@@ -64,12 +97,12 @@ void lqr_test(void)
         global_data.control_data.F_r,
         global_data.control_data.T_p_r);
 
-    osDelay(20U);
+    // osDelay(20U);
 
-    uart1->uart_printf(uart1,
-    "IL_fb=%.3f IR_fb=%.3f RPM_l=%d RPM_r=%d\r\n",
-    wheel_l_data->torque_current, wheel_r_data->torque_current,
-    (int)wheel_l_data->speed_rpm, (int)wheel_r_data->speed_rpm);
+    // uart1->uart_printf(uart1,
+    // "IL_fb=%.3f IR_fb=%.3f RPM_l=%d RPM_r=%d\r\n",
+    // wheel_l_data->torque_current, wheel_r_data->torque_current,
+    // (int)wheel_l_data->speed_rpm, (int)wheel_r_data->speed_rpm);
 }
 
 void length_test(void)

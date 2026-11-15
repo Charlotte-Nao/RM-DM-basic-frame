@@ -102,6 +102,11 @@ void sensor_task(void)
 
         /* Publish the newest attitude every sample for motor-control users. */
         quaternion_to_euler(quaternion, &roll, &pitch, &yaw);
+        // 用四元数将加速度计比力投影到世界系竖直方向，再减去重力。
+        global_data.imu_data.imu_z_acc_m_s2 =
+            2.0f * (quaternion[1] * quaternion[3] - quaternion[0] * quaternion[2]) * accel[0]
+            + 2.0f * (quaternion[2] * quaternion[3] + quaternion[0] * quaternion[1]) * accel[1]
+            + (1.0f - 2.0f * (quaternion[1] * quaternion[1] + quaternion[2] * quaternion[2])) * accel[2] - 9.8f;
         global_data.imu_data.imu_roll_rad = pitch;
         global_data.imu_data.imu_pitch_rad = roll;
         // 当前 pitch 对应传感器 roll 通道；纵向平面运动时角速度对应 gyro X。

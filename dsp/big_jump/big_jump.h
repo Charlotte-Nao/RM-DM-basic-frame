@@ -4,6 +4,8 @@
 
 #ifndef DM_BIG_JUMP_H
 #define DM_BIG_JUMP_H
-
-void big_jump();
+#include "../../application/global_data.h"
+void jump_pre();
+void jump_start();
+void jump_air();
 #endif //DM_BIG_JUMP_H

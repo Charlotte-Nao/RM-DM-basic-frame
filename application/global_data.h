@@ -33,6 +33,7 @@ typedef struct {
     volatile float imu_pitch_dot_rad_s; // 与 imu_pitch 同方向，当前平面运动取去偏 gyro X
     volatile float imu_yaw_rad;
     volatile float imu_yaw_dot_rad_s; // 与 imu_yaw_rad 同方向的偏航角速度
+    volatile float imu_z_acc_m_s2; // 世界系竖直运动加速度，向上为正，已去重力
     volatile uint32_t imu_update_tick;
     volatile uint8_t imu_ready;
 } imu_data_t;
@@ -58,6 +59,8 @@ typedef struct {
     volatile float r_theta;
     volatile float Jl[2][2];
     volatile float Jr[2][2];
+    volatile float Fn_l;
+    volatile float Fn_r;
 } middle_data_t;
 
 // 状态空间矩阵：[theta, theta_dot, x, x_dot, phi, phi_dot]。
@@ -94,7 +97,11 @@ typedef struct
     state_data_t state_data;
     control_data_t control_data;
     uint8_t mode;
+    uint8_t mode2;
     uint8_t last_mode;
+    uint8_t last_mode2;
+    uint8_t jump_stage; // 0U默认，1U准备，2U起跳，3U在空中，4U收腿准备落地，落地变为0U
+    uint8_t last_jump_stage;
 } global_data_t;
 
 extern volatile global_data_t global_data;

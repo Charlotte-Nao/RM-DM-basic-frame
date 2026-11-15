@@ -90,6 +90,12 @@ void trace_tracking_calculate(void)
             hip_torque = hip_torque - gain[1][i] * state[i];
         }
 
+        if (global_data.jump_stage == 3U || global_data.jump_stage == 4U)
+        {
+            wheel_torque = 0.0f;
+            hip_torque = -gain[1][0] * state[0] - gain[1][1] * state[1];
+        }
+
         wheel_torque = wheel_torque / 2.0f;
         hip_torque = hip_torque / 2.0f;
 

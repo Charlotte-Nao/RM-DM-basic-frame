@@ -19,6 +19,7 @@ float F_spring_divid_l, F_spring_divid_r;
 float target_length_l, target_length_r;
 
 float kp = 1000.0f;
+float ki = 0.0f;
 float kd = 120.0f;
 float F_spring = 400.0f;
 float F_feedback_half = 50.0f; // 半车质量
@@ -38,21 +39,72 @@ void leg_pd(void)
         global_data.control_data.L_l = 0.18f;
         global_data.control_data.L_r = 0.18f;
     }
+
+    // 大跳部分腿长变化
+    // 准备起跳,压缩腿长
+    if (global_data.jump_stage == 1U)
+    {
+        global_data.control_data.L_l = 0.18f;
+        global_data.control_data.L_r = 0.18f;
+    }
+    if (global_data.jump_stage == 2U || global_data.jump_stage == 3U)
+    {
+        global_data.control_data.L_l = 0.35f;
+        global_data.control_data.L_r = 0.35f;
+    }
+    if (global_data.jump_stage == 4U)
+    {
+        global_data.control_data.L_l = 0.23f;
+        global_data.control_data.L_r = 0.23f;
+    }
+
     // 设置腿长target，测试阶段设置为0.18m
     target_length_l = global_data.control_data.L_l;
     target_length_r = global_data.control_data.L_r;
 
+
+
     float error_l = target_length_l - global_data.middle_data.L_l;
     float error_r = target_length_r - global_data.middle_data.L_r;
+    float abs_error_l = fabsf(error_l);
+    float abs_error_r = fabsf(error_r);
 
+    // 腿长追踪pd变化
+    if (abs_error_l >= 0.08f && abs_error_r >= 0.08f)
+    {
+        kp = 1000.0f;
+    }
+    else if (abs_error_l > 0.04f && abs_error_r > 0.04f)
+    {
+        kp = 1000.0f + ((0.08f - abs_error_l) + (0.08f - abs_error_r)) / 2.0f / 0.04f * 2000.0f;
+    }
+    else if (abs_error_l <= 0.04f && abs_error_r <= 0.04f)
+    {
+        kp = 3000.0f;
+    }
 
+    //大跳部分pd变化
+
+    if (global_data.jump_stage == 2U)
+    {
+        kp = 3000.0f;
+        kd = 50.0f;
+    }
+    if (global_data.jump_stage != 2U)
+    {
+        kd = 120.0f;
+    }
 
     F_l = kp * error_l - kd * global_data.middle_data.L_l_dot;
     F_r = kp * error_r - kd * global_data.middle_data.L_r_dot;
 
     // 重力前馈
-    F_l = F_l + F_feedback_half;
-    F_r = F_r + F_feedback_half;
+    if (global_data.jump_stage != 3U && global_data.jump_stage != 4U)
+    {
+        F_l += F_feedback_half;
+        F_r += F_feedback_half;
+    }
+
 
     // 气弹簧解算，在长腿长段正常，短腿长段结算偏差较大
     const float q1 = 0.21f;
@@ -85,8 +137,12 @@ void leg_pd(void)
             (spring_length_r * q1 * q2 * sinf(spring_angle_r));
     }
 
-    F_l = F_l - F_spring_divid_l;
-    F_r = F_r - F_spring_divid_r;
+    if (global_data.jump_stage != 2U)
+    {
+        F_l = F_l - F_spring_divid_l;
+        F_r = F_r - F_spring_divid_r;
+    }
+
 
     global_data.control_data.F_l = F_l;
     global_data.control_data.F_r = F_r;

@@ -21,6 +21,8 @@
 #include "../../dsp/State/state.h"
 #include "../../dsp/LQR/lqr.h"
 #include "../../dsp/ComprensiveControl/comprensive_control.h"
+#include "../../dsp/FnSolve/fn_solve.h"
+#include "../../dsp/big_jump/big_jump.h"
 #include "../../dsp/TraceTracking/trace_tracking.h"
 
 void test_task(void)
@@ -32,12 +34,16 @@ void test_task(void)
         vmc_calculate();
         leg_pd();
         state_update();
+        fn_solve();
+        // jump_air();
         // lqr_calculate();
         trace_tracking_calculate();
-        equalize_phi0();
-        // equalize_roll();
-        steering_control();
-        // big_jump();
+        if (global_data.jump_stage != 3U && global_data.jump_stage != 4U)
+        {
+            equalize_phi0();
+            // equalize_roll();
+            steering_control();
+        }
         torque_send ();
 
         osDelay(1);

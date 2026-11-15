@@ -28,9 +28,20 @@ void mode_switch(void)
 
      if (global_data.remote_data.rc.s2 == 1U)
     {
-        global_data.mode = 3U;  // 底盘继电器强制断电
+        global_data.mode2 = 3U;  // 底盘继电器强制断电
         LED_PINK_SET();
     }
+
+    else if (global_data.remote_data.rc.s2 == 2U)
+    {
+        global_data.mode2 = 4U;  // 空闲状态
+    }
+
+    else if (global_data.remote_data.rc.s2 == 3U)
+    {
+        global_data.mode2 = 5U;  // 起跳
+    }
+
 }
 
 void mode_control(void)
@@ -41,22 +52,32 @@ void mode_control(void)
     {
     case 0U:
         send_all_disable();
+        global_data.jump_stage = 0U;
         break;
     case 1U:
         send_all_enable();
+        global_data.jump_stage = 0U;
         break;
     case 2U:
         start_jump();
         break;
+    default:
+        break;
+    }
+    switch (global_data.mode2)
+    {
     case 3U:
         chassis_disable();
-        break;;
-
-    default:
+        break;
+    case 4U:
+        break;
+    case 5U:
+        // jump_start();
         break;
     }
 
     global_data.last_mode = global_data.mode;
+    global_data.last_mode2 = global_data.mode2;
 }
 
 void send_all_disable(void)
@@ -143,8 +164,12 @@ void send_all_enable(void)
 void chassis_disable(void)
 {
     HAL_GPIO_WritePin(POWER_OUT2_EN_GPIO_Port, POWER_OUT1_EN_Pin, GPIO_PIN_RESET);
+    global_data.jump_stage = 0U;
 }
 void start_jump(void)
 {
-
+    if (global_data.mode == 2U && global_data.last_mode != 2U)
+    {
+        // jump_pre();
+    }
 }
