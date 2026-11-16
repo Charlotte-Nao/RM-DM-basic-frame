@@ -7,8 +7,6 @@
 
 #include "../../application/global_data.h"
 
-extern float F_spring_divid_l, F_spring_divid_r;
-extern float target_length_l, target_length_r;
 
 void leg_pd(void);
 

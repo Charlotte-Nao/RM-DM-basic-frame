@@ -137,6 +137,9 @@ void leg_pd(void)
             (spring_length_r * q1 * q2 * sinf(spring_angle_r));
     }
 
+    global_data.middle_data.F_spring_divid_l = F_spring_divid_l;
+    global_data.middle_data.F_spring_divid_r = F_spring_divid_r;
+
     if (global_data.jump_stage != 2U)
     {
         F_l = F_l - F_spring_divid_l;

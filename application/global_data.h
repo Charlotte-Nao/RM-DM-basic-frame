@@ -59,6 +59,8 @@ typedef struct {
     volatile float r_theta;
     volatile float Jl[2][2];
     volatile float Jr[2][2];
+    volatile float F_spring_divid_l;
+    volatile float F_spring_divid_r;
     volatile float Fn_l;
     volatile float Fn_r;
 } middle_data_t;
