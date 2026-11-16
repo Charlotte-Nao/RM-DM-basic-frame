@@ -72,7 +72,7 @@ void mode_control(void)
     case 4U:
         break;
     case 5U:
-        // jump_start();
+        jump_start();
         break;
     }
 
@@ -170,6 +170,6 @@ void start_jump(void)
 {
     if (global_data.mode == 2U && global_data.last_mode != 2U)
     {
-        // jump_pre();
+        jump_pre();
     }
 }

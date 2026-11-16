@@ -22,8 +22,8 @@ void jump_start()
 void jump_air()
 {
     static uint8_t air_clock = 0U;
-    float contact_force = 20.0f;
-    static float fn[2] = {0};;
+    float contact_force = - 2.0f;
+    static float fn[2] = {0};
     fn[0] = global_data.middle_data.Fn_l;
     fn[1] = global_data.middle_data.Fn_r;
 

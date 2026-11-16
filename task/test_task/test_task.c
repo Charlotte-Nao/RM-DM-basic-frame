@@ -35,7 +35,7 @@ void test_task(void)
         leg_pd();
         state_update();
         fn_solve();
-        // jump_air();
+        jump_air();
         // lqr_calculate();
         trace_tracking_calculate();
         if (global_data.jump_stage != 3U && global_data.jump_stage != 4U)

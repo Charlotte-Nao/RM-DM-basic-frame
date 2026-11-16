@@ -84,10 +84,13 @@ void lqr_test(void)
     osDelay(20U);
 
     uart1->uart_printf(uart1,
-        "TORQUE LF=%.3f LB=%.3f RF=%.3f RB=%.3f WL=%.3f WR=%.3f\r\n"
-        "L_l=%.4f phi_0_l=%.2f F_l=%.2f T_p_l=%.2f L_r=%.4f  phi0_r= %.2f F_r=%.2f T_p_r=%.2f\r\n",
+        "TORQUE LF=%.3f LB=%.3f RF=%.3f RB=%.3f WL=%.3f WR=%.3f\r\n",
         lf_torque, lb_torque, rf_torque, rb_torque,
-        wheel_l_torque, wheel_r_torque,
+        wheel_l_torque, wheel_r_torque);
+
+    osDelay(20);
+
+    uart1->uart_printf(uart1,"L_l=%.4f phi_0_l=%.2f F_l=%.2f T_p_l=%.2f L_r=%.4f  phi0_r= %.2f F_r=%.2f T_p_r=%.2f\r\n",
         global_data.middle_data.L_l,
         global_data.middle_data.l_phi0 * RAD_TO_DEG,
         global_data.control_data.F_l,
@@ -97,8 +100,9 @@ void lqr_test(void)
         global_data.control_data.F_r,
         global_data.control_data.T_p_r);
 
-    // osDelay(20U);
 
+    // osDelay(20U);
+    //
     // uart1->uart_printf(uart1,
     // "IL_fb=%.3f IR_fb=%.3f RPM_l=%d RPM_r=%d\r\n",
     // wheel_l_data->torque_current, wheel_r_data->torque_current,
