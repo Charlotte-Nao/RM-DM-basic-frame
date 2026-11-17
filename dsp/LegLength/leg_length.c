@@ -30,22 +30,22 @@ void leg_pd(void)
     float F_l, F_r;
 
     // 遥控器控制腿长，用于测试
-    // ch1 对应左腿，ch3 对应右腿；-660~660 映射到 0.18~0.35 m,中位 265mm
-    global_data.control_data.L_l = 0.18f + (global_data.remote_data.rc.ch2 + 660.0f) * (0.35f - 0.18f) / 1320.0f;
-    global_data.control_data.L_r = 0.18f + (global_data.remote_data.rc.ch2 + 660.0f) * (0.35f - 0.18f) / 1320.0f;
+    // ch1 对应左腿，ch3 对应右腿；-660~660 映射到 0.15~0.40 m,中位 265mm
+    global_data.control_data.L_l = 0.15f + (global_data.remote_data.rc.ch2 + 660.0f) * (0.35f - 0.15f) / 1320.0f;
+    global_data.control_data.L_r = 0.15f + (global_data.remote_data.rc.ch2 + 660.0f) * (0.35f - 0.15f) / 1320.0f;
 
     if (global_data.control_data.L_l == 0.0f || global_data.control_data.L_r == 0.0f)
     {
-        global_data.control_data.L_l = 0.18f;
-        global_data.control_data.L_r = 0.18f;
+        global_data.control_data.L_l = 0.15f;
+        global_data.control_data.L_r = 0.15f;
     }
 
     // 大跳部分腿长变化
     // 准备起跳,压缩腿长
     if (global_data.jump_stage == 1U)
     {
-        global_data.control_data.L_l = 0.18f;
-        global_data.control_data.L_r = 0.18f;
+        global_data.control_data.L_l = 0.15f;
+        global_data.control_data.L_r = 0.15f;
     }
     if (global_data.jump_stage == 2U || global_data.jump_stage == 3U)
     {
@@ -57,11 +57,20 @@ void leg_pd(void)
         global_data.control_data.L_l = 0.23f;
         global_data.control_data.L_r = 0.23f;
     }
+    if (global_data.climb_stage == 1U || global_data.climb_stage == 2U)
+    {
+        global_data.control_data.L_l = 0.35f;
+        global_data.control_data.L_r = 0.35f;
+    }
+    if (global_data.climb_stage == 3U || global_data.climb_stage == 4U)
+    {
+        global_data.control_data.L_l = 0.15f;
+        global_data.control_data.L_r = 0.15f;
+    }
 
     // 设置腿长target，测试阶段设置为0.18m
     target_length_l = global_data.control_data.L_l;
     target_length_r = global_data.control_data.L_r;
-
 
 
     float error_l = target_length_l - global_data.middle_data.L_l;

@@ -42,6 +42,15 @@ void mode_switch(void)
         global_data.mode2 = 5U;  // 起跳
     }
 
+    if (global_data.remote_data.rc.reserved > 600 && global_data.last_stage == 0U)
+    {
+        global_data.climb_stage = 1U;  // 进入上台阶阶段
+    }
+    if (global_data.remote_data.rc.reserved < 400 )
+    {
+        global_data.climb_stage = 0U;
+    }
+
 }
 
 void mode_control(void)
@@ -78,6 +87,7 @@ void mode_control(void)
 
     global_data.last_mode = global_data.mode;
     global_data.last_mode2 = global_data.mode2;
+    global_data.last_stage = global_data.climb_stage;
 }
 
 void send_all_disable(void)

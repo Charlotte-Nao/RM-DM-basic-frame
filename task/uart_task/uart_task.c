@@ -38,9 +38,10 @@ void uart_task(void)
         osDelay(50);
         // length_test();
         // state_test();
-        Fn_test();
+        // Fn_test();
+        climb_test();
 
-        osDelay(100U);
+        osDelay(50U);
 
 
 

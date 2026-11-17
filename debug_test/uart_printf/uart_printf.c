@@ -11,6 +11,55 @@
 #include "../../dsp/State/state.h"
 #include "../../dsp/LegLength/leg_length.h"
 #include <math.h>
+void climb_test(void)
+{
+    struct uart_device *uart1 = uart_get_device("uart1_dma");
+    if (uart1 == NULL) {
+        return;
+    }
+
+    // 先读取本次数据，再分三次发送，避免发送间隔中各字段持续变化。
+    uint32_t tick = osKernelGetTickCount();
+    uint8_t stage = global_data.climb_stage;
+    uint8_t jump_stage = global_data.jump_stage;
+    uint8_t mode = global_data.mode;
+    uint8_t mode2 = global_data.mode2;
+    int16_t roller = global_data.remote_data.rc.reserved;
+    control_data_t control = global_data.control_data;
+    float length_l = global_data.middle_data.L_l;
+    float length_r = global_data.middle_data.L_r;
+    float phi0_l = global_data.middle_data.l_phi0;
+    float phi0_r = global_data.middle_data.r_phi0;
+    float phi0_rate_l = global_data.middle_data.l_phi0_dot;
+    float phi0_rate_r = global_data.middle_data.r_phi0_dot;
+    float fn_l = global_data.middle_data.Fn_l;
+    float fn_r = global_data.middle_data.Fn_r;
+    float theta = global_data.state_data.theta_rad;
+    float phi = global_data.state_data.phi_rad;
+
+    // Tw为当前轮端目标力矩，单位Nm。
+    uart1->uart_printf(uart1,
+        "CLIMB tick=%lu stage=%u jump=%u mode=%u mode2=%u rc=%d Tw_l=%.3f Tw_r=%.3f\r\n",
+        (unsigned long)tick, (unsigned int)stage, (unsigned int)jump_stage,
+        (unsigned int)mode, (unsigned int)mode2, (int)roller,
+        control.T_w_l, control.T_w_r);
+
+    osDelay(20U);
+
+    // 腿长为m，phi0为rad，dphi0为rad/s。
+    uart1->uart_printf(uart1,
+        "LEG L_l=%.4f L_l_set=%.4f L_r=%.4f L_r_set=%.4f phi0_l_rad=%.3f phi0_r_rad=%.3f dphi0_l=%.3f dphi0_r=%.3f\r\n",
+        length_l, control.L_l, length_r, control.L_r,
+        phi0_l, phi0_r, phi0_rate_l, phi0_rate_r);
+
+    osDelay(20U);
+
+    // F/Fn为N，Tp为虚拟髋力矩Nm，theta/phi显示为deg。
+    uart1->uart_printf(uart1,
+        "CTRL F_l=%.2f F_r=%.2f Tp_l=%.2f Tp_r=%.2f Fn_l=%.2f Fn_r=%.2f theta_deg=%.2f phi_deg=%.2f\r\n",
+        control.F_l, control.F_r, control.T_p_l, control.T_p_r,
+        fn_l, fn_r, theta * RAD_TO_DEG, phi * RAD_TO_DEG);
+}
 void Fn_test(void)
 {
     struct uart_device *uart1 = uart_get_device("uart1_dma");
@@ -41,7 +90,7 @@ void Fn_test(void)
         global_data.middle_data.L_l, global_data.middle_data.L_r,
         (global_data.middle_data.l_theta - global_data.state_data.phi_rad) * RAD_TO_DEG,
         (global_data.middle_data.r_theta - global_data.state_data.phi_rad) * RAD_TO_DEG,
-        F_spring_divid_l, F_spring_divid_r,
+        global_data.middle_data.F_spring_divid_l, global_data.middle_data.F_spring_divid_r,
         torque_lf, torque_lb, torque_rf, torque_rb);
 }
 void lqr_test(void)

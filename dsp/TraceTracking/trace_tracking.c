@@ -33,7 +33,14 @@ void trace_tracking_calculate(void)
 
     // ch1 的 -660~660 映射到 -1.5~1.5 m/s，正值对应模型前进方向。
     float target_x_dot = global_data.remote_data.rc.ch1 * speed / 660.0f;
-    target_x = target_x + target_x_dot * dt;
+    // if (global_data.climb_stage == 2U || global_data.climb_stage == 3U || global_data.climb_stage == 4U)
+    // {
+    //     target_x_dot = 0.0f;
+    // }
+
+    // target_x = target_x + target_x_dot * dt;
+    target_x = target_x + target_x_dot * 0.001f;
+
 
     // target_x = 0;
     // target_x_dot = 0;

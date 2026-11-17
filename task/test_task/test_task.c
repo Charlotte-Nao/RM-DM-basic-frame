@@ -23,6 +23,7 @@
 #include "../../dsp/ComprensiveControl/comprensive_control.h"
 #include "../../dsp/FnSolve/fn_solve.h"
 #include "../../dsp/big_jump/big_jump.h"
+#include "../../dsp/climb/climb.h"
 #include "../../dsp/TraceTracking/trace_tracking.h"
 
 void test_task(void)
@@ -37,13 +38,17 @@ void test_task(void)
         fn_solve();
         jump_air();
         // lqr_calculate();
-        trace_tracking_calculate();
+        if (global_data.climb_stage == 0U || global_data.climb_stage == 1U)
+        {
+            trace_tracking_calculate();
+        }
         if (global_data.jump_stage != 3U && global_data.jump_stage != 4U)
         {
             equalize_phi0();
             // equalize_roll();
             steering_control();
         }
+        climb();
         torque_send ();
 
         osDelay(1);
