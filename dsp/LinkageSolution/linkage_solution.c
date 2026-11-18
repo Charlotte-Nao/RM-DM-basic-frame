@@ -20,14 +20,13 @@
 **/
 
 // 安装零偏，单位 rad
-// 按初态 R:phi1 = 128.5deg、phi4 = 52.65deg 标定,L_r实际37.7，RF_pos=0.2951 RB_pos=-0.0109
-//L:phi1:135.7deg ,phi4=60.25deg 标定。L_l 实际为37.7，LF_pos=0.3169 LB_pos=-0.1639
+// phi4 = -29.75deg,phi1 = 46.65deg。L=37.7cm
 // l:offset =  1.1875 * phi_target - pos
 // r:offset = -1.1875 * phi_target - pos
-float lf_offset = 142.703550f * DEG_TO_RAD;
-float lb_offset = 53.112475f * DEG_TO_RAD;
-float rf_offset =  (-152.888850f + 360 * ( - 0 )) * DEG_TO_RAD;
-float rb_offset =  -62.510975f  * DEG_TO_RAD;
+float lf_offset = -106.093125f   * DEG_TO_RAD;
+float lb_offset = -194.588625f     * DEG_TO_RAD;
+float rf_offset =  (-114.246675f    + 360 * ( - 0 )) * DEG_TO_RAD;
+float rb_offset =  -8.003275f      * DEG_TO_RAD;
 
 // 传动比
 float transmission = 1.1875f;
