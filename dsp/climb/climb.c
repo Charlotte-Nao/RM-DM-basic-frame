@@ -41,7 +41,8 @@ void climb()
     collision_test();
     if (global_data.climb_stage == 2U)
     {
-        phi0_pd(3.05f);
+        // phi0_pd(3.05f);
+        phi0_pd(3.35f);
         if (global_data.middle_data.l_phi0 > 2.87f && global_data.middle_data.r_phi0 > 2.87f) // 165deg
         {
             global_data.climb_stage = 3U;
@@ -51,7 +52,7 @@ void climb()
     if (global_data.climb_stage == 3U)
     {
         phi0_pd(3.05f);
-        if (global_data.middle_data.L_l < 0.18f && global_data.middle_data.L_r < 0.18f)
+        if (global_data.middle_data.L_l < 0.20f && global_data.middle_data.L_r < 0.20f)
         {
             global_data.climb_stage = 4U;
         }

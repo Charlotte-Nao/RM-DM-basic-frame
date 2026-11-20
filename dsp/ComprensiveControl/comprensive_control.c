@@ -23,8 +23,8 @@ void equalize_roll(void)
 }
 void equalize_phi0(void)
 {
-    const float kp = 20.0f;
-    const float kd = 2.0f;
+    const float kp = 30.0f;
+    const float kd = 3.0f;
 
     // 角度差取右减左，角度为 rad，角速度为 rad/s。
     float phi0_error = global_data.middle_data.r_phi0 - global_data.middle_data.l_phi0;

@@ -64,8 +64,8 @@ void leg_pd(void)
     }
     if (global_data.climb_stage == 3U || global_data.climb_stage == 4U)
     {
-        global_data.control_data.L_l = 0.15f;
-        global_data.control_data.L_r = 0.15f;
+        global_data.control_data.L_l = 0.13f;
+        global_data.control_data.L_r = 0.13f;
     }
 
     // 设置腿长target，测试阶段设置为0.18m
@@ -81,11 +81,11 @@ void leg_pd(void)
     // 腿长追踪pd变化
     if (abs_error_l >= 0.08f && abs_error_r >= 0.08f)
     {
-        kp = 1000.0f;
+        kp = 1200.0f;
     }
     else if (abs_error_l > 0.04f && abs_error_r > 0.04f)
     {
-        kp = 1000.0f + ((0.08f - abs_error_l) + (0.08f - abs_error_r)) / 2.0f / 0.04f * 2000.0f;
+        kp = 1200.0f + ((0.08f - abs_error_l) + (0.08f - abs_error_r)) / 2.0f / 0.04f * 2000.0f;
     }
     else if (abs_error_l <= 0.04f && abs_error_r <= 0.04f)
     {
