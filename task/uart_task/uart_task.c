@@ -24,6 +24,7 @@ void uart_task(void)
     uart7 = uart_get_device("uart7_dma");
     uart10 = uart_get_device("uart10_dma");
     uart5 = uart_get_device("uart5_dma");
+
     uart1->uart_recv_callback = uart1_recv_callback;
     uart7->uart_recv_callback = uart7_recv_callback;
     uart10->uart_recv_callback = uart10_recv_callback;
@@ -33,8 +34,8 @@ void uart_task(void)
 
     for (;;)
     {
-        DM8009P_offset_test();
-        // lqr_test();
+        // DM8009P_offset_test();
+        lqr_test();
         // osDelay(50);
         // length_test();
         // state_test();

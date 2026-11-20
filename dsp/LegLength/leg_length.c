@@ -108,7 +108,8 @@ void leg_pd(void)
     F_r = kp * error_r - kd * global_data.middle_data.L_r_dot;
 
     // 重力前馈
-    if (global_data.jump_stage != 3U && global_data.jump_stage != 4U)
+    if (global_data.jump_stage != 3U && global_data.jump_stage != 4U
+        && global_data.climb_stage != 2U && global_data.climb_stage != 3U && global_data.climb_stage != 4U)
     {
         F_l += F_feedback_half;
         F_r += F_feedback_half;

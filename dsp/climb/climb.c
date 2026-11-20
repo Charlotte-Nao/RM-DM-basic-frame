@@ -21,9 +21,9 @@ void collision_test()
 
 void phi0_pd(float target_phi0)
 {
-    const float kp = 140.0f;
-    const float kd = 7.0f;
-    const float max_out = 10.0f;
+    const float kp = 14.0f;
+    const float kd = 1.0f;
+    const float max_out = 40.0f;
 
     float error_l = remainderf(target_phi0 - global_data.middle_data.l_phi0, TWO_PI);
     float error_r = remainderf(target_phi0 - global_data.middle_data.r_phi0, TWO_PI);
@@ -41,8 +41,8 @@ void climb()
     collision_test();
     if (global_data.climb_stage == 2U)
     {
-        phi0_pd(2.8f);
-        if (global_data.middle_data.l_phi0 > 2.61f && global_data.middle_data.r_phi0 > 2.61f) // 150deg
+        phi0_pd(3.05f);
+        if (global_data.middle_data.l_phi0 > 2.87f && global_data.middle_data.r_phi0 > 2.87f) // 165deg
         {
             global_data.climb_stage = 3U;
         }
@@ -50,7 +50,7 @@ void climb()
 
     if (global_data.climb_stage == 3U)
     {
-        phi0_pd(2.8f);
+        phi0_pd(3.05f);
         if (global_data.middle_data.L_l < 0.18f && global_data.middle_data.L_r < 0.18f)
         {
             global_data.climb_stage = 4U;
@@ -59,8 +59,8 @@ void climb()
 
     if (global_data.climb_stage == 4U)
     {
-        phi0_pd(0.0f);
-        if (global_data.middle_data.l_phi0 < 1.80f && global_data.middle_data.r_phi0 < 1.80f &&
+        phi0_pd(1.39f);
+        if (global_data.middle_data.l_phi0 < 1.57f && global_data.middle_data.r_phi0 < 1.57f &&
             global_data.middle_data.L_l < 0.2f && global_data.middle_data.L_r < 0.2f)
         {
             global_data.climb_stage = 0U;

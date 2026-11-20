@@ -150,12 +150,12 @@ void lqr_test(void)
         global_data.control_data.T_p_r);
 
 
-    // osDelay(20U);
-    //
-    // uart1->uart_printf(uart1,
-    // "IL_fb=%.3f IR_fb=%.3f RPM_l=%d RPM_r=%d\r\n",
-    // wheel_l_data->torque_current, wheel_r_data->torque_current,
-    // (int)wheel_l_data->speed_rpm, (int)wheel_r_data->speed_rpm);
+    osDelay(20U);
+
+    uart1->uart_printf(uart1,
+    "IL_fb=%.3f IR_fb=%.3f RPM_l=%d RPM_r=%d\r\n",
+    wheel_l_data->torque_current, wheel_r_data->torque_current,
+    (int)wheel_l_data->speed_rpm, (int)wheel_r_data->speed_rpm);
 }
 
 void length_test(void)
