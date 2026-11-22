@@ -8,6 +8,8 @@
 #include "../../device/motor/motor_instance.h"
 #include "../../../bsp/LED/LED.h"
 #include "../../dsp/big_jump/big_jump.h"
+#include "../../dsp/self_save/self_save.h"
+
 
 void mode_switch(void)
 {
@@ -42,7 +44,7 @@ void mode_switch(void)
         global_data.mode2 = 5U;  // 起跳
     }
 
-    if (global_data.remote_data.rc.reserved > 600 && global_data.last_stage == 0U)
+    if (global_data.save_stage == 1U && global_data.remote_data.rc.reserved > 600 && global_data.last_stage == 0U)
     {
         global_data.climb_stage = 1U;  // 进入上台阶阶段
     }
@@ -66,6 +68,8 @@ void mode_control(void)
     case 1U:
         send_all_enable();
         global_data.jump_stage = 0U;
+        global_data.save_stage = 0U;
+        global_data.climb_stage = 0U;
         break;
     case 2U:
         start_jump();
@@ -73,15 +77,19 @@ void mode_control(void)
     default:
         break;
     }
+
     switch (global_data.mode2)
     {
     case 3U:
-        chassis_disable();
+        // chassis_disable();   //底盘完全断电
+        save_start();
         break;
     case 4U:
         break;
     case 5U:
         jump_start();
+        break;
+    default:
         break;
     }
 
@@ -100,6 +108,10 @@ void send_all_disable(void)
             motor->send_disable_cmd(motor);
         }
     }
+    global_data.control_data.T_w_l = 0.0f;
+    global_data.control_data.T_w_r = 0.0f;
+    global_data.control_data.T_p_l = 0.0f;
+    global_data.control_data.T_p_r = 0.0f;
 }
 void send_all_enable(void)
 {
@@ -175,11 +187,22 @@ void chassis_disable(void)
 {
     HAL_GPIO_WritePin(POWER_OUT2_EN_GPIO_Port, POWER_OUT1_EN_Pin, GPIO_PIN_RESET);
     global_data.jump_stage = 0U;
+
 }
 void start_jump(void)
 {
     if (global_data.mode == 2U && global_data.last_mode != 2U)
     {
         jump_pre();
+    }
+}
+void save_start(void)
+{
+    if (global_data.mode2 == 3U && global_data.last_mode2 != 3U)
+    {
+        if (global_data.save_stage == 0U)
+        {
+            save_pre();
+        }
     }
 }

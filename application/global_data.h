@@ -104,6 +104,8 @@ typedef struct
     uint8_t last_mode2;
     uint8_t jump_stage; // 0U默认，1U准备，2U起跳，3U在空中，4U收腿准备落地，落地变为0U
     uint8_t climb_stage; // 0U默认， 1U升高，2U关LQR，撞击，后摆腿，3U收腿，4U向前回正
+    uint8_t save_stage; // 0U未使能， 1U正常状态， 2U收腿. 3U摆腿回正，
+    uint8_t self_stage; // 0U异常状态， 1U正常状态, 2U可复位初始姿态
     uint8_t last_stage;
 } global_data_t;
 

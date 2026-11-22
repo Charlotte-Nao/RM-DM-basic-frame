@@ -8,4 +8,5 @@
 #include "../../application/global_data.h"
 void collision_test();
 void climb();
+void phi0_pd(float target_phi0);
 #endif //DM_CLIMB_H

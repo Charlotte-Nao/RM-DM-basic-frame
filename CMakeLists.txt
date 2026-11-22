@@ -117,6 +117,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         dsp/FnSolve/fn_solve.h
         dsp/climb/climb.c
         dsp/climb/climb.h
+        dsp/self_save/self_save.c
+        dsp/self_save/self_save.h
 )
 
 # Add STM32CubeMX generated sources

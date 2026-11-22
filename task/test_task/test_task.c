@@ -24,6 +24,7 @@
 #include "../../dsp/FnSolve/fn_solve.h"
 #include "../../dsp/big_jump/big_jump.h"
 #include "../../dsp/climb/climb.h"
+#include "../../dsp/self_save/self_save.h"
 #include "../../dsp/TraceTracking/trace_tracking.h"
 
 void test_task(void)
@@ -36,19 +37,24 @@ void test_task(void)
         leg_pd();
         state_update();
         fn_solve();
-        jump_air();
-        // lqr_calculate();
-        if (global_data.climb_stage == 0U || global_data.climb_stage == 1U)
+        self_save();
+        if (global_data.save_stage == 1U)
         {
-            trace_tracking_calculate();
+            jump_air();
+            // lqr_calculate();
+            if (global_data.climb_stage == 0U || global_data.climb_stage == 1U || global_data.save_stage == 1U)
+            {
+                trace_tracking_calculate();
+            }
+
+            if (global_data.jump_stage != 3U && global_data.jump_stage != 4U)
+            {
+                equalize_phi0();
+                // equalize_roll();
+                steering_control();
+            }
+            climb();
         }
-        if (global_data.jump_stage != 3U && global_data.jump_stage != 4U)
-        {
-            equalize_phi0();
-            // equalize_roll();
-            steering_control();
-        }
-        climb();
         torque_send ();
 
         osDelay(1);
