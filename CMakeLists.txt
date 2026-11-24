@@ -119,6 +119,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         dsp/climb/climb.h
         dsp/self_save/self_save.c
         dsp/self_save/self_save.h
+        dsp/Gimbal/gimbal.c
+        dsp/Gimbal/gimbal.h
 )
 
 # Add STM32CubeMX generated sources

@@ -166,14 +166,12 @@ void send_all_enable(void)
             dm_8009p_rb->send_enable_cmd(dm_8009p_rb);
         }
 
-        // // GM6020_YAW使能
-        // {
-        //     struct motor_device *gm6020_yaw = motor_get_device("GM6020_YAW");
-        //     if (gm6020_yaw != NULL && gm6020_yaw->send_enable_cmd != NULL) {
-        //         gm6020_yaw->send_enable_cmd(gm6020_yaw);
-        //     }
-        //     osDelay(100U);
-        // }
+        // GM6020_YAW使能
+        struct motor_device *gm6020_yaw = motor_get_device("GM6020_YAW");
+        if (gm6020_yaw != NULL && gm6020_yaw->send_enable_cmd != NULL) {
+            gm6020_yaw->send_enable_cmd(gm6020_yaw);
+        }
+
         // // MG4005E_STIR使能
         // {
         //     struct motor_device *mg4005e_stir = motor_get_device("MG4005E_STIR");

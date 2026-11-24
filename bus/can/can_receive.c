@@ -4,6 +4,7 @@
  */
 
 #include "can_receive.h"
+#include "can_send.h"
 
 #include "fdcan.h"
 
@@ -76,6 +77,10 @@ static void can3_dispatch(uint32_t identifier, const uint8_t frame[8])
     struct motor_device *motor;
 
     switch (identifier) {
+    case 0x12U:
+        gimbal_receive(frame);
+        break;
+
     case CAN_GM6020_YAW_ID:
         motor = motor_get_device("GM6020_YAW");
         if (motor == NULL) { return; }

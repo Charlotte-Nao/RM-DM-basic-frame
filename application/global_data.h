@@ -38,6 +38,12 @@ typedef struct {
     volatile uint8_t imu_ready;
 } imu_data_t;
 
+typedef struct
+{
+    volatile float gimbal_yaw_rad;
+    volatile uint8_t gimbal_yaw_ready; // 已收到云台Yaw反馈
+}gimbal_data_t;
+
 typedef struct {
     volatile float L_l;
     volatile float L_r;
@@ -98,6 +104,7 @@ typedef struct
     middle_data_t middle_data;
     state_data_t state_data;
     control_data_t control_data;
+    gimbal_data_t gimbal_data;
     uint8_t mode;
     uint8_t mode2;
     uint8_t last_mode;
@@ -107,6 +114,7 @@ typedef struct
     uint8_t save_stage; // 0U未使能， 1U正常状态， 2U收腿. 3U摆腿回正，
     uint8_t self_stage; // 0U异常状态， 1U正常状态, 2U可复位初始姿, 3U复位收腿
     uint8_t last_stage;
+    uint8_t gimbal_mode; // 0U跟随状态， 1U小陀螺， 2U自瞄状态
 } global_data_t;
 
 extern volatile global_data_t global_data;

@@ -26,6 +26,7 @@
 #include "../../dsp/climb/climb.h"
 #include "../../dsp/self_save/self_save.h"
 #include "../../dsp/TraceTracking/trace_tracking.h"
+#include "../../dsp/Gimbal/gimbal.h"
 
 void test_task(void)
 {
@@ -56,6 +57,7 @@ void test_task(void)
             climb();
         }
         torque_send ();
+        gimbal_select();
 
         osDelay(1);
     }
