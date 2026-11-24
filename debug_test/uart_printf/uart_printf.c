@@ -11,6 +11,69 @@
 #include "../../dsp/State/state.h"
 #include "../../dsp/LegLength/leg_length.h"
 #include <math.h>
+void save_test(void)
+{
+    struct uart_device *uart1 = uart_get_device("uart1_dma");
+    struct motor_device *lf_motor = motor_get_device("DM8009P_LF");
+    struct motor_device *lb_motor = motor_get_device("DM_8009P_LB");
+    struct motor_device *rf_motor = motor_get_device("DM_8009P_RF");
+    struct motor_device *rb_motor = motor_get_device("DM_8009P_RB");
+
+    if (uart1 == NULL || lf_motor == NULL || lb_motor == NULL || rf_motor == NULL || rb_motor == NULL) {
+        return;
+    }
+
+    // 先记录本次数据，再分组发送，避免发送间隔中阶段和控制量持续变化。
+    uint32_t tick = osKernelGetTickCount();
+    uint8_t s1 = global_data.remote_data.rc.s1;
+    uint8_t s2 = global_data.remote_data.rc.s2;
+    uint8_t mode = global_data.mode;
+    uint8_t mode2 = global_data.mode2;
+    uint8_t self_stage = global_data.self_stage;
+    uint8_t save_stage = global_data.save_stage;
+    uint8_t jump_stage = global_data.jump_stage;
+    uint8_t climb_stage = global_data.climb_stage;
+    control_data_t control = global_data.control_data;
+    float length_l = global_data.middle_data.L_l;
+    float length_r = global_data.middle_data.L_r;
+    float length_rate_l = global_data.middle_data.L_l_dot;
+    float length_rate_r = global_data.middle_data.L_r_dot;
+    float phi0_l = global_data.middle_data.l_phi0;
+    float phi0_r = global_data.middle_data.r_phi0;
+    float theta = global_data.state_data.theta_rad;
+    float phi = global_data.state_data.phi_rad;
+
+    uart1->uart_printf(uart1,
+        "SAVE tick=%lu s1=%u s2=%u mode=%u mode2=%u self=%u save=%u jump=%u climb=%u\r\n",
+        (unsigned long)tick, (unsigned int)s1, (unsigned int)s2,
+        (unsigned int)mode, (unsigned int)mode2, (unsigned int)self_stage,
+        (unsigned int)save_stage, (unsigned int)jump_stage, (unsigned int)climb_stage);
+
+    osDelay(20U);
+
+    // 腿长为m，腿长速度为m/s。
+    uart1->uart_printf(uart1,
+        "LEG L_l=%.4f L_l_set=%.4f L_r=%.4f L_r_set=%.4f dL_l=%.4f dL_r=%.4f\r\n",
+        length_l, control.L_l, length_r, control.L_r, length_rate_l, length_rate_r);
+
+    osDelay(20U);
+
+
+    uart1->uart_printf(uart1,
+    "ANGLE swing=%u phi0_l_deg=%.3f phi0_r_deg=%.3f set_rad=1.390  theta_deg=%.2f phi_deg=%.2f\r\n",
+    (unsigned int)(self_stage == 3U && save_stage == 3U),
+    phi0_l * RAD_TO_DEG, phi0_r* RAD_TO_DEG ,  theta * RAD_TO_DEG, phi * RAD_TO_DEG);
+
+    osDelay(20U);
+
+    // F为轴向力N，Tp为虚拟髋力矩Nm，Tw为轮端力矩Nm。
+    uart1->uart_printf(uart1,
+        "CTRL F_l=%.2f F_r=%.2f Tp_l=%.2f Tp_r=%.2f Tw_l=%.2f Tw_r=%.2f\r\n",
+        control.F_l, control.F_r, control.T_p_l, control.T_p_r, control.T_w_l, control.T_w_r);
+
+    osDelay(20U);
+
+}
 void climb_test(void)
 {
     struct uart_device *uart1 = uart_get_device("uart1_dma");

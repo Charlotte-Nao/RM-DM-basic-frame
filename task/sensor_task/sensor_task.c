@@ -69,7 +69,8 @@ void sensor_task(void)
     float accel[3];
     float gyro_bias[3];
     float temperature;
-    float quaternion[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    // float quaternion[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    float quaternion[4] = {0.0f, 1.0f, 0.0f, 0.0f};
     float roll;
     float pitch;
     float yaw;

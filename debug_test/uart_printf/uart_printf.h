@@ -11,5 +11,6 @@ void length_test(void);
 void lqr_test(void);
 void Fn_test(void);
 void climb_test(void);
+void save_test(void);
 
 #endif //DM_UART_PRINTF_H

@@ -28,7 +28,7 @@ void mode_switch(void)
         global_data.mode = 2U;  // 进入大跳模式！
     }
 
-     if (global_data.remote_data.rc.s2 == 1U)
+    if (global_data.remote_data.rc.s2 == 1U)
     {
         global_data.mode2 = 3U;  // 底盘继电器强制断电
         LED_PINK_SET();
@@ -64,11 +64,12 @@ void mode_control(void)
     case 0U:
         send_all_disable();
         global_data.jump_stage = 0U;
+        global_data.save_stage = 0U;
+        global_data.climb_stage = 0U;
         break;
     case 1U:
         send_all_enable();
         global_data.jump_stage = 0U;
-        global_data.save_stage = 0U;
         global_data.climb_stage = 0U;
         break;
     case 2U:
