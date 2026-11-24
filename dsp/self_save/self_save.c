@@ -24,8 +24,8 @@ void self_save()
     else if (global_data.save_stage == 3U && global_data.self_stage == 3U)
     {
         phi0_pd(1.39f);
-        if (global_data.middle_data.l_phi0 < 1.57f && global_data.middle_data.l_phi0 > 1.01f
-            && global_data.middle_data.r_phi0 < 1.57f && global_data.middle_data.r_phi0 > 1.01f
+        if (global_data.middle_data.l_phi0 < 1.85f && global_data.middle_data.l_phi0 > 1.20f
+            && global_data.middle_data.r_phi0 < 1.85f && global_data.middle_data.r_phi0 > 1.20f
             && global_data.middle_data.L_l < 0.2f && global_data.middle_data.L_r < 0.2f)
         {
             global_data.save_stage = 1U;

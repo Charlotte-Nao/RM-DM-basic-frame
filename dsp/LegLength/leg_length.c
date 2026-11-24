@@ -112,7 +112,8 @@ void leg_pd(void)
 
     // 重力前馈
     if (global_data.jump_stage != 3U && global_data.jump_stage != 4U
-        && global_data.climb_stage != 2U && global_data.climb_stage != 3U && global_data.climb_stage != 4U)
+        && global_data.climb_stage != 2U && global_data.climb_stage != 3U && global_data.climb_stage != 4U
+        && global_data.save_stage != 2U && global_data.save_stage != 3U)
     {
         F_l += F_feedback_half;
         F_r += F_feedback_half;
