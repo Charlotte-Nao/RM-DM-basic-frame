@@ -36,45 +36,22 @@ typedef struct {
     volatile uint8_t imu_ready;
 } imu_data_t;
 
-typedef struct {
-    volatile float L_l;
-    volatile float L_r;
-    volatile float L_l_dot;
-    volatile float L_r_dot;
-    volatile float l_phi1;
-    volatile float l_phi4;
-    volatile float l_phi0;
-    volatile float l_phi1_dot;
-    volatile float l_phi4_dot;
-    volatile float l_phi0_dot;
-    volatile float r_phi1;
-    volatile float r_phi4;
-    volatile float r_phi0;
-    volatile float r_phi1_dot;
-    volatile float r_phi4_dot;
-    volatile float r_phi0_dot;
-    volatile float l_theta;
-    volatile float r_theta;
-    volatile float Jl[2][2];
-    volatile float Jr[2][2];
-} middle_data_t;
-
-// 状态空间矩阵：[theta, theta_dot, x, x_dot, phi, phi_dot]。
-typedef struct {
-    volatile float theta_rad;               // 世界系虚拟腿倾角，rad
-    volatile float theta_dot_rad_s;         // 虚拟腿倾角变化率，rad/s
-    volatile float x_m;                     // 模型水平位移，m
-    volatile float x_dot_m_s;               // 模型水平速度，m/s
-    volatile float phi_rad;                 // 机体俯仰角，rad
-    volatile float phi_dot_rad_s;           // 机体俯仰角变化率，rad/s
-} state_data_t;
+// 底盘通过CAN发送的云台控制数据
+typedef struct
+{
+    volatile int16_t pitch_ch3;
+    volatile float pitch_target_rad; // 世界系Pitch目标，抬头为正
+    volatile float pitch_motor_target_rad; // 限位后的电机机械角目标，零位为0
+    volatile float shooter_speed_rpm; // 两只摩擦轮的公共目标转速，方向相反
+    volatile uint8_t pitch_enabled;
+    volatile uint8_t shooter_enabled;
+} gimbal_data_t;
 
 typedef struct
 {
     imu_data_t imu_data;
     remote_data_t remote_data;
-    middle_data_t middle_data;
-    state_data_t state_data;
+    gimbal_data_t gimbal_data;
 } global_data_t;
 
 extern volatile global_data_t global_data;

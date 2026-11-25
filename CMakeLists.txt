@@ -95,14 +95,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         bus/can/can_all.h
         protocol/remote.c
         protocol/remote.h
-        dsp/VMC/vmc.c
-        dsp/VMC/vmc.h
-        dsp/LegLength/leg_length.c
-        dsp/LegLength/leg_length.h
-        dsp/State/state.c
-        dsp/State/state.h
-        dsp/LQR/lqr.c
-        dsp/LQR/lqr.h
+        application/motor.c
+        application/motor.h
+        application/move.c
+        application/move.h
 )
 
 # Add STM32CubeMX generated sources

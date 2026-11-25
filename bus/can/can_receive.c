@@ -7,86 +7,47 @@
 
 #include "fdcan.h"
 
+#include "../../application/global_data.h"
 #include "../../bsp/can/can.h"
 #include "../../device/motor/motor.h"
 #include "../../device/motor/motor_internal.h"
 
 static void can1_dispatch(uint32_t identifier, const uint8_t frame[8])
 {
-    struct motor_device *motor;
-
     switch (identifier) {
-    case CAN_M3508_L_ID:
-        motor = motor_get_device("M3508_L");
-        if (motor == NULL) { return; }
-        m3508_feedback_calculate(motor, frame);
-        motor->last_rx_tick = HAL_GetTick();
-        break;
-
-    case CAN_M3508_R_ID:
-        motor = motor_get_device("M3508_R");
-        if (motor == NULL) { return; }
-        m3508_feedback_calculate(motor, frame);
-        motor->last_rx_tick = HAL_GetTick();
+    case CAN_GIMBAL_COMMAND_ID:
+        // 底盘0x25前2字节为有符号16位大端序ch3，其余字节暂不使用。
+        global_data.gimbal_data.pitch_ch3 = (int16_t)(((uint16_t)frame[0] << 8) | frame[1]);
         break;
 
     default:
         break;
     }
 }
+
 static void can2_dispatch(uint32_t identifier, const uint8_t frame[8])
 {
     struct motor_device *motor;
 
     switch (identifier) {
-    case CAN_DM8009P_LF_FEEDBACK_ID:
-        motor = motor_get_device("DM8009P_LF");
+    case CAN_DM4310_PITCH_FEEDBACK_ID:
+        motor = motor_get_device("DM4310_PITCH");
         if (motor == NULL) { return; }
-        dm8009p_feedback_calculate(motor, frame);
+        dm4310_feedback_calculate(motor, frame);
         motor->last_rx_tick = HAL_GetTick();
         break;
 
-    case CAN_DM_8009P_LB_FEEDBACK_ID:
-        motor = motor_get_device("DM_8009P_LB");
+    case CAN_M3508_SHOOT_L_ID:
+        motor = motor_get_device("M3508_SHOOT_L");
         if (motor == NULL) { return; }
-        dm8009p_feedback_calculate(motor, frame);
+        m3508_feedback_calculate(motor, frame);
         motor->last_rx_tick = HAL_GetTick();
         break;
 
-    case CAN_DM_8009P_RF_FEEDBACK_ID:
-        motor = motor_get_device("DM_8009P_RF");
+    case CAN_M3508_SHOOT_R_ID:
+        motor = motor_get_device("M3508_SHOOT_R");
         if (motor == NULL) { return; }
-        dm8009p_feedback_calculate(motor, frame);
-        motor->last_rx_tick = HAL_GetTick();
-        break;
-
-    case CAN_DM_8009P_RB_FEEDBACK_ID:
-        motor = motor_get_device("DM_8009P_RB");
-        if (motor == NULL) { return; }
-        dm8009p_feedback_calculate(motor, frame);
-        motor->last_rx_tick = HAL_GetTick();
-        break;
-
-    default:
-        break;
-    }
-}
-static void can3_dispatch(uint32_t identifier, const uint8_t frame[8])
-{
-    struct motor_device *motor;
-
-    switch (identifier) {
-    case CAN_GM6020_YAW_ID:
-        motor = motor_get_device("GM6020_YAW");
-        if (motor == NULL) { return; }
-        gm6020_feedback_calculate(motor, frame);
-        motor->last_rx_tick = HAL_GetTick();
-        break;
-
-    case CAN_MG4005E_STIR_ID:
-        motor = motor_get_device("MG4005E_STIR");
-        if (motor == NULL) { return; }
-        mg4005e_feedback_calculate(motor, frame);
+        m3508_feedback_calculate(motor, frame);
         motor->last_rx_tick = HAL_GetTick();
         break;
 
@@ -118,9 +79,6 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *handle, uint32_t interrupts)
         }
         else if (handle == &hfdcan2) {
             can2_dispatch(header.Identifier, frame);
-        }
-        if (handle == &hfdcan3) {
-            can3_dispatch(header.Identifier, frame);
         }
     }
 }
